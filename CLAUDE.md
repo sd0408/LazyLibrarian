@@ -24,6 +24,18 @@ LazyLibrarian is an open-source book/magazine metadata aggregation and download 
 
 ---
 
+## Workflow Requirements
+
+**IMPORTANT:** After completing each task that modifies code, you MUST run the unit tests to verify nothing is broken:
+
+```bash
+source .venv/bin/activate && python -m pytest lazylibrarian/unittests/
+```
+
+Do not consider a task complete until tests pass. If tests fail, fix the issues before moving on.
+
+---
+
 ## Project Structure
 
 ```
