@@ -1210,20 +1210,7 @@ def db_v43(myDB, upgradelog):
 
     
 def db_v44(myDB, upgradelog):
-    if lazylibrarian.CONFIG['GIT_USER'].lower() == 'dobytang':
-        upgradelog.write("%s v44: %s\n" % (time.ctime(), "Updating git host"))
-        timer = 60
-        while timer > 0:
-            msg = "<mark>IMPORTANT MESSAGE</mark><p>LazyLibrarian hosting has moved, the new location is<p>"
-            msg += "<mark>https://gitlab.com/LazyLibrarian/lazylibrarian</mark><p>"
-            msg += "Your config has been updated to the new location<p>"
-            msg += "Startup will continue in %s seconds" % timer
-            lazylibrarian.UPDATE_MSG = msg
-            time.sleep(1)
-            timer -= 1
-        lazylibrarian.CONFIG['GIT_USER'] = 'LazyLibrarian'
-        lazylibrarian.CONFIG['GIT_HOST'] = 'gitlab.com'
-        lazylibrarian.CONFIG['GITLAB_TOKEN'] = 'gitlab+deploy-token-25650:dPocQXZTi--s69kykCxJ@gitlab.com'
-        lazylibrarian.config_write('Git')
-    upgradelog.write("%s v44: complete\n" % time.ctime())
+    # Legacy migration for git host change - no longer needed
+    # Automatic updates have been removed; use Docker/deployment for updates
+    upgradelog.write("%s v44: complete (no-op)\n" % time.ctime())
     

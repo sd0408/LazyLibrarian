@@ -268,22 +268,3 @@ class TestApiDatabaseIntegration:
         author = db2.match("SELECT Status FROM authors WHERE AuthorID=?",
                            (sample_author_data['AuthorID'],))
         assert author['Status'] == 'Ignored'
-
-    @patch('cherrypy.request')
-    def test_getVersion_returns_configured_values(self, mock_request, api_config):
-        """getVersion should return values from CONFIG."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        lazylibrarian.CONFIG['INSTALL_TYPE'] = 'test-install'
-        lazylibrarian.CONFIG['CURRENT_VERSION'] = 'v1.0.0-test'
-        lazylibrarian.CONFIG['LATEST_VERSION'] = 'v1.0.1-test'
-        lazylibrarian.CONFIG['COMMITS_BEHIND'] = 10
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='getVersion')
-        result = json.loads(api.fetchData)
-
-        assert result['install_type'] == 'test-install'
-        assert result['current_version'] == 'v1.0.0-test'
-        assert result['commits_behind'] == 10

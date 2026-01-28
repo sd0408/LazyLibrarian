@@ -619,27 +619,6 @@ class TestApiSystem:
         assert 'Test log entry 1' in parsed
 
     @patch('cherrypy.request')
-    def test_getVersion_returns_version_info(self, mock_request, api_config):
-        """getVersion should return version information."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        lazylibrarian.CONFIG['INSTALL_TYPE'] = 'git'
-        lazylibrarian.CONFIG['CURRENT_VERSION'] = 'abc123'
-        lazylibrarian.CONFIG['LATEST_VERSION'] = 'def456'
-        lazylibrarian.CONFIG['COMMITS_BEHIND'] = 5
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='getVersion')
-        result = api.fetchData
-
-        parsed = json.loads(result)
-        assert 'install_type' in parsed
-        assert 'current_version' in parsed
-        assert parsed['install_type'] == 'git'
-        assert parsed['current_version'] == 'abc123'
-
-    @patch('cherrypy.request')
     def test_showThreads_returns_thread_names(self, mock_request, api_config):
         """showThreads should return list of thread names."""
         mock_request.headers = {'X-Forwarded-For': None}

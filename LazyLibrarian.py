@@ -9,25 +9,37 @@ import platform
 import sys
 import threading
 import time
-import shutil
 
 import lazylibrarian
-from lazylibrarian import webStart, logger, versioncheck, dbupgrade
-from lazylibrarian.formatter import check_int
+from lazylibrarian import webStart, logger, dbupgrade
 import configparser
 
-# The following should probably be made configurable at the settings level
-# This fix is put in place for systems with broken SSL (like QNAP)
-opt_out_of_certificate_verification = True
-if opt_out_of_certificate_verification:
-    # noinspection PyBroadException
-    try:
-        import ssl
-        # noinspection PyProtectedMember
-        ssl._create_default_https_context = ssl._create_unverified_context
-    except Exception:
-        pass
-# ==== end block (should be configurable at settings level)
+def configure_ssl_verification():
+    """
+    Configure SSL certificate verification based on config settings.
+
+    This can be controlled via:
+    - config.ini: SSL_VERIFY = 0 (default, skip verification) or 1 (verify certificates)
+    - Environment variable: LAZYLIBRARIAN_SSL_VERIFY = true/false or 1/0
+
+    SSL verification is DISABLED by default for backward compatibility with systems
+    that have broken SSL (like QNAP). Set SSL_VERIFY = 1 to enable verification.
+    """
+    # Check environment variable first, then config
+    env_ssl_verify = os.environ.get('LAZYLIBRARIAN_SSL_VERIFY', '')
+    if env_ssl_verify:
+        ssl_verify = env_ssl_verify.lower() in ('1', 'true', 'yes')
+    else:
+        ssl_verify = lazylibrarian.CONFIG.get('SSL_VERIFY', False)
+
+    if not ssl_verify:
+        # noinspection PyBroadException
+        try:
+            import ssl
+            # noinspection PyProtectedMember
+            ssl._create_default_https_context = ssl._create_unverified_context
+        except Exception:
+            pass
 
 
 def main():
@@ -70,8 +82,6 @@ def main():
                  dest='debug', help="Show debuglog messages")
     p.add_option('--nolaunch', action="store_true",
                  dest='nolaunch', help="Don't start browser")
-    p.add_option('--update', action="store_true",
-                 dest='update', help="Update to latest version (only git or source installs)")
     p.add_option('--port',
                  dest='port', default=None,
                  help="Force webinterface to listen on this port")
@@ -106,21 +116,6 @@ def main():
 
     if options.nolaunch:
         lazylibrarian.CONFIG['LAUNCH_BROWSER'] = False
-
-    if options.update:
-        lazylibrarian.SIGNAL = 'update'
-        # This is the "emergency recovery" update in case lazylibrarian won't start.
-        # Set up some dummy values for the update as we have not read the config file yet
-        lazylibrarian.CONFIG['GIT_PROGRAM'] = ''
-        lazylibrarian.CONFIG['GIT_USER'] = 'lazylibrarian'
-        lazylibrarian.CONFIG['GIT_REPO'] = 'lazylibrarian'
-        lazylibrarian.CONFIG['LOGLIMIT'] = 2000
-        versioncheck.getInstallType()
-        if lazylibrarian.CONFIG['INSTALL_TYPE'] not in ['git', 'source']:
-            lazylibrarian.SIGNAL = None
-            print('Cannot update, not a git or source installation')
-        else:
-            lazylibrarian.shutdown(restart=True, update=True)
 
     if options.loglevel:
         try:
@@ -164,69 +159,9 @@ def main():
     # There is no point putting in any logging above this line, as its not set till after initialize.
     lazylibrarian.initialize()
 
-    if lazylibrarian.CONFIG['VERSIONCHECK_INTERVAL'] == 0:
-        logger.debug('Automatic update checks are disabled')
-        # pretend we're up to date so we don't keep warning the user
-        # version check button will still override this if you want to
-        lazylibrarian.CONFIG['LATEST_VERSION'] = lazylibrarian.CONFIG['CURRENT_VERSION']
-        lazylibrarian.CONFIG['COMMITS_BEHIND'] = 0
-    else:
-        # Set the install type (win,git,source) &
-        # check the version when the application starts
-        versioncheck.checkForUpdates()
+    # Configure SSL verification based on config/env settings
+    configure_ssl_verification()
 
-        logger.debug('Current Version [%s] - Latest remote version [%s] - Install type [%s]' % (
-            lazylibrarian.CONFIG['CURRENT_VERSION'], lazylibrarian.CONFIG['LATEST_VERSION'],
-            lazylibrarian.CONFIG['INSTALL_TYPE']))
-
-        if check_int(lazylibrarian.CONFIG['GIT_UPDATED'], 0) == 0:
-            if lazylibrarian.CONFIG['CURRENT_VERSION'] == lazylibrarian.CONFIG['LATEST_VERSION']:
-                if lazylibrarian.CONFIG['INSTALL_TYPE'] == 'git' and lazylibrarian.CONFIG['COMMITS_BEHIND'] == 0:
-                    lazylibrarian.CONFIG['GIT_UPDATED'] = str(int(time.time()))
-                    logger.debug('Setting update timestamp to now')
-
-    # flatpak insists on PROG_DIR being read-only so we have to move version.txt into CACHEDIR
-    old_file = os.path.join(lazylibrarian.PROG_DIR, 'version.txt')
-    version_file = os.path.join(lazylibrarian.CACHEDIR, 'version.txt')
-    if os.path.isfile(old_file):
-        if not os.path.isfile(version_file):
-            try:
-                with open(old_file, 'r') as s:
-                    with open(version_file, 'w') as d:
-                        d.write(s.read())
-            except OSError:
-                logger.warn("Unable to copy version.txt")
-        try:
-            os.remove(old_file)
-        except OSError:
-            pass
-
-    # for dockers that haven't updated correctly from github to gitlab, force source install
-    if lazylibrarian.CONFIG['CURRENT_VERSION'] != lazylibrarian.CONFIG['LATEST_VERSION']:
-        if lazylibrarian.CONFIG['INSTALL_TYPE'] == 'git' and lazylibrarian.CONFIG['COMMITS_BEHIND'] == 0:
-            if os.path.exists('/app/lazylibrarian/.git'):
-                os.remove(version_file)
-                shutil.rmtree('/app/lazylibrarian/.git')
-                lazylibrarian.CONFIG['INSTALL_TYPE'] = 'source'
-                lazylibrarian.CONFIG['GIT_USER'] = 'LazyLibrarian'
-                lazylibrarian.CONFIG['GIT_HOST'] = 'gitlab.com'
-                lazylibrarian.CONFIG['GITLAB_TOKEN'] = 'gitlab+deploy-token-26212:Hbo3d8rfZmSx4hL1Fdms@gitlab.com'
-                lazylibrarian.config_write('Git')
-
-    if not os.path.isfile(version_file) and lazylibrarian.CONFIG['INSTALL_TYPE'] == 'source':
-        # User may be running an old source zip, so try to force update
-        lazylibrarian.CONFIG['COMMITS_BEHIND'] = 1
-        lazylibrarian.SIGNAL = 'update'
-        # but only once in case the update fails, don't loop
-        with open(version_file, 'w') as f:
-            f.write("UNKNOWN SOURCE")
-
-    if lazylibrarian.CONFIG['COMMITS_BEHIND'] <= 0 and lazylibrarian.SIGNAL == 'update':
-        lazylibrarian.SIGNAL = None
-        if lazylibrarian.CONFIG['COMMITS_BEHIND'] == 0:
-            logger.debug('Not updating, LazyLibrarian is already up to date')
-        else:
-            logger.debug('Not updating, LazyLibrarian has local changes')
 
     if lazylibrarian.DAEMON:
         lazylibrarian.daemonize()
@@ -280,8 +215,6 @@ def main():
                 lazylibrarian.shutdown()
             elif lazylibrarian.SIGNAL == 'restart':
                 lazylibrarian.shutdown(restart=True)
-            elif lazylibrarian.SIGNAL == 'update':
-                lazylibrarian.shutdown(restart=True, update=True)
             lazylibrarian.SIGNAL = None
 
 

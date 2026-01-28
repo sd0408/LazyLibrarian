@@ -862,20 +862,6 @@
                 <label>Post-Processing Interval:</label>
                 <input type="text" id="scan_interval" name="scan_interval" value="${lazylibrarian.CONFIG['SCAN_INTERVAL']}" size="8"> (mins)
               </div>
-              <div>
-                <label>Version Check Interval:</label>
-                <input type="text" id="versioncheck_interval" name="versioncheck_interval" value="${lazylibrarian.CONFIG['VERSIONCHECK_INTERVAL']}" size="8"> (hours)
-              <%
-                    if lazylibrarian.CONFIG['AUTO_UPDATE'] == True:
-                        checked = 'checked="checked"'
-                    else:
-                        checked = ''
-              %>
-              <br>
-              <input type="checkbox" id="auto_update" name="auto_update" value=1 ${checked} /><label> Auto Update when new version found</label>
-              <br>
-              <small>This will auto update if the task finds a new version. Does not apply to manual version checks</small>
-              </div>
               <small>
                 <BR>
                 Changes to the scan intervals only take effect when the jobs are restarted, an interval of zero disables the task
@@ -913,11 +899,6 @@
               <label>Max Coverwall Images:</label>
               <input type="text" id="max_wall" name="max_wall"  value="${lazylibrarian.CONFIG['MAX_WALL']}" size="8">
             </div>
-            <label>git program:</label>
-            <input type="text" placeholder="git program" id="git_program" name="git_program" value="${lazylibrarian.CONFIG['GIT_PROGRAM']}" size="26">
-            <BR>
-            <small>Path to git program unless already in your path.
-              <BR>You can usually leave this blank</small>
           </td>
         </tr>
         <tr>
@@ -2014,8 +1995,6 @@
       <p><input type="submit" value="Save changes" id="add"></p>
     </div>
     <p>&nbsp;</p>
-    <p style="text-align:center;color:grey">Repo: https://${lazylibrarian.CONFIG['GIT_HOST']}/${lazylibrarian.CONFIG['GIT_USER']}/${lazylibrarian.CONFIG['GIT_REPO']}  : Branch: ${lazylibrarian.CONFIG['GIT_BRANCH']}<br>
-      Current Version: ${lazylibrarian.CONFIG['CURRENT_VERSION']}  : Latest  Version: ${lazylibrarian.CONFIG['LATEST_VERSION']}</p>
   </div>
 </form>
 </%def>

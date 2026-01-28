@@ -514,11 +514,6 @@ def scheduleJob(action='Start', target=None):
                 hours = check_int(lazylibrarian.CONFIG['WISHLIST_INTERVAL'], 0)
                 lazylibrarian.SCHED.add_interval_job(lazylibrarian.searchrss.cron_search_wishlist, hours=hours)
                 logger.debug("%s %s job in %s hour%s" % (action, target, hours, plural(hours)))
-        elif 'checkForUpdates' in target and check_int(lazylibrarian.CONFIG['VERSIONCHECK_INTERVAL'], 0):
-            hours = check_int(lazylibrarian.CONFIG['VERSIONCHECK_INTERVAL'], 0)
-            lazylibrarian.SCHED.add_interval_job(
-                lazylibrarian.versioncheck.checkForUpdates, hours=hours)
-            logger.debug("%s %s job in %s hour%s" % (action, target, hours, plural(hours)))
         elif 'authorUpdate' in target and check_int(lazylibrarian.CONFIG['CACHE_AGE'], 0):
             # Try to get all authors scanned evenly inside the cache age
             maxage = check_int(lazylibrarian.CONFIG['CACHE_AGE'], 0)
@@ -607,7 +602,6 @@ def restartJobs(start='Restart'):
     scheduleJob(start, 'search_rss_book')
     scheduleJob(start, 'search_wishlist')
     scheduleJob(start, 'search_magazines')
-    scheduleJob(start, 'checkForUpdates')
     scheduleJob(start, 'authorUpdate')
 
 
@@ -745,8 +739,6 @@ def showJobs():
         job = str(job)
         if "search_magazines" in job:
             jobname = "Magazine search"
-        elif "checkForUpdates" in job:
-            jobname = "Check LazyLibrarian version"
         elif "search_book" in job:
             jobname = "Book search"
         elif "search_rss_book" in job:

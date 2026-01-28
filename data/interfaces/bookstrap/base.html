@@ -223,49 +223,7 @@
       <div id="syncAlert" style="display:none; position:fixed; bottom:48px; right:15px; z-index:99; font-size:14px; border:2px solid lightgrey; background-color:#888; color:white; padding:6px; border-radius:8px;"><i class="fa fa-circle-notch fa-spin"></i> Syncing, please wait...</div>
     </div>
     <script type="text/javascript">
-      msg = '';
-      % if lazylibrarian.CONFIG['INSTALL_TYPE'] == 'git' or lazylibrarian.CONFIG['INSTALL_TYPE'] == 'source':
-          title = 'LazyLibrarian Update'
-          % if not lazylibrarian.CONFIG['CURRENT_VERSION']:
-              msg = '<div class="input-group">You are running an unknown version of lazylibrarian</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Update to the latest release">Update</a></div>'
-          % elif (lazylibrarian.CONFIG['INSTALL_TYPE'] == 'source' and lazylibrarian.CONFIG['CURRENT_VERSION'] == 'No Version File' ):
-              msg = '<div class="input-group">You are running an unknown version via source install</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Update to the latest release">Update</a></div>'
-          % elif lazylibrarian.CONFIG['CURRENT_VERSION'] != lazylibrarian.CONFIG['LATEST_VERSION']:
-              % if lazylibrarian.CONFIG['LATEST_VERSION'] == 'Not_Available_From_Git':
-                  msg = '<div class="input-group">Unable to get latest version from git</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the warning for 24 hours" id="ignoreUpdate">Ignore</a></div>'
-              % elif lazylibrarian.CONFIG['COMMITS_BEHIND'] < 0:
-                  msg = '<div class="input-group">Running a local updated version. Push changes to git or rollback to Master release</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the warning for 24 hours" id="ignoreUpdate">Ignore</a></div>'
-              % elif lazylibrarian.CONFIG['COMMITS_BEHIND'] > 1:
-                  msg = '<div class="input-group">New version available. You are ${lazylibrarian.CONFIG['COMMITS_BEHIND']} commits behind.</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the update message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Update to the latest release" id="doUpdate">Update</a></div>'
-              % elif lazylibrarian.CONFIG['COMMITS_BEHIND'] == 1:
-                  msg = '<div class="input-group">New version available. You are one commit behind.</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the update message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Update to the latest release" id="doUpdate">Update</a></div>'
-              % endif
-          % endif
-      % endif
-
       $(document).ready(function() {
-        if (readCookie('ignoreUpdate') != null) { msg = '' }
-
-        if (msg != '') {
-          $.notify({
-              icon: "images/ll48.png",
-              title: '<strong>'+title+'</strong>',
-              message: msg
-          },{
-              icon_type: 'image'
-          },{
-                type: 'warning'
-            });
-        }
-
-        $('#ignoreUpdate').click(function() {
-            createCookie("ignoreUpdate", true, 1);
-        });
-
-        $('#doUpdate').click(function () {
-            createCookie("ignoreUpdate", true, 0.01);  // suppress popup while updating
-        });
-
         // Tools dropdown handlers
         $('#nav-exportcsv').on('click', function(e) {
             e.preventDefault();

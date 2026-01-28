@@ -1539,23 +1539,6 @@
                       <span class="input-group-addon">Minutes</span>
                     </div>
                   </div>
-                  <div class="form-group">
-                    <label for="versioncheck_interval" class="control-label">Version Check Interval:</label>
-                    <div class="input-group">
-                      <input type="number" id="versioncheck_interval" name="versioncheck_interval" value="${lazylibrarian.CONFIG['VERSIONCHECK_INTERVAL']}" class="form-control" placeholder="0 to disable" >
-                      <span class="input-group-addon">Hours</span>
-                    </div>
-                    <%
-                        if lazylibrarian.CONFIG['AUTO_UPDATE'] == True:
-                            checked = 'checked="checked"'
-                        else:
-                            checked = ''
-                    %>
-                    <label for="auto_update" class="control-label">
-                      <input type="checkbox" id="auto_update" name="auto_update" value="1" ${checked} />
-                      Auto Update when new version found</label>
-                    <span class="help-block">This will auto update if the task finds a new version. Does not apply to manual version checks</span>
-                  </div>
                   <div class="help-block">Setting a scan interval to zero disables the task</div>
                 </fieldset>
                 <legend>Status</legend>
@@ -1951,11 +1934,6 @@
                   </div>
                 </fieldset>
                 <fieldset>
-                  <div class="form-group">
-                    <label for="git_program">git program:</label>
-                    <input type="text" placeholder="git program" id="git_program" name="git_program" value="${lazylibrarian.CONFIG['GIT_PROGRAM']}" class="form-control">
-                    <span class="help-block">Git program unless already in your path. Usually leave this blank</span>
-                  </div>
                   <div class="form-group">
                     <label for="imp_convert">Cover creation program:</label>
                     <input type="text" placeholder="Cover creation program" id="imp_convert" name="imp_convert" value="${lazylibrarian.CONFIG['IMP_CONVERT']}" class="form-control">
@@ -3033,8 +3011,6 @@
     </div>
     <!-- tabs -->
     <p>&nbsp;</p>
-    <p style="text-align:center;color:grey">Repo: https://${lazylibrarian.CONFIG['GIT_HOST']}/${lazylibrarian.CONFIG['GIT_USER']}/${lazylibrarian.CONFIG['GIT_REPO']}  :     Branch: ${lazylibrarian.CONFIG['GIT_BRANCH']}  :  Updated: ${config['updated']}<br>
-    Current Version: ${lazylibrarian.CONFIG['CURRENT_VERSION']}  : Latest  Version:    ${lazylibrarian.CONFIG['LATEST_VERSION']}</p>
   </div>
 <!-- form -->
 </form>

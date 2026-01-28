@@ -98,10 +98,8 @@ cmd_dict = {'help': 'list available commands. ' +
             'forceLibraryScan': '[&wait] [&remove] [&dir=] [&id=] rescan whole or part book library',
             'forceAudioBookScan': '[&wait] [&remove] [&dir=] [&id=] rescan whole or part audiobook library',
             'forceMagazineScan': '[&wait] rescan whole magazine library',
-            'getVersion': 'show lazylibrarian current/git version',
             'shutdown': 'stop lazylibrarian',
             'restart': 'restart lazylibrarian',
-            'update': 'update lazylibrarian',
             'findAuthor': '&name= search googlebooks for named author',
             'findBook': '&name= search googlebooks for named book',
             'addBook': '&id= add book details to the database',
@@ -932,14 +930,6 @@ class Api(object):
         else:
             threading.Thread(target=getAuthorImages, name='API-GETAUTHORIMAGES', args=[]).start()
 
-    def _getVersion(self):
-        self.data = {
-            'install_type': lazylibrarian.CONFIG['INSTALL_TYPE'],
-            'current_version': lazylibrarian.CONFIG['CURRENT_VERSION'],
-            'latest_version': lazylibrarian.CONFIG['LATEST_VERSION'],
-            'commits_behind': lazylibrarian.CONFIG['COMMITS_BEHIND'],
-        }
-
     @staticmethod
     def _shutdown():
         lazylibrarian.SIGNAL = 'shutdown'
@@ -947,10 +937,6 @@ class Api(object):
     @staticmethod
     def _restart():
         lazylibrarian.SIGNAL = 'restart'
-
-    @staticmethod
-    def _update():
-        lazylibrarian.SIGNAL = 'update'
 
     def _findAuthor(self, **kwargs):
         if 'name' not in kwargs:

@@ -26,7 +26,7 @@ import webbrowser
 import sqlite3
 
 import cherrypy
-from lazylibrarian import logger, database, versioncheck, postprocess, searchbook, searchmag, searchrss, \
+from lazylibrarian import logger, database, postprocess, searchbook, searchmag, searchrss, \
     importer, webServe
 from lazylibrarian.cache import fetchURL
 from lazylibrarian.common import restartJobs, logHeader, scheduleJob
@@ -100,7 +100,6 @@ AUTHORS_UPDATE = 0
 LOGIN_MSG = ''
 GROUP_CONCAT = 0
 HIST_REFRESH = 1000
-GITLAB_TOKEN = 'gitlab+deploy-token-25650:dPocQXZTi--s69kykCxJ@gitlab.com'
 
 # extended loglevels
 log_magdates = 1 << 2  # 4 magazine date matching
@@ -165,8 +164,6 @@ isbn_978_dict = {
 # Not all are accessible from the web ui
 # Any undefined on startup will be set to the default value
 # Any _NOT_ in the web ui will remain unchanged on config save
-CONFIG_GIT = ['GIT_REPO', 'GIT_USER', 'GIT_BRANCH', 'LATEST_VERSION', 'GIT_UPDATED', 'CURRENT_VERSION',
-              'GIT_HOST', 'COMMITS_BEHIND', 'INSTALL_TYPE', 'AUTO_UPDATE']
 CONFIG_NONWEB = ['NAME_POSTFIX', 'DIR_PERM', 'FILE_PERM', 'BLOCKLIST_TIMER', 'DISPLAYLENGTH', 'ISBN_LOOKUP',
                  'WALL_COLUMNS', 'ADMIN_EMAIL', 'HTTP_TIMEOUT', 'PROXY_LOCAL', 'SKIPPED_EXT', 'CHERRYPYLOG',
                  'SYS_ENCODING', 'LT_DEVKEY', 'HIST_REFRESH', 'HTTP_EXT_TIMEOUT', 'CALIBRE_RENAME',
@@ -217,6 +214,7 @@ CONFIG_DEFINITIONS = {
     'HTTPS_ENABLED': ('bool', 'General', 0),
     'HTTPS_CERT': ('str', 'General', ''),
     'HTTPS_KEY': ('str', 'General', ''),
+    'SSL_VERIFY': ('bool', 'General', 0),
     'HTTP_TIMEOUT': ('int', 'General', 30),
     'HTTP_EXT_TIMEOUT': ('int', 'General', 90),
     'BOOKSTRAP_THEME': ('str', 'General', 'slate'),
@@ -265,21 +263,10 @@ CONFIG_DEFINITIONS = {
     'IMP_MAGCOVER': ('bool', 'General', 1),
     'IMP_CONVERT': ('str', 'General', ''),
     'IMP_PREPROCESS': ('str', 'General', ''),
-    'GIT_PROGRAM': ('str', 'General', ''),
     'CACHE_AGE': ('int', 'General', 30),
     'TASK_AGE': ('int', 'General', 2),
     'OPF_TAGS': ('bool', 'General', 1),
     'WISHLIST_TAGS': ('bool', 'General', 1),
-    'GIT_HOST': ('str', 'Git', 'github.com'),
-    'GIT_USER': ('str', 'Git', 'dobytang'),
-    'GIT_REPO': ('str', 'Git', 'lazylibrarian'),
-    'GIT_BRANCH': ('str', 'Git', 'master'),
-    'GIT_UPDATED': ('int', 'Git', 0),
-    'INSTALL_TYPE': ('str', 'Git', ''),
-    'CURRENT_VERSION': ('str', 'Git', ''),
-    'LATEST_VERSION': ('str', 'Git', ''),
-    'COMMITS_BEHIND': ('int', 'Git', 0),
-    'AUTO_UPDATE': ('int', 'Git', 0),
     'SAB_HOST': ('str', 'SABnzbd', ''),
     'SAB_PORT': ('int', 'SABnzbd', 0),
     'SAB_SUBDIR': ('str', 'SABnzbd', ''),
@@ -415,7 +402,6 @@ CONFIG_DEFINITIONS = {
     'SCAN_INTERVAL': ('int', 'SearchScan', '10'),
     'SEARCHRSS_INTERVAL': ('int', 'SearchScan', '20'),
     'WISHLIST_INTERVAL': ('int', 'SearchScan', '24'),
-    'VERSIONCHECK_INTERVAL': ('int', 'SearchScan', '24'),
     'DELAYSEARCH': ('bool', 'SearchScan', 0),
     'FULL_SCAN': ('bool', 'LibraryScan', 0),
     'ADD_AUTHOR': ('bool', 'LibraryScan', 1),
@@ -594,7 +580,7 @@ def initialize():
         CONFIG, CFG, DBFILE, COMMIT_LIST, SCHED, INIT_LOCK, __INITIALIZED__, started, LOGLIST, LOGTOGGLE, \
         UPDATE_MSG, CURRENT_TAB, CACHE_HIT, CACHE_MISS, LAST_LIBRARYTHING, SHOW_SERIES, SHOW_MAGS, \
         SHOW_AUDIO, CACHEDIR, BOOKSTRAP_THEMELIST, MONTHNAMES, CONFIG_DEFINITIONS, isbn_979_dict, isbn_978_dict, \
-        CONFIG_NONWEB, CONFIG_NONDEFAULT, CONFIG_GIT, MAG_UPDATE, AUDIO_UPDATE, EBOOK_UPDATE, \
+        CONFIG_NONWEB, CONFIG_NONDEFAULT, MAG_UPDATE, AUDIO_UPDATE, EBOOK_UPDATE, \
         GROUP_CONCAT, LT_SLEEP, GB_CALLS
 
     with INIT_LOCK:
@@ -721,7 +707,7 @@ def initialize():
 # noinspection PyUnresolvedReferences
 def config_read(reloaded=False):
     global CONFIG, CONFIG_DEFINITIONS, CONFIG_NONWEB, CONFIG_NONDEFAULT, NEWZNAB_PROV, TORZNAB_PROV, RSS_PROV, \
-        CONFIG_GIT, SHOW_SERIES, SHOW_MAGS, SHOW_AUDIO, NABAPICOUNT
+        SHOW_SERIES, SHOW_MAGS, SHOW_AUDIO, NABAPICOUNT
     # legacy name conversion
     if not CFG.has_option('General', 'ebook_dir'):
         ebook_dir = check_setting('str', 'General', 'destination_dir', '')
@@ -867,6 +853,13 @@ def config_read(reloaded=False):
     for key in list(CONFIG_DEFINITIONS.keys()):
         item_type, section, default = CONFIG_DEFINITIONS[key]
         CONFIG[key.upper()] = check_setting(item_type, section, key.lower(), default)
+
+    # Environment variable overrides for sensitive settings
+    # LAZYLIBRARIAN_SSL_VERIFY overrides config file setting (0/1 or true/false)
+    env_ssl_verify = os.environ.get('LAZYLIBRARIAN_SSL_VERIFY', '')
+    if env_ssl_verify:
+        CONFIG['SSL_VERIFY'] = env_ssl_verify.lower() in ('1', 'true', 'yes')
+
     if not CONFIG['LOGDIR']:
         CONFIG['LOGDIR'] = os.path.join(DATADIR, 'Logs')
     if CONFIG['HTTP_PORT'] < 21 or CONFIG['HTTP_PORT'] > 65535:
@@ -934,7 +927,7 @@ def config_read(reloaded=False):
 
 # noinspection PyUnresolvedReferences
 def config_write(part=None):
-    global SHOW_SERIES, SHOW_MAGS, SHOW_AUDIO, CONFIG_NONWEB, CONFIG_NONDEFAULT, CONFIG_GIT, LOGLEVEL, NEWZNAB_PROV, \
+    global SHOW_SERIES, SHOW_MAGS, SHOW_AUDIO, CONFIG_NONWEB, CONFIG_NONDEFAULT, LOGLEVEL, NEWZNAB_PROV, \
         TORZNAB_PROV, RSS_PROV
 
     if part:
@@ -983,7 +976,7 @@ def config_write(part=None):
                     value = 'E'
                 CONFIG[key] = value
 
-        if key in ['SEARCH_BOOKINTERVAL', 'SEARCH_MAGINTERVAL', 'SCAN_INTERVAL', 'VERSIONCHECK_INTERVAL',
+        if key in ['SEARCH_BOOKINTERVAL', 'SEARCH_MAGINTERVAL', 'SCAN_INTERVAL',
                    'SEARCHRSS_INTERVAL', 'WISHLIST_INTERVAL']:
             oldvalue = CFG.get(section, key.lower())
             if value != oldvalue:
@@ -997,8 +990,6 @@ def config_write(part=None):
                     scheduleJob('Restart', 'search_wishlist')
                 elif key == 'SCAN_INTERVAL':
                     scheduleJob('Restart', 'PostProcessor')
-                elif key == 'VERSIONCHECK_INTERVAL':
-                    scheduleJob('Restart', 'checkForUpdates')
 
         CFG.set(section, key.lower(), value)
 
@@ -1560,24 +1551,14 @@ def logmsg(level, msg):
         print(level.upper(), msg)
 
 
-def shutdown(restart=False, update=False):
+def shutdown(restart=False):
     cherrypy.engine.exit()
     if SCHED:
         SCHED.shutdown(wait=False)
     # config_write() don't automatically rewrite config on exit
 
-    if not restart and not update:
+    if not restart:
         logmsg('info', 'LazyLibrarian is shutting down...')
-
-    if update:
-        logmsg('info', 'LazyLibrarian is updating...')
-        try:
-            if versioncheck.update():
-                logmsg('info', 'Lazylibrarian version updated')
-                CONFIG['GIT_UPDATED'] = str(int(time.time()))
-                config_write('Git')
-        except Exception as e:
-            logmsg('warn', 'LazyLibrarian failed to update: %s %s. Restarting.' % (type(e).__name__, str(e)))
 
     if PIDFILE:
         logmsg('info', 'Removing pidfile %s' % PIDFILE)

@@ -51,8 +51,6 @@ def setup_lazylibrarian_globals():
     lazylibrarian.CONFIG.setdefault('MAG_TYPE', 'pdf')
     lazylibrarian.CONFIG.setdefault('NAME_POSTFIX', 'jr, sr, phd, md, ii, iii, iv')
     lazylibrarian.CONFIG.setdefault('HTTP_TIMEOUT', '30')
-    lazylibrarian.CONFIG.setdefault('INSTALL_TYPE', '')
-    lazylibrarian.CONFIG.setdefault('LATEST_VERSION', '')
 
     # Additional required CONFIG keys
     lazylibrarian.CONFIG.setdefault('USER_AGENT', '')
@@ -289,7 +287,6 @@ def mock_config():
         'SAB_APIKEY': 'test-api-key',
         'SAB_USER': '',
         'SAB_PASS': '',
-        'INSTALL_TYPE': '',
     }
 
 
@@ -427,9 +424,6 @@ def api_config():
     lazylibrarian.CONFIG.setdefault('HTTP_ROOT', '/')
     lazylibrarian.CONFIG.setdefault('HTTP_LOOK', 'bookstrap')
     lazylibrarian.CONFIG.setdefault('USER_ACCOUNTS', False)
-    lazylibrarian.CONFIG.setdefault('CURRENT_VERSION', 'test-version')
-    lazylibrarian.CONFIG.setdefault('LATEST_VERSION', 'test-version')
-    lazylibrarian.CONFIG.setdefault('COMMITS_BEHIND', 0)
     lazylibrarian.CONFIG.setdefault('SORT_SURNAME', False)
     lazylibrarian.CONFIG.setdefault('SORT_DEFINITE', False)
     lazylibrarian.CONFIG.setdefault('DISPLAYLENGTH', 100)

@@ -27,7 +27,7 @@ import json as simplejson
 import cherrypy
 import lazylibrarian
 from cherrypy.lib.static import serve_file
-from lazylibrarian import logger, database, notifiers, versioncheck, magazinescan, \
+from lazylibrarian import logger, database, notifiers, magazinescan, \
     qbittorrent, utorrent, rtorrent, transmission, sabnzbd, nzbget, deluge, synology
 from lazylibrarian.bookwork import setSeries, deleteEmptySeries, getSeriesAuthors
 from lazylibrarian.cache import cache_img
@@ -3463,53 +3463,14 @@ class WebInterface(object):
                     self.startMagazineSearch(mags)
             raise cherrypy.HTTPRedirect("magazines")
 
-    # UPDATES ###########################################################
-
-    @cherrypy.expose
-    def checkForUpdates(self):
-        self.label_thread('UPDATES')
-        versioncheck.checkForUpdates()
-        if lazylibrarian.CONFIG['COMMITS_BEHIND'] == 0:
-            if lazylibrarian.COMMIT_LIST:
-                message = "unknown status"
-                messages = lazylibrarian.COMMIT_LIST.replace('\n', '<br>')
-                message = message + '<br><small>' + messages
-            else:
-                message = "up to date"
-        elif lazylibrarian.CONFIG['COMMITS_BEHIND'] > 0:
-            message = "behind by %s commit%s" % (lazylibrarian.CONFIG['COMMITS_BEHIND'],
-                                                 plural(lazylibrarian.CONFIG['COMMITS_BEHIND']))
-            messages = lazylibrarian.COMMIT_LIST.replace('\n', '<br>')
-            message = message + '<br><small>' + messages
-        else:
-            message = "unknown version"
-            messages = "Your version is not recognised at<br>https://%s/%s/%s  Branch: %s" % (
-                lazylibrarian.CONFIG['GIT_HOST'], lazylibrarian.CONFIG['GIT_USER'],
-                lazylibrarian.CONFIG['GIT_REPO'], lazylibrarian.CONFIG['GIT_BRANCH'])
-            message = message + '<br><small>' + messages
-
-        if lazylibrarian.CONFIG['HTTP_LOOK'] == 'legacy':
-            return serve_template(templatename="response.html", prefix='LazyLibrarian is ',
-                                  title="Version Check", message=message, timer=5)
-        else:
-            return "LazyLibrarian is %s" % message
-
     @cherrypy.expose
     def forceUpdate(self):
+        """Force update of author metadata (not application update)."""
         if 'AAUPDATE' not in [n.name for n in [t for t in threading.enumerate()]]:
             threading.Thread(target=aaUpdate, name='AAUPDATE', args=[False]).start()
         else:
             logger.debug('AAUPDATE already running')
         raise cherrypy.HTTPRedirect("home")
-
-    @cherrypy.expose
-    def update(self):
-        self.label_thread('UPDATING')
-        logger.debug('(webServe-Update) - Performing update')
-        lazylibrarian.SIGNAL = 'update'
-        message = 'Updating...'
-        return serve_template(templatename="shutdown.html", prefix='LazyLibrarian is ', title="Updating",
-                              message=message, timer=30)
 
     # IMPORT/EXPORT #####################################################
 
