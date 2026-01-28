@@ -27,7 +27,7 @@ import json as simplejson
 import cherrypy
 import lazylibrarian
 from cherrypy.lib.static import serve_file
-from lazylibrarian import logger, database, notifiers, magazinescan, \
+from lazylibrarian import logger, database, magazinescan, \
     qbittorrent, utorrent, rtorrent, transmission, sabnzbd, nzbget, deluge, synology
 from lazylibrarian.bookwork import setSeries, deleteEmptySeries, getSeriesAuthors
 from lazylibrarian.cache import cache_img
@@ -44,7 +44,6 @@ from lazylibrarian.images import getBookCover, createMagCover
 from lazylibrarian.importer import addAuthorToDB, addAuthorNameToDB, update_totals, search_for
 from lazylibrarian.librarysync import LibraryScan
 from lazylibrarian.manualbook import searchItem
-from lazylibrarian.notifiers import notify_snatch, custom_notify_snatch
 from lazylibrarian.postprocess import processAlternate, processDir, delete_task, getDownloadProgress
 from lazylibrarian.providers import test_provider
 from lazylibrarian.searchbook import search_book
@@ -442,16 +441,8 @@ class WebInterface(object):
             else:
                 line = "%s: \n" % item
             msg += line
-        if 'email' in kwargs and kwargs['email']:
-            result = notifiers.email_notifier.notify_message('Message from LazyLibrarian User',
-                                                             msg, lazylibrarian.CONFIG['ADMIN_EMAIL'])
-            if result:
-                return "Message sent to admin, you will receive a reply by email"
-            else:
-                logger.error("Unable to send message to admin: %s" % msg)
-                return "Message not sent, please try again later"
-        else:
-            return "No message sent, no return email address"
+        logger.info("Contact form message: %s" % msg)
+        return "Message logged. Email notifications are not configured."
 
     @cherrypy.expose
     def userAdmin(self):
@@ -538,29 +529,14 @@ class WebInterface(object):
             else:
                 perm_msg = 'Custom %s' % perms
 
-            msg_template = "Your lazylibrarian username is {username}\n"
-            msg_template += "Your password is {password}\n"
-            msg_template += "You can log in to lazylibrarian and change these to something more memorable\n"
-            msg_template += "You have been given {permission} access\n"
-            msg = msg_template.replace('{username}', kwargs['username']).replace(
-                '{password}', kwargs['password']).replace(
-                '{permission}', perm_msg)
-
-            result = notifiers.email_notifier.notify_message('LazyLibrarian New Account', msg, kwargs['email'])
-
-            if result:
-                cmd = 'INSERT into users (UserID, UserName, Name, Password, Email, SendTo, Perms)'
-                cmd += ' VALUES (?, ?, ?, ?, ?, ?, ?)'
-                myDB.action(cmd, (pwd_generator(), kwargs['username'], kwargs['fullname'],
-                                  md5_utf8(kwargs['password']), kwargs['email'], kwargs['sendto'], perms))
-                msg = "New user added: %s: %s" % (kwargs['username'], perm_msg)
-                msg += "<br>Email sent to %s" % kwargs['email']
-                cnt = myDB.match("select count(*) as counter from users")
-                if cnt['counter'] > 1:
-                    lazylibrarian.SHOWLOGOUT = 1
-            else:
-                msg = "New user NOT added"
-                msg += "<br>Failed to send email to %s" % kwargs['email']
+            cmd = 'INSERT into users (UserID, UserName, Name, Password, Email, SendTo, Perms)'
+            cmd += ' VALUES (?, ?, ?, ?, ?, ?, ?)'
+            myDB.action(cmd, (pwd_generator(), kwargs['username'], kwargs['fullname'],
+                              md5_utf8(kwargs['password']), kwargs['email'], kwargs['sendto'], perms))
+            msg = "New user added: %s: %s" % (kwargs['username'], perm_msg)
+            cnt = myDB.match("select count(*) as counter from users")
+            if cnt['counter'] > 1:
+                lazylibrarian.SHOWLOGOUT = 1
             return msg
 
         else:
@@ -663,16 +639,9 @@ class WebInterface(object):
             msg = "Who are you?"
 
         if res and not msg:
-            new_pwd = pwd_generator()
-            msg = "Your new password is %s" % new_pwd
-            result = notifiers.email_notifier.notify_message('LazyLibrarian New Password', msg, res['Email'])
-            if result:
-                pwd = md5_utf8(new_pwd)
-                myDB.action("UPDATE users SET Password=? WHERE UserID=?", (pwd, res['UserID']))
-                return "Password reset, check your email"
-            else:
-                msg = "Failed to send email to [%s]" % res['Email']
-        msg = "Password not reset: %s" % msg
+            msg = "Password reset requires email notifications which are not configured"
+        else:
+            msg = "Password not reset: %s" % msg
         logger.error("%s IP:%s" % (msg, remote_ip))
         return msg
 
@@ -1007,7 +976,6 @@ class WebInterface(object):
             "status_list": status_list,
             "magazines_list": mags_list,
             "namevars": nameVars('test'),
-            "updated": time.ctime(check_int(lazylibrarian.CONFIG['GIT_UPDATED'], 0))
         }
         return serve_template(templatename="config.html", title="Settings", config=config)
 
@@ -1537,8 +1505,6 @@ class WebInterface(object):
                 snatch = False
             if snatch:
                 logger.info('Downloading %s %s from %s' % (library, bookdata["BookName"], provider))
-                custom_notify_snatch("%s %s" % (bookid, library))
-                notify_snatch("%s from %s at %s" % (unaccented(bookdata["BookName"]), provider, now()))
                 scheduleJob(action='Start', target='PostProcessor')
             else:
                 myDB.action('UPDATE wanted SET status="Failed",DLResult=? WHERE NZBurl=?', (res, url))
@@ -1933,19 +1899,9 @@ class WebInterface(object):
 
                 title = "%s: %s" % (booktype, bookdata['BookName'])
 
-                if 'email' in kwargs and kwargs['email']:
-                    result = notifiers.email_notifier.notify_message('Request from LazyLibrarian User',
-                                                                     msg, lazylibrarian.CONFIG['ADMIN_EMAIL'])
-                    if result:
-                        prefix = "Message sent"
-                        msg = "You will receive a reply by email"
-                    else:
-                        logger.error("Unable to send message to: %s" % msg)
-                        prefix = "Message not sent"
-                        msg = "Please try again later"
-                else:
-                    prefix = "Unable to send message"
-                    msg = "No email address supplied"
+                logger.info("User request: %s" % msg)
+                prefix = "Request logged"
+                msg = "Email notifications are not configured"
             else:
                 msg = "Unknown user"
         else:
@@ -3263,8 +3219,6 @@ class WebInterface(object):
                 if snatch:
                     myDB.action('UPDATE pastissues set status=? WHERE NZBurl=?', ("Snatched", items['nzburl']))
                     logger.info('Downloading %s from %s' % (items['nzbtitle'], items['nzbprov']))
-                    custom_notify_snatch("%s %s" % (items['bookid'], 'Magazine'))
-                    notifiers.notify_snatch(items['nzbtitle'] + ' at ' + now())
                     scheduleJob(action='Start', target='PostProcessor')
                 else:
                     myDB.action('UPDATE pastissues SET status="Failed",DLResult=? WHERE NZBurl=?',
@@ -4073,208 +4027,6 @@ class WebInterface(object):
                 msg = "No userid found"
         return msg
 
-    # NOTIFIERS #########################################################
-
-    @cherrypy.expose
-    def testAndroidPN(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'url' in kwargs:
-            lazylibrarian.CONFIG['ANDROIDPN_URL'] = kwargs['url']
-        if 'username' in kwargs:
-            lazylibrarian.CONFIG['ANDROIDPN_USERNAME'] = kwargs['username']
-        if 'broadcast' in kwargs:
-            if kwargs['broadcast'] == 'True':
-                lazylibrarian.CONFIG['ANDROIDPN_BROADCAST'] = True
-            else:
-                lazylibrarian.CONFIG['ANDROIDPN_BROADCAST'] = False
-        result = notifiers.androidpn_notifier.test_notify()
-        if result:
-            lazylibrarian.config_write('AndroidPN')
-            return "Test AndroidPN notice sent successfully"
-        else:
-            return "Test AndroidPN notice failed"
-
-    @cherrypy.expose
-    def testBoxcar(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'token' in kwargs:
-            lazylibrarian.CONFIG['BOXCAR_TOKEN'] = kwargs['token']
-        result = notifiers.boxcar_notifier.test_notify()
-        if result:
-            lazylibrarian.config_write('Boxcar')
-            return "Boxcar notification successful,\n%s" % result
-        else:
-            return "Boxcar notification failed"
-
-    @cherrypy.expose
-    def testPushbullet(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'token' in kwargs:
-            lazylibrarian.CONFIG['PUSHBULLET_TOKEN'] = kwargs['token']
-        if 'device' in kwargs:
-            lazylibrarian.CONFIG['PUSHBULLET_DEVICEID'] = kwargs['device']
-        result = notifiers.pushbullet_notifier.test_notify()
-        if result:
-            lazylibrarian.config_write('PushBullet')
-            return "Pushbullet notification successful,\n%s" % result
-        else:
-            return "Pushbullet notification failed"
-
-    @cherrypy.expose
-    def testPushover(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'apitoken' in kwargs:
-            lazylibrarian.CONFIG['PUSHOVER_APITOKEN'] = kwargs['apitoken']
-        if 'keys' in kwargs:
-            lazylibrarian.CONFIG['PUSHOVER_KEYS'] = kwargs['keys']
-        if 'priority' in kwargs:
-            lazylibrarian.CONFIG['PUSHOVER_PRIORITY'] = check_int(kwargs['priority'], 0)
-        if 'device' in kwargs:
-            lazylibrarian.CONFIG['PUSHOVER_DEVICE'] = kwargs['device']
-
-        result = notifiers.pushover_notifier.test_notify()
-        if result:
-            lazylibrarian.config_write('Pushover')
-            return "Pushover notification successful,\n%s" % result
-        else:
-            return "Pushover notification failed"
-
-    @cherrypy.expose
-    def testTelegram(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'token' in kwargs:
-            lazylibrarian.CONFIG['TELEGRAM_TOKEN'] = kwargs['token']
-        if 'userid' in kwargs:
-            lazylibrarian.CONFIG['TELEGRAM_USERID'] = kwargs['userid']
-
-        result = notifiers.telegram_notifier.test_notify()
-        if result:
-            lazylibrarian.config_write('Telegram')
-            return "Test Telegram notice sent successfully"
-        else:
-            return "Test Telegram notice failed"
-
-    @cherrypy.expose
-    def testProwl(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'apikey' in kwargs:
-            lazylibrarian.CONFIG['PROWL_APIKEY'] = kwargs['apikey']
-        if 'priority' in kwargs:
-            lazylibrarian.CONFIG['PROWL_PRIORITY'] = check_int(kwargs['priority'], 0)
-
-        result = notifiers.prowl_notifier.test_notify()
-        if result:
-            lazylibrarian.config_write('Prowl')
-            return "Test Prowl notice sent successfully"
-        else:
-            return "Test Prowl notice failed"
-
-    @cherrypy.expose
-    def testGrowl(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'apikey' in kwargs:
-            lazylibrarian.CONFIG['GROWL_HOST'] = kwargs['host']
-        if 'priority' in kwargs:
-            lazylibrarian.CONFIG['GROWL_PASSWORD'] = check_int(kwargs['password'], 0)
-
-        result = notifiers.growl_notifier.test_notify()
-        if result:
-            lazylibrarian.config_write('Growl')
-            return "Test Growl notice sent successfully"
-        else:
-            return "Test Growl notice failed"
-
-    @cherrypy.expose
-    def testNMA(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'apikey' in kwargs:
-            lazylibrarian.CONFIG['NMA_APIKEY'] = kwargs['apikey']
-        if 'priority' in kwargs:
-            lazylibrarian.CONFIG['NMA_PRIORITY'] = check_int(kwargs['priority'], 0)
-
-        result = notifiers.nma_notifier.test_notify('NMA')
-        if result:
-            lazylibrarian.config_write('NMA')
-            return "Test NMA notice sent successfully"
-        else:
-            return "Test NMA notice failed"
-
-    @cherrypy.expose
-    def testSlack(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'token' in kwargs:
-            lazylibrarian.CONFIG['SLACK_TOKEN'] = kwargs['token']
-        if 'url' in kwargs:
-            lazylibrarian.CONFIG['SLACK_URL'] = kwargs['url']
-
-        result = notifiers.slack_notifier.test_notify()
-        if result != "ok":
-            return "Slack notification failed,\n%s" % result
-        else:
-            lazylibrarian.config_write('Slack')
-            return "Slack notification successful"
-
-    @cherrypy.expose
-    def testCustom(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'script' in kwargs:
-            lazylibrarian.CONFIG['CUSTOM_SCRIPT'] = kwargs['script']
-        result = notifiers.custom_notifier.test_notify()
-        if result is False:
-            return "Custom notification failed"
-        else:
-            lazylibrarian.config_write('Custom')
-            return "Custom notification successful"
-
-    @cherrypy.expose
-    def testEmail(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'tls' in kwargs:
-            if kwargs['tls'] == 'True':
-                lazylibrarian.CONFIG['EMAIL_TLS'] = True
-            else:
-                lazylibrarian.CONFIG['EMAIL_TLS'] = False
-        if 'ssl' in kwargs:
-            if kwargs['ssl'] == 'True':
-                lazylibrarian.CONFIG['EMAIL_SSL'] = True
-            else:
-                lazylibrarian.CONFIG['EMAIL_SSL'] = False
-        if 'sendfile' in kwargs:
-            if kwargs['sendfile'] == 'True':
-                lazylibrarian.CONFIG['EMAIL_SENDFILE_ONDOWNLOAD'] = True
-            else:
-                lazylibrarian.CONFIG['EMAIL_SENDFILE_ONDOWNLOAD'] = False
-        if 'emailfrom' in kwargs:
-            lazylibrarian.CONFIG['EMAIL_FROM'] = kwargs['emailfrom']
-        if 'emailto' in kwargs:
-            lazylibrarian.CONFIG['EMAIL_TO'] = kwargs['emailto']
-        if 'server' in kwargs:
-            lazylibrarian.CONFIG['EMAIL_SMTP_SERVER'] = kwargs['server']
-        if 'user' in kwargs:
-            lazylibrarian.CONFIG['EMAIL_SMTP_USER'] = kwargs['user']
-        if 'password' in kwargs:
-            lazylibrarian.CONFIG['EMAIL_SMTP_PASSWORD'] = kwargs['password']
-        if 'port' in kwargs:
-            lazylibrarian.CONFIG['EMAIL_SMTP_PORT'] = kwargs['port']
-
-        result = notifiers.email_notifier.test_notify()
-        if not result:
-            return "Email notification failed"
-        else:
-            lazylibrarian.config_write('Email')
-            return "Email notification successful, check your email"
-
     # API ###############################################################
 
     @cherrypy.expose
@@ -4610,20 +4362,8 @@ class WebInterface(object):
                         msg = '%s is too large (%s) to email' % (os.path.split(basefile)[1], fsize)
                         logger.debug(msg)
                     else:
-                        logger.debug("Emailing %s to %s" % (basefile, res['SendTo']))
-                        if name:
-                            msg = name + ' is attached'
-                        else:
-                            msg = ''
-                        result = notifiers.email_notifier.email_file(subject="Message from LazyLibrarian",
-                                                                     message=msg, to_addr=res['SendTo'],
-                                                                     files=[basefile])
-                        if result:
-                            msg = "Emailed file %s to %s" % (os.path.split(basefile)[1], res['SendTo'])
-                            logger.debug(msg)
-                        else:
-                            msg = "Failed to email file %s to %s" % (os.path.split(basefile)[1], res['SendTo'])
-                            logger.error(msg)
+                        msg = "Email notifications are not configured"
+                        logger.debug(msg)
                     return serve_template(templatename="choosetype.html", prefix="SendTo", title='Send file',
                                           pop_message=msg, pop_types='', bookid='', valid='')
 

@@ -256,25 +256,6 @@ class TestSafeCopy:
                 assert f.read() == 'test content'
 
 
-class TestNotifyStrings:
-    """Tests for notification constants."""
-
-    def test_notify_snatch_constant(self):
-        """NOTIFY_SNATCH should be defined."""
-        assert common.NOTIFY_SNATCH == 1
-
-    def test_notify_download_constant(self):
-        """NOTIFY_DOWNLOAD should be defined."""
-        assert common.NOTIFY_DOWNLOAD == 2
-
-    def test_notifyStrings_mapping(self):
-        """notifyStrings should map notification types to messages."""
-        assert common.NOTIFY_SNATCH in common.notifyStrings
-        assert common.NOTIFY_DOWNLOAD in common.notifyStrings
-        assert 'Download' in common.notifyStrings[common.NOTIFY_SNATCH]
-        assert 'Library' in common.notifyStrings[common.NOTIFY_DOWNLOAD]
-
-
 class TestMimeType:
     """Tests for mimeType() function."""
 

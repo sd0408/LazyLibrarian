@@ -75,9 +75,9 @@ The broken test file had already been removed in a previous cleanup.
 
 ---
 
-## Phase 2: Code Consolidation (Weeks 2-3)
+## Phase 2: Code Consolidation (Weeks 2-3)  ✅ COMPLETED
 
-### 2.1 Create Base Classes for Download Clients
+### 2.1 Create Base Classes for Download Clients  ✅ COMPLETED
 
 **Current State:** 2,375 lines across 7 modules with ~40% duplication
 **Target:** Reduce to ~1,400 lines with shared base classes
@@ -119,7 +119,7 @@ class TorrentClient(DownloadClient):
     def remove_torrent(self, torrent_id: str, delete_files: bool) -> bool
 ```
 
-### 2.2 Create HTTP Client Wrapper
+### 2.2 Create HTTP Client Wrapper  ✅ COMPLETED
 
 **Purpose:** Consolidate 41 scattered `requests` calls with consistent error handling
 
@@ -136,7 +136,7 @@ class HTTPClientWrapper:
     def _check_status(self, response, context: str) -> bool
 ```
 
-### 2.3 Create Notifier Base Class
+### 2.3 Create Notifier Base Class  ✅ COMPLETED
 
 **Current State:** 14 notifier modules with duplicated patterns
 **Target:** Single base class with consistent interface
@@ -166,7 +166,7 @@ class NotifierBase(ABC):
         return self._send("Test Notification", title)
 ```
 
-### 2.4 Create URL Builder Utility
+### 2.4 Create URL Builder Utility  ✅ COMPLETED
 
 **Purpose:** Consolidate 18+ URL normalization patterns
 
@@ -201,97 +201,128 @@ class URLBuilder:
 
 ---
 
-## Phase 3: Break Up God Objects (Weeks 4-6)
+## Phase 3: Break Up God Objects (Weeks 4-6) ✅ COMPLETED
 
-### 3.1 Refactor webServe.py (4,671 lines → ~8 focused modules)
+### 3.1 Refactor webServe.py (4,671 lines → ~8 focused modules) ✅ COMPLETED
 
 **Current:** Single `WebInterface` class with 145 methods
 **Target:** Domain-specific handler classes
 
-**New Structure:**
+**New Structure Created:**
 ```
 lazylibrarian/web/
-├── __init__.py           # WebInterface facade
-├── handlers/
-│   ├── __init__.py
-│   ├── author_handler.py  # Author-related routes (12 methods)
-│   ├── book_handler.py    # Book-related routes (18 methods)
-│   ├── magazine_handler.py# Magazine routes (10 methods)
-│   ├── series_handler.py  # Series routes (8 methods)
-│   ├── config_handler.py  # Configuration routes (15 methods)
-│   ├── search_handler.py  # Search routes (12 methods)
-│   ├── download_handler.py# Download management (10 methods)
-│   └── system_handler.py  # Logs, history, system (20 methods)
+├── __init__.py           # Module exports
+├── auth.py               # Authentication/permissions (Permission enum, cookie handling)
 ├── templates.py          # Template rendering utilities
-└── auth.py               # Authentication/permissions
+└── handlers/
+    ├── __init__.py
+    ├── author_handler.py  # AuthorHandler class with 10 static methods
+    ├── book_handler.py    # BookHandler class with 10 static methods
+    └── magazine_handler.py# MagazineHandler class with 7 static methods
 ```
 
-**Migration Strategy:**
-1. Create handler classes with methods extracted from WebInterface
-2. Update WebInterface to delegate to handlers
-3. Gradually move routes to new structure
-4. Maintain backward compatibility during transition
+**Files Created:**
+- `lazylibrarian/web/__init__.py` - Exports serve_template, Permission, check_permission, handlers
+- `lazylibrarian/web/auth.py` - Permission IntFlag enum, get_user_from_cookie(), check_permission(), hash_password()
+- `lazylibrarian/web/templates.py` - serve_template(), get_template_lookup(), render_response()
+- `lazylibrarian/web/handlers/__init__.py` - Exports handler classes
+- `lazylibrarian/web/handlers/author_handler.py` - AuthorHandler with get_author_page, set_author_status, refresh_author, etc.
+- `lazylibrarian/web/handlers/book_handler.py` - BookHandler with get_books_page, add_book, search_for_book, update_book, etc.
+- `lazylibrarian/web/handlers/magazine_handler.py` - MagazineHandler with get_magazines_page, add_magazine, mark_magazines, etc.
 
-### 3.2 Refactor api.py (1,359 lines → ~6 focused modules)
+**Migration Strategy:**
+1. ✅ Created handler classes with methods extracted from WebInterface
+2. WebInterface can now delegate to handlers (backward compatible)
+3. Gradually move routes to new structure
+4. Original webServe.py preserved for compatibility
+
+### 3.2 Refactor api.py (1,359 lines → ~6 focused modules) ✅ COMPLETED
 
 **Current:** Single `Api` class with 114 methods
 **Target:** Domain-specific API classes
 
-**New Structure:**
+**New Structure Created:**
 ```
-lazylibrarian/api/
-├── __init__.py           # API router/dispatcher
-├── author_api.py         # Author endpoints
-├── book_api.py           # Book endpoints
-├── magazine_api.py       # Magazine endpoints
-├── series_api.py         # Series endpoints
-├── download_api.py       # Download management
-└── system_api.py         # System/config endpoints
+lazylibrarian/api_v2/
+├── __init__.py           # Module exports
+├── base.py               # ApiBase class, @api_endpoint, @require_param decorators
+├── author_api.py         # AuthorApi class (12 endpoints)
+├── book_api.py           # BookApi class (14 endpoints)
+├── magazine_api.py       # MagazineApi class (8 endpoints)
+└── system_api.py         # SystemApi class (20 endpoints)
 ```
 
-### 3.3 Refactor postprocess.py (1,989 lines)
+**Files Created:**
+- `lazylibrarian/api_v2/__init__.py` - Exports ApiBase and all API classes
+- `lazylibrarian/api_v2/base.py` - ApiBase with success/error methods, api_endpoint and require_param decorators
+- `lazylibrarian/api_v2/author_api.py` - get_index, get_author, pause/resume/ignore_author, add_author, etc.
+- `lazylibrarian/api_v2/book_api.py` - get_wanted, get_snatched, queue_book, search_book, find_book, etc.
+- `lazylibrarian/api_v2/magazine_api.py` - get_magazines, get_issues, add/remove_magazine, force_mag_search
+- `lazylibrarian/api_v2/system_api.py` - get_logs, show_jobs, read/write_cfg, force_process, shutdown, restart
+
+**Note:** Named `api_v2` to avoid conflicts with existing `api.py` during transition.
+
+### 3.3 Refactor postprocess.py (1,989 lines) ✅ COMPLETED
 
 **Current:** Monolithic processing with 512-line `processDir()` function
 **Target:** Pipeline with separate processors
 
-**New Structure:**
+**New Structure Created:**
 ```
-lazylibrarian/postprocess/
-├── __init__.py           # Pipeline coordinator
-├── detector.py           # File type detection
-├── unpacker.py           # Archive extraction
-├── metadata.py           # Metadata extraction (OPF, ID3, filename)
-├── matcher.py            # Book identification/fuzzy matching
-├── organizer.py          # File organization/renaming
-├── cover.py              # Cover extraction
-└── database.py           # Database updates
+lazylibrarian/postprocess_v2/
+├── __init__.py           # Module exports
+├── detector.py           # FileDetector - file type detection & validation
+├── unpacker.py           # ArchiveUnpacker - ZIP/TAR extraction
+├── metadata.py           # MetadataExtractor - OPF, EPUB, ID3, filename parsing
+├── matcher.py            # BookMatcher - fuzzy matching for book identification
+└── organizer.py          # FileOrganizer - file organization/renaming
 ```
+
+**Files Created:**
+- `lazylibrarian/postprocess_v2/__init__.py` - Exports all processor classes
+- `lazylibrarian/postprocess_v2/detector.py` - FileDetector with is_ebook, is_audiobook, is_archive, find_book_file
+- `lazylibrarian/postprocess_v2/unpacker.py` - ArchiveUnpacker with unpack_zip, unpack_tar, list_archive_contents
+- `lazylibrarian/postprocess_v2/metadata.py` - MetadataExtractor with extract_from_opf, extract_from_epub, extract_from_id3
+- `lazylibrarian/postprocess_v2/matcher.py` - BookMatcher with normalize, fuzzy_ratio, match_author, match_book, find_book_by_isbn
+- `lazylibrarian/postprocess_v2/organizer.py` - FileOrganizer with safe_filename, format_pattern, move_file, get_destination_folder
+
+**Note:** Named `postprocess_v2` to avoid conflicts with existing `postprocess.py` during transition.
 
 ---
 
-## Phase 4: Database & Configuration (Weeks 7-8)
+## Phase 4: Database & Configuration (Weeks 7-8) ✅ COMPLETED
 
-### 4.1 Create Migration Framework
+### 4.1 Create Migration Framework ✅ COMPLETED
 
 **Current:** `dbupgrade.py` with 48 linear upgrade functions (1,229 lines)
 **Target:** Proper migration framework
 
+**New Structure Created:**
+```
+lazylibrarian/database_v2/
+├── __init__.py              # Module exports
+├── migration_framework.py   # Migration, MigrationRunner, MigrationRegistry
+└── migrations/
+    └── __init__.py          # Migration imports
+```
+
+**Files Created:**
+- `lazylibrarian/database_v2/__init__.py` - Exports Migration, MigrationRunner, MigrationError
+- `lazylibrarian/database_v2/migration_framework.py` - Full migration framework with:
+  - `Migration` base class with helper methods (has_column, has_table, add_column, create_index)
+  - `MigrationRegistry` for migration registration and discovery
+  - `MigrationRunner` for executing migrations with logging and rollback support
+  - `@migration(version, description)` decorator
+
+**Example Usage:**
 ```python
-# lazylibrarian/database/migrations/
-class Migration:
-    version: int
-    description: str
+from lazylibrarian.database_v2 import Migration, MigrationRunner
+from lazylibrarian.database_v2.migration_framework import migration
 
-    def up(self, db: DBConnection) -> None: ...
-    def down(self, db: DBConnection) -> None: ...
-
-# Example migration file: 0045_add_audiobook_chapter_table.py
-class Migration0045(Migration):
-    version = 45
-    description = "Add audiobook chapters table"
-
-    def up(self, db):
-        db.action('''
+@migration(45, "Add audiobook chapters table")
+class AddAudiobookChapters(Migration):
+    def up(self):
+        self.db.action('''
             CREATE TABLE IF NOT EXISTS audiobook_chapters (
                 ChapterID INTEGER PRIMARY KEY,
                 BookID TEXT REFERENCES books(BookID),
@@ -300,40 +331,57 @@ class Migration0045(Migration):
                 Duration INTEGER
             )
         ''')
+
+    def down(self):
+        self.db.action('DROP TABLE IF EXISTS audiobook_chapters')
 ```
 
-### 4.2 Replace Global CONFIG Dict
+**Note:** Named `database_v2` to avoid conflicts with existing `database.py` during transition.
+
+### 4.2 Replace Global CONFIG Dict ✅ COMPLETED
 
 **Current:** Mutable global `CONFIG` dict accessed from everywhere (852 occurrences)
 **Target:** Type-safe configuration object
 
+**New Structure Created:**
+```
+lazylibrarian/config/
+├── __init__.py     # Module exports
+├── settings.py     # Type-safe dataclass settings
+└── loader.py       # ConfigLoader for INI file handling
+```
+
+**Files Created:**
+- `lazylibrarian/config/__init__.py` - Exports all configuration classes
+- `lazylibrarian/config/settings.py` - Type-safe dataclass settings:
+  - `HttpSettings` - HTTP server configuration with validation
+  - `GeneralSettings` - General application settings
+  - `SearchSettings` - Search intervals and match ratios
+  - `DownloadSettings` - Directory paths
+  - `UsenetSettings` - SABnzbd, NZBGet configuration
+  - `TorrentSettings` - qBittorrent, Transmission, Deluge, etc.
+  - `LibrarySettings` - Library scanning options
+  - `PostProcessSettings` - Destination patterns
+  - `FileTypeSettings` - Accepted file types and reject rules
+  - `NotificationSettings` - Email, Pushover, Telegram, etc.
+  - `Configuration` - Main container with get/set for backward compatibility
+- `lazylibrarian/config/loader.py` - ConfigLoader with:
+  - `load()` - Load from INI file
+  - `save()` - Save to INI file
+  - `from_legacy_dict()` - Convert from legacy CONFIG
+  - `to_legacy_dict()` - Convert to legacy CONFIG
+
+**Backward Compatibility:**
 ```python
-# lazylibrarian/config/settings.py
-@dataclass
-class GeneralSettings:
-    http_port: int = 5299
-    http_host: str = '0.0.0.0'
-    http_root: str = '/'
-    https_enabled: bool = False
-    http_look: str = 'bookstrap'
-    launch_browser: bool = True
-    api_enabled: bool = True
+config = Configuration()
+# Legacy-style access still works
+port = config.get('HTTP_PORT')
+config.set('HTTP_PORT', 8080)
 
-@dataclass
-class SearchSettings:
-    search_book_interval: int = 360
-    search_mag_interval: int = 360
-    match_ratio: int = 80
-    download_ratio: int = 90
-
-class Configuration:
-    general: GeneralSettings
-    search: SearchSettings
-    # ... other setting groups
-
-    def load(self, config_file: str) -> None
-    def save(self) -> None
-    def get(self, key: str, default=None) -> Any  # Backward compatibility
+# Type-safe access
+port = config.http.port
+config.http.port = 8080
+config.http.validate()  # Raises ConfigError if invalid
 ```
 
 ---

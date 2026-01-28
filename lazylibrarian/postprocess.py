@@ -40,7 +40,6 @@ from lazylibrarian.importer import addAuthorToDB, addAuthorNameToDB, update_tota
 from lazylibrarian.librarysync import get_book_info, find_book_in_db, LibraryScan
 from lazylibrarian.magazinescan import create_id
 from lazylibrarian.images import createMagCover
-from lazylibrarian.notifiers import notify_download, custom_notify_download
 from vendor.deluge_client import DelugeRPCClient
 from fuzzywuzzy import fuzz
 
@@ -690,15 +689,6 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                         logger.info('Successfully processed: %s' % global_name)
 
                         ppcount += 1
-                        if bookname:
-                            custom_notify_download("%s %s" % (book['BookID'], book_type))
-                            notify_download("%s %s from %s at %s" %
-                                            (book_type, global_name, book['NZBprov'], now()), book['BookID'])
-                        else:
-                            custom_notify_download("%s %s" % (book['BookID'], book['NZBUrl']))
-                            notify_download("%s %s from %s at %s" %
-                                            (book_type, global_name, book['NZBprov'], now()), iss_id)
-
                         update_downloads(book['NZBprov'])
                     else:
                         logger.error('Postprocessing for %s has failed: %s' % (global_name, dest_file))
@@ -1375,13 +1365,6 @@ def process_book(pp_path=None, bookID=None):
                         logger.debug("Not removing original files as in download root")
 
                 logger.info('Successfully processed: %s' % global_name)
-                custom_notify_download("%s %s" % (bookID, book_type))
-                if snatched_from == "manually added":
-                    frm = ''
-                else:
-                    frm = 'from '
-
-                notify_download("%s %s %s%s at %s" % (book_type, global_name, frm, snatched_from, now()), bookID)
                 update_downloads(snatched_from)
                 return True
             else:

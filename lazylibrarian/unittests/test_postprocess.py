@@ -245,21 +245,6 @@ class TestDownloadProgressTracking:
         # requires extensive mocking of multiple download clients
 
 
-class TestNotificationIntegration:
-    """Tests for notification integration in postprocess."""
-
-    @patch('lazylibrarian.postprocess.notify_download')
-    def test_notify_download_called_on_success(self, mock_notify, postprocess_config):
-        """notify_download should be called when processing succeeds."""
-        # This tests the notification integration point
-        # Full testing requires mocking the entire process pipeline
-        mock_notify.return_value = True
-
-        # Test that the notification function is importable and callable
-        from lazylibrarian.notifiers import notify_download
-        assert callable(notify_download)
-
-
 class TestDatabaseIntegration:
     """Tests for database operations in postprocess."""
 

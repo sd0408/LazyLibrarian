@@ -94,16 +94,23 @@ def addAuthorToDB(authorname=None, refresh=False, authorid=None, addbooks=True):
         new_author = not refresh
         entry_status = ''
 
+        # If authorid provided without authorname, look up author by id first
+        dbauthor = None
+        if authorid:
+            dbauthor = myDB.match("SELECT * from authors WHERE AuthorID=?", (authorid,))
+            if dbauthor and not authorname:
+                authorname = dbauthor['AuthorName']
+
+        # Ensure authorname is valid before proceeding
+        if not authorname:
+            logger.error("addAuthorToDB called without authorname or valid authorid")
+            return
+
         authorname = ' '.join(authorname.split())  # ensure no extra whitespace
 
-        # Check if author already exists by name
-        dbauthor = myDB.match("SELECT * from authors WHERE AuthorName=?", (authorname,))
-
-        # If authorid provided, also check by id
-        if authorid and not dbauthor:
-            dbauthor = myDB.match("SELECT * from authors WHERE AuthorID=?", (authorid,))
-            if dbauthor:
-                authorname = dbauthor['AuthorName']
+        # Check if author already exists by name (if we didn't already find by id)
+        if not dbauthor:
+            dbauthor = myDB.match("SELECT * from authors WHERE AuthorName=?", (authorname,))
 
         if dbauthor:
             entry_status = dbauthor['Status']
