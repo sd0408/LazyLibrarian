@@ -260,7 +260,7 @@
                       <div class="form-group">
                         <label>API key</label>
                         <input type="text" name="api_key" id="api_key" value="${lazylibrarian.CONFIG['API_KEY']}" size="36">
-                        <input class="button btn btn-sm btn-primary" type="button" value="Generate" id="generateAPI" onClick="document.location.reload(true)">
+                        <input class="button btn btn-sm btn-primary" type="button" value="Generate" id="generateAPI" onClick="window.location.href='generateAPI'">
                         <br>
                         <small>Current API key: <strong>${lazylibrarian.CONFIG['API_KEY']}</strong></small>
                       </div>

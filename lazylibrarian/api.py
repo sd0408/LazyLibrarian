@@ -98,6 +98,14 @@ cmd_dict = {'help': 'list available commands. ' +
             'forceLibraryScan': '[&wait] [&remove] [&dir=] [&id=] rescan whole or part book library',
             'forceAudioBookScan': '[&wait] [&remove] [&dir=] [&id=] rescan whole or part audiobook library',
             'forceMagazineScan': '[&wait] rescan whole magazine library',
+            'getVersion': 'show lazylibrarian version',
+            'listNabProviders': 'list newznab and torznab providers (Prowlarr compatible)',
+            'addProvider': '&type=newznab/torznab &host= &apikey= [&name=] [&categories=] add a provider',
+            'add': '&type=newznab/torznab &host= &apikey= [&name=] [&categories=] add a provider (alias)',
+            'delProvider': '&name= delete a provider by name',
+            'del': '&name= delete a provider by name (alias)',
+            'changeProvider': '&name= [&host=] [&apikey=] [&enabled=] [&categories=] modify a provider',
+            'change': '&name= [&host=] [&apikey=] [&enabled=] [&categories=] modify a provider (alias)',
             'shutdown': 'stop lazylibrarian',
             'restart': 'restart lazylibrarian',
             'findAuthor': '&name= search googlebooks for named author',
@@ -929,6 +937,248 @@ class Api(object):
             self.data = getAuthorImages()
         else:
             threading.Thread(target=getAuthorImages, name='API-GETAUTHORIMAGES', args=[]).start()
+
+    def _getVersion(self):
+        from lazylibrarian.version import LAZYLIBRARIAN_VERSION
+        self.data = {
+            'Success': True,
+            'install_type': LAZYLIBRARIAN_VERSION,
+            'current_version': LAZYLIBRARIAN_VERSION,
+            'latest_version': LAZYLIBRARIAN_VERSION,
+            'commits_behind': 0,
+        }
+
+    def _listNabProviders(self):
+        """Return newznab and torznab providers in Prowlarr-compatible format."""
+        newznabs = []
+        for provider in lazylibrarian.NEWZNAB_PROV:
+            categories = []
+            if provider.get('BOOKSCAT'):
+                categories.append(provider['BOOKSCAT'])
+            if provider.get('MAGSCAT'):
+                categories.append(provider['MAGSCAT'])
+            if provider.get('AUDIOCAT'):
+                categories.append(provider['AUDIOCAT'])
+            if provider.get('COMICSCAT'):
+                categories.append(provider['COMICSCAT'])
+            newznabs.append({
+                'Name': provider.get('NAME', ''),
+                'Dispname': provider.get('DISPNAME', provider.get('NAME', '')),
+                'Host': provider.get('HOST', ''),
+                'Apikey': provider.get('API', ''),
+                'Enabled': bool(provider.get('ENABLED', False)),
+                'Categories': ','.join(filter(None, categories)),
+            })
+
+        torznabs = []
+        for provider in lazylibrarian.TORZNAB_PROV:
+            categories = []
+            if provider.get('BOOKSCAT'):
+                categories.append(provider['BOOKSCAT'])
+            if provider.get('MAGSCAT'):
+                categories.append(provider['MAGSCAT'])
+            if provider.get('AUDIOCAT'):
+                categories.append(provider['AUDIOCAT'])
+            if provider.get('COMICSCAT'):
+                categories.append(provider['COMICSCAT'])
+            torznabs.append({
+                'Name': provider.get('NAME', ''),
+                'Dispname': provider.get('DISPNAME', provider.get('NAME', '')),
+                'Host': provider.get('HOST', ''),
+                'Apikey': provider.get('API', ''),
+                'Enabled': bool(provider.get('ENABLED', False)),
+                'Categories': ','.join(filter(None, categories)),
+            })
+
+        self.data = {
+            'Success': True,
+            'Data': {
+                'Newznabs': newznabs,
+                'Torznabs': torznabs,
+            },
+            'Error': {'Code': 200, 'Message': 'OK'},
+        }
+
+    def _addProvider(self, **kwargs):
+        """Add a new newznab or torznab provider (Prowlarr compatible)."""
+        # Prowlarr uses 'providertype', also accept 'type' for compatibility
+        prov_type = kwargs.get('providertype', kwargs.get('type', '')).lower()
+        if prov_type not in ('newznab', 'torznab'):
+            self.data = {
+                'Success': False,
+                'Error': {'Code': 400, 'Message': 'Missing or invalid type parameter (newznab/torznab)'},
+            }
+            return
+
+        host = kwargs.get('host', '')
+        if not host:
+            self.data = {
+                'Success': False,
+                'Error': {'Code': 400, 'Message': 'Missing host parameter'},
+            }
+            return
+
+        # Prowlarr uses 'prov_apikey', also accept 'apikey' for compatibility
+        apikey = kwargs.get('prov_apikey', kwargs.get('apikey', ''))
+        dispname = kwargs.get('name', kwargs.get('dispname', ''))
+        categories = kwargs.get('categories', '')
+        enabled = kwargs.get('enabled', '1')
+        priority = kwargs.get('dlpriority', kwargs.get('priority', '0'))
+
+        if prov_type == 'newznab':
+            prov_list = lazylibrarian.NEWZNAB_PROV
+            prov_prefix = 'Newznab'
+            default_bookcat = '7000,7020'
+            default_magcat = '7010'
+            default_audiocat = '3030'
+        else:
+            prov_list = lazylibrarian.TORZNAB_PROV
+            prov_prefix = 'Torznab'
+            default_bookcat = '8000,8010'
+            default_magcat = '8030'
+            default_audiocat = '3030'
+
+        # Find an empty slot or the last slot
+        slot_index = None
+        for i, prov in enumerate(prov_list):
+            if not prov.get('HOST'):
+                slot_index = i
+                break
+
+        if slot_index is None:
+            slot_index = len(prov_list)
+            # Need to add a new slot
+            if prov_type == 'newznab':
+                lazylibrarian.add_newz_slot()
+            else:
+                lazylibrarian.add_torz_slot()
+
+        prov_name = '%s%i' % (prov_prefix, slot_index)
+        if not dispname:
+            dispname = prov_name
+
+        # Update the provider
+        try:
+            dl_priority = int(priority)
+        except (ValueError, TypeError):
+            dl_priority = 0
+
+        prov_list[slot_index].update({
+            'HOST': host,
+            'API': apikey,
+            'DISPNAME': dispname,
+            'ENABLED': 1 if str(enabled).lower() in ('1', 'true', 'yes') else 0,
+            'BOOKCAT': categories if categories else default_bookcat,
+            'MAGCAT': default_magcat,
+            'AUDIOCAT': default_audiocat,
+            'DLPRIORITY': dl_priority,
+        })
+
+        lazylibrarian.config_write(prov_name)
+
+        self.data = {
+            'Success': True,
+            'Data': {'Name': prov_name, 'Dispname': dispname},
+            'Error': {'Code': 200, 'Message': 'OK'},
+        }
+
+    def _delProvider(self, **kwargs):
+        """Delete a provider by name (Prowlarr compatible)."""
+        name = kwargs.get('name', '')
+        if not name:
+            self.data = {
+                'Success': False,
+                'Error': {'Code': 400, 'Message': 'Missing name parameter'},
+            }
+            return
+
+        # Find and clear the provider
+        found = False
+        for prov_list in [lazylibrarian.NEWZNAB_PROV, lazylibrarian.TORZNAB_PROV]:
+            for prov in prov_list:
+                if prov.get('NAME', '').lower() == name.lower() or prov.get('DISPNAME', '').lower() == name.lower():
+                    prov['HOST'] = ''
+                    prov['API'] = ''
+                    prov['ENABLED'] = 0
+                    lazylibrarian.config_write(prov['NAME'])
+                    found = True
+                    break
+            if found:
+                break
+
+        if found:
+            self.data = {
+                'Success': True,
+                'Error': {'Code': 200, 'Message': 'OK'},
+            }
+        else:
+            self.data = {
+                'Success': False,
+                'Error': {'Code': 404, 'Message': 'Provider not found'},
+            }
+
+    def _changeProvider(self, **kwargs):
+        """Modify an existing provider (Prowlarr compatible)."""
+        name = kwargs.get('name', '')
+        if not name:
+            self.data = {
+                'Success': False,
+                'Error': {'Code': 400, 'Message': 'Missing name parameter'},
+            }
+            return
+
+        # Find the provider
+        found_prov = None
+        for prov_list in [lazylibrarian.NEWZNAB_PROV, lazylibrarian.TORZNAB_PROV]:
+            for prov in prov_list:
+                if prov.get('NAME', '').lower() == name.lower() or prov.get('DISPNAME', '').lower() == name.lower():
+                    found_prov = prov
+                    break
+            if found_prov:
+                break
+
+        if not found_prov:
+            self.data = {
+                'Success': False,
+                'Error': {'Code': 404, 'Message': 'Provider not found'},
+            }
+            return
+
+        # Update fields if provided
+        if 'host' in kwargs:
+            found_prov['HOST'] = kwargs['host']
+        if 'apikey' in kwargs:
+            found_prov['API'] = kwargs['apikey']
+        if 'dispname' in kwargs:
+            found_prov['DISPNAME'] = kwargs['dispname']
+        if 'enabled' in kwargs:
+            found_prov['ENABLED'] = 1 if str(kwargs['enabled']).lower() in ('1', 'true', 'yes') else 0
+        if 'categories' in kwargs:
+            found_prov['BOOKCAT'] = kwargs['categories']
+        if 'priority' in kwargs:
+            try:
+                found_prov['DLPRIORITY'] = int(kwargs['priority'])
+            except (ValueError, TypeError):
+                pass
+
+        lazylibrarian.config_write(found_prov['NAME'])
+
+        self.data = {
+            'Success': True,
+            'Error': {'Code': 200, 'Message': 'OK'},
+        }
+
+    def _add(self, **kwargs):
+        """Alias for addProvider (Prowlarr compatibility)."""
+        return self._addProvider(**kwargs)
+
+    def _del(self, **kwargs):
+        """Alias for delProvider (Prowlarr compatibility)."""
+        return self._delProvider(**kwargs)
+
+    def _change(self, **kwargs):
+        """Alias for changeProvider (Prowlarr compatibility)."""
+        return self._changeProvider(**kwargs)
 
     @staticmethod
     def _shutdown():

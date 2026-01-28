@@ -451,6 +451,7 @@ class GoogleBooks:
                             cmd += 'FROM books WHERE BookID=?'
                             existing = myDB.match(cmd, (bookid,))
                             if existing:
+                                existing_book = True
                                 book_status = existing['Status']
                                 audio_status = existing['AudioStatus']
                                 if lazylibrarian.CONFIG['FOUND_STATUS'] == 'Open':

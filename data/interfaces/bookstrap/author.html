@@ -219,7 +219,7 @@
                     }
                 },
                 callback: function (result) {
-                    if (result) { $.get("removeAuthor", {'AuthorID': ${author['AuthorID']} },
+                    if (result) { $.get("removeAuthor", {'AuthorID': '${author['AuthorID']}' },
                         function (data) { window.location = 'home' }); }
                 }
             });

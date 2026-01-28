@@ -4039,8 +4039,10 @@ class WebInterface(object):
 
     @cherrypy.expose
     def generateAPI(self):
-        api_key = hashlib.sha224(str(random.getrandbits(256))).hexdigest()[0:32]
+        api_key = hashlib.sha224(str(random.getrandbits(256)).encode('utf-8')).hexdigest()[0:32]
         lazylibrarian.CONFIG['API_KEY'] = api_key
+        lazylibrarian.CONFIG['API_ENABLED'] = 1
+        lazylibrarian.config_write('General')
         logger.info("New API generated")
         raise cherrypy.HTTPRedirect("config")
 
