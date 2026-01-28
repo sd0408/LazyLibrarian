@@ -17,17 +17,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Sick Beard.  If not, see <http://www.gnu.org/licenses/>.
-try:
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
+import requests
 
 import lazylibrarian
 from lazylibrarian import logger
 from lazylibrarian.common import notifyStrings, NOTIFY_SNATCH, NOTIFY_DOWNLOAD, proxyList
 from lazylibrarian.formatter import check_int
-from lib.six import PY2
+
+# Python 3 compatibility
+PY2 = False
 
 
 class AndroidPNNotifier:

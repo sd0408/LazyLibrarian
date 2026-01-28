@@ -21,11 +21,7 @@ import threading
 import time
 
 import lazylibrarian
-try:
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
+import requests
 
 from lazylibrarian import logger, version
 from lazylibrarian.common import getUserAgent, proxyList

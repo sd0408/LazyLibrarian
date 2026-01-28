@@ -16,7 +16,7 @@
 import datetime
 
 from lazylibrarian import logger, database
-from lib.rfeed import Item, Guid, Feed
+from vendor.rfeed import Item, Guid, Feed
 
 
 def genFeed(ftype, limit=10, user=0, baseurl=''):

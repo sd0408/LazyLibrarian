@@ -18,13 +18,13 @@
 # along with Sick Beard.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urlencode
-# noinspection PyUnresolvedReferences
-from lib.six.moves.http_client import HTTPSConnection
+from urllib.parse import urlencode
+from http.client import HTTPSConnection
 
 import lazylibrarian
+
+# Python 3 compatibility
+PY2 = False
 from lazylibrarian import logger
 from lazylibrarian.common import notifyStrings, NOTIFY_SNATCH, NOTIFY_DOWNLOAD
 from lazylibrarian.formatter import unaccented

@@ -15,7 +15,7 @@ import os
 import sys
 
 import cherrypy
-import lib.cherrypy_cors as cherrypy_cors
+import vendor.cherrypy_cors as cherrypy_cors
 import lazylibrarian
 from lazylibrarian import logger
 from lazylibrarian.webServe import WebInterface
@@ -174,8 +174,11 @@ def initialize(options=None):
                                       '{webroot}', options['http_root']))
                     t.write('\n')
 
-    # Prevent time-outs
-    cherrypy.engine.timeout_monitor.unsubscribe()
+    # Prevent time-outs (timeout_monitor was removed in newer CherryPy versions)
+    try:
+        cherrypy.engine.timeout_monitor.unsubscribe()
+    except AttributeError:
+        pass
     cherrypy.tree.mount(WebInterface(), str(options['http_root']), config=conf)
 
     if lazylibrarian.CHERRYPYLOG:

@@ -16,7 +16,9 @@ import platform
 import threading
 import inspect
 from logging import handlers
-from lib.six import PY2
+
+# Python 3 compatibility
+PY2 = False
 
 import lazylibrarian
 from lazylibrarian import formatter

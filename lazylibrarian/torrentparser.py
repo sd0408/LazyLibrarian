@@ -17,16 +17,12 @@ import lazylibrarian
 from lazylibrarian import logger
 from lazylibrarian.cache import fetchURL
 from lazylibrarian.formatter import plural, unaccented, makeUnicode, size_in_bytes, url_fix
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote, urlencode
+from urllib.parse import quote, urlencode
+from bs4 import BeautifulSoup
+import feedparser
 
-if PY2:
-    from lib.bs4 import BeautifulSoup
-    import lib.feedparser as feedparser
-else:
-    from lib3.bs4 import BeautifulSoup
-    import lib3.feedparser as feedparser
+# Python 3 compatibility
+PY2 = False
 
 
 def TPB(book=None, test=False):

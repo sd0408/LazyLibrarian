@@ -23,10 +23,11 @@ from lazylibrarian import logger, database
 from lazylibrarian.formatter import plural, getList
 from lazylibrarian.gr import GoodReads
 from lazylibrarian.cache import gr_api_sleep
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urlencode, parse_qsl
-import lib.oauth2 as oauth
+from urllib.parse import urlencode, parse_qsl
+import vendor.oauth2 as oauth
+
+# Python 3 compatibility
+PY2 = False
 
 client = ''
 request_token = ''

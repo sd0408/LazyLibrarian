@@ -24,17 +24,12 @@ from lazylibrarian.formatter import plural, makeUnicode, makeBytestr, safe_unico
 from lazylibrarian.common import safe_copy, setperm
 from lazylibrarian.cache import cache_img, fetchURL
 from shutil import copyfile
-from lib.six import PY2, text_type
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote_plus
+from urllib.parse import quote_plus
+import zipfile
 
-try:
-    import zipfile
-except ImportError:
-    if PY2:
-        import lib.zipfile as zipfile
-    else:
-        import lib3.zipfile as zipfile
+# Python 3 compatibility
+PY2 = False
+text_type = str
 
 
 def getAuthorImages():
@@ -545,7 +540,7 @@ def createMagCover(issuefile=None, refresh=False, pagenum=1):
             # note we need LIBRARY SOURCE not a binary package
             # make lib; sudo make install-lib; sudo ldconfig
             # lib.unrar should then be able to find libunrar.so
-            from lib.unrar import rarfile
+            from vendor.unrar import rarfile
             data = rarfile.RarFile(issuefile)
         except Exception as why:
             logger.error("Failed to read rar file %s, %s %s" % (issuefile, type(why).__name__, str(why)))

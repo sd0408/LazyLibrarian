@@ -21,14 +21,11 @@ from lazylibrarian.directparser import GEN
 from lazylibrarian.formatter import age, today, plural, cleanName, unaccented, getList, check_int, \
     makeUnicode, seconds_to_midnight
 from lazylibrarian.torrentparser import KAT, TPB, WWT, ZOO, TDL, LIME
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urlencode
+from urllib.parse import urlencode
+import feedparser
 
-if PY2:
-    import lib.feedparser as feedparser
-else:
-    import lib3.feedparser as feedparser
+# Python 3 compatibility
+PY2 = False
 
 
 def test_provider(name, host=None, api=None):

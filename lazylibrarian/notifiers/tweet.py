@@ -17,11 +17,10 @@
 # along with Sick Beard.  If not, see <http://www.gnu.org/licenses/>.
 
 import lazylibrarian
-import lib.pythontwitter as twitter
+import vendor.pythontwitter as twitter
 from lazylibrarian import logger, common, formatter
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import parse_qsl
-import lib.oauth2 as oauth
+from urllib.parse import parse_qsl
+import vendor.oauth2 as oauth
 
 
 class TwitterNotifier:

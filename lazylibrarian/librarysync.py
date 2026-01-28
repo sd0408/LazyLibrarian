@@ -15,7 +15,8 @@ import re
 import traceback
 import shutil
 from xml.etree import ElementTree
-from lib.six import PY2
+import zipfile
+from urllib.parse import quote_plus, urlencode
 
 import lazylibrarian
 from lazylibrarian import logger, database
@@ -28,23 +29,16 @@ from lazylibrarian.formatter import plural, is_valid_isbn, is_valid_booktype, ge
 from lazylibrarian.gb import GoogleBooks
 from lazylibrarian.gr import GoodReads
 from lazylibrarian.importer import update_totals, addAuthorNameToDB
-from lib.fuzzywuzzy import fuzz
-from lib.mobi import Mobi
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote_plus, urlencode
+from fuzzywuzzy import fuzz
+from vendor.mobi import Mobi
 
 try:
-    from lib.tinytag import TinyTag
+    from vendor.tinytag import TinyTag
 except ImportError:
     TinyTag = None
 
-try:
-    import zipfile
-except ImportError:
-    if PY2:
-        import lib.zipfile as zipfile
-    else:
-        import lib3.zipfile as zipfile
+# Python 3 compatibility
+PY2 = False
 
 
 def get_book_info(fname):

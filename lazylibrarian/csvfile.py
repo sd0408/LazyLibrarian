@@ -15,7 +15,7 @@ import shutil
 import traceback
 
 import lazylibrarian
-from lib.six import PY2
+from csv import writer, reader, QUOTE_MINIMAL
 from lazylibrarian import database, logger
 from lazylibrarian.common import csv_file, safe_move
 from lazylibrarian.formatter import plural, is_valid_isbn, now, unaccented, formatAuthorName, \
@@ -23,13 +23,8 @@ from lazylibrarian.formatter import plural, is_valid_isbn, now, unaccented, form
 from lazylibrarian.importer import search_for, import_book, addAuthorNameToDB
 from lazylibrarian.librarysync import find_book_in_db
 
-try:
-    from csv import writer, reader, QUOTE_MINIMAL
-except ImportError:
-    if PY2:
-        from lib.csv import writer, reader, QUOTE_MINIMAL
-    else:
-        from lib3.csv import writer, reader, QUOTE_MINIMAL
+# Python 3 compatibility
+PY2 = False
 
 
 def dump_table(table, savedir=None, status=None):

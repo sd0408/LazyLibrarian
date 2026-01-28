@@ -19,14 +19,10 @@ import random
 import string
 import time
 
-# noinspection PyUnresolvedReferences
-from lib.six.moves import http_cookiejar
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_error import URLError
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urlencode
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_request import HTTPCookieProcessor, build_opener, Request
+import http.cookiejar as http_cookiejar
+from urllib.error import URLError
+from urllib.parse import urlencode
+from urllib.request import HTTPCookieProcessor, build_opener, Request
 
 import lazylibrarian
 from lazylibrarian import logger

@@ -17,8 +17,7 @@ import lazylibrarian
 from lazylibrarian import logger
 from lazylibrarian.cache import fetchURL
 from lazylibrarian.formatter import check_int
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urlencode
+from urllib.parse import urlencode
 
 
 def _getJSON(URL, params):

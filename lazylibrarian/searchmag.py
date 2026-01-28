@@ -16,9 +16,11 @@ import re
 import threading
 import time
 import traceback
-from lib.six import PY2
 
 import lazylibrarian
+
+# Python 3 compatibility
+PY2 = False
 from lazylibrarian import logger, database
 from lazylibrarian.common import scheduleJob
 from lazylibrarian.downloadmethods import NZBDownloadMethod, TORDownloadMethod, DirectDownloadMethod

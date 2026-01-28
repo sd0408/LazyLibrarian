@@ -16,14 +16,11 @@ import lazylibrarian
 from lazylibrarian import logger
 from lazylibrarian.cache import fetchURL
 from lazylibrarian.formatter import plural, formatAuthorName, makeUnicode, size_in_bytes, url_fix
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urlparse, urlencode
+from urllib.parse import urlparse, urlencode
+from bs4 import BeautifulSoup
 
-if PY2:
-    from lib.bs4 import BeautifulSoup
-else:
-    from lib3.bs4 import BeautifulSoup
+# Python 3 compatibility
+PY2 = False
 
 
 # noinspection PyProtectedMember

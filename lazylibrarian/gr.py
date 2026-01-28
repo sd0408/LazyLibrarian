@@ -15,11 +15,7 @@ import time
 import traceback
 import unicodedata
 
-try:
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
+import requests
 
 import lazylibrarian
 from lazylibrarian import logger, database
@@ -29,10 +25,11 @@ from lazylibrarian.images import getBookCover
 from lazylibrarian.cache import gr_xml_request, cache_img
 from lazylibrarian.formatter import plural, today, replace_all, bookSeries, unaccented, split_title, getList, \
     cleanName, is_valid_isbn, formatAuthorName, check_int, makeUnicode, check_year
-from lib.fuzzywuzzy import fuzz
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote, quote_plus, urlencode
+from fuzzywuzzy import fuzz
+from urllib.parse import quote, quote_plus, urlencode
+
+# Python 3 compatibility
+PY2 = False
 
 
 class GoodReads:

@@ -15,12 +15,10 @@ import os
 import shutil
 import time
 from xml.etree import ElementTree
-try:
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
-from lib.six import PY2
+import requests
+
+# Python 3 compatibility
+PY2 = False
 
 import lazylibrarian
 from lazylibrarian import logger

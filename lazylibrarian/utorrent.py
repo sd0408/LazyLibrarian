@@ -18,16 +18,14 @@ import lazylibrarian
 from lazylibrarian import logger
 from lazylibrarian.common import getUserAgent
 from lazylibrarian.formatter import check_int, getList
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves import http_cookiejar
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urljoin, urlencode
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_request import HTTPCookieProcessor, HTTPBasicAuthHandler, \
+import http.cookiejar as http_cookiejar
+from urllib.parse import urljoin, urlencode
+from urllib.request import HTTPCookieProcessor, HTTPBasicAuthHandler, \
     build_opener, install_opener, Request
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_error import HTTPError
+from urllib.error import HTTPError
+
+# Python 3 compatibility
+PY2 = False
 
 
 class utorrentclient(object):

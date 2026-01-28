@@ -26,9 +26,10 @@ from cherrypy.lib.static import serve_file
 from lazylibrarian.formatter import makeUnicode, check_int, plural, getList
 from lazylibrarian.common import mimeType, zipAudio
 from lazylibrarian.cache import cache_img
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote_plus
-from lib.six import string_types
+from urllib.parse import quote_plus
+
+# Python 3 compatibility
+string_types = (str,)
 
 
 searchable = ['Authors', 'Magazines', 'Series', 'Author', 'RecentBooks', 'RecentAudio', 'RecentMags',

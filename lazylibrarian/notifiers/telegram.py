@@ -1,8 +1,4 @@
-try:
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
+import requests
 
 import lazylibrarian
 from lazylibrarian import logger

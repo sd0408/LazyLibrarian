@@ -2,13 +2,13 @@ import os
 import lazylibrarian
 from lazylibrarian import logger
 from lazylibrarian.common import notifyStrings, NOTIFY_SNATCH, NOTIFY_DOWNLOAD
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urlencode
-# noinspection PyUnresolvedReferences
-from lib.six.moves.http_client import HTTPSConnection
+from urllib.parse import urlencode
+from http.client import HTTPSConnection
 
-import lib.gntp.notifier as gntp_notifier
+# Python 3 compatibility
+PY2 = False
+
+import vendor.gntp.notifier as gntp_notifier
 
 
 class Growl_Notifier:

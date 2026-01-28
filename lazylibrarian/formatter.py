@@ -19,9 +19,11 @@ import string
 import unicodedata
 
 import lazylibrarian
-from lib.six import PY2, text_type
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote_plus, quote, urlencode, urlsplit, urlunsplit
+from urllib.parse import quote_plus, quote, urlencode, urlsplit, urlunsplit
+
+# Python 3 compatibility - these are no longer needed but kept for reference
+PY2 = False
+text_type = str
 
 
 def url_fix(s, charset='utf-8'):

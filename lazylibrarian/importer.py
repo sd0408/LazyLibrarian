@@ -22,9 +22,8 @@ from lazylibrarian.formatter import today, unaccented, formatAuthorName, makeUni
 from lazylibrarian.grsync import grfollow
 from lazylibrarian.gb import GoogleBooks
 from lazylibrarian.gr import GoodReads
-from lib.fuzzywuzzy import fuzz
-# noinspection PyUnresolvedReferences
-from lib.six.moves import queue
+from fuzzywuzzy import fuzz
+import queue
 
 
 def addAuthorNameToDB(author=None, refresh=False, addbooks=True):

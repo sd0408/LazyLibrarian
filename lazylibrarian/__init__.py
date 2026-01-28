@@ -32,10 +32,12 @@ from lazylibrarian.cache import fetchURL
 from lazylibrarian.common import restartJobs, logHeader, scheduleJob
 from lazylibrarian.formatter import getList, bookSeries, plural, unaccented, check_int, unaccented_str, makeUnicode
 from lazylibrarian.dbupgrade import check_db
-from lib.apscheduler.scheduler import Scheduler
-from lib.six import PY2, text_type
-# noinspection PyUnresolvedReferences
-from lib.six.moves import configparser
+from vendor.apscheduler.scheduler import Scheduler
+import configparser
+
+# Python 3 compatibility
+PY2 = False
+text_type = str
 
 # Transient globals NOT stored in config
 # These are used/modified by LazyLibrarian.py before config.ini is read

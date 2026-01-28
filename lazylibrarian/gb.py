@@ -17,11 +17,7 @@
 import re
 import traceback
 
-try:
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
+import requests
 
 import lazylibrarian
 from lazylibrarian import logger, database
@@ -32,10 +28,11 @@ from lazylibrarian.cache import gb_json_request, cache_img
 from lazylibrarian.formatter import plural, today, replace_all, unaccented, unaccented_str, is_valid_isbn, \
     getList, cleanName, makeUnicode
 from lazylibrarian.gr import GoodReads
-from lib.fuzzywuzzy import fuzz
-from lib.six import PY2
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote, quote_plus, urlencode
+from fuzzywuzzy import fuzz
+from urllib.parse import quote, quote_plus, urlencode
+
+# Python 3 compatibility
+PY2 = False
 
 
 class GoogleBooks:

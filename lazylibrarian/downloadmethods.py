@@ -17,11 +17,7 @@ import unicodedata
 from base64 import b16encode, b32decode, b64encode
 from hashlib import sha1
 
-try:
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
+import requests
 
 # noinspection PyBroadException
 try:
@@ -30,7 +26,7 @@ try:
 except Exception:
     # noinspection PyBroadException
     try:
-        import lib.magic as magic
+        import vendor.magic as magic
     except Exception:
         magic = None
 
@@ -41,10 +37,12 @@ from lazylibrarian.cache import fetchURL
 from lazylibrarian.common import setperm, getUserAgent, proxyList, mymakedirs
 from lazylibrarian.formatter import cleanName, unaccented_str, getList, makeUnicode
 from lazylibrarian.postprocess import delete_task, check_contents
-from lib.deluge_client import DelugeRPCClient
+from vendor.deluge_client import DelugeRPCClient
 from .magnet2torrent import magnet2torrent
-from lib.bencode import bencode, bdecode
-from lib.six import text_type
+from bencode import bencode, bdecode
+
+# Python 3 compatibility
+text_type = str
 
 
 def NZBDownloadMethod(bookid=None, nzbtitle=None, nzburl=None, library='eBook'):

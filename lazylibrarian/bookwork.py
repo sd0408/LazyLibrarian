@@ -15,8 +15,7 @@ import os
 import re
 import time
 
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote_plus, quote, urlencode
+from urllib.parse import quote_plus, quote, urlencode
 
 import lazylibrarian
 from lazylibrarian import logger, database
@@ -24,14 +23,12 @@ from lazylibrarian.cache import fetchURL, gr_xml_request, gb_json_request
 from lazylibrarian.common import proxyList
 from lazylibrarian.formatter import safe_unicode, plural, cleanName, unaccented, formatAuthorName, \
     check_int, replace_all, check_year, getList
-from lib.fuzzywuzzy import fuzz
-from lib.six import PY2
+from fuzzywuzzy import fuzz
 
-try:
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
+# Python 3 compatibility
+PY2 = False
+
+import requests
 
 
 def setAllBookAuthors():

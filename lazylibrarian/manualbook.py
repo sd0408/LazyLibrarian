@@ -16,9 +16,8 @@ from lazylibrarian import logger, database
 from lazylibrarian.formatter import getList, unaccented_str, plural
 from lazylibrarian.providers import IterateOverRSSSites, IterateOverTorrentSites, IterateOverNewzNabSites, \
     IterateOverDirectSites
-from lib.fuzzywuzzy import fuzz
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote_plus
+from fuzzywuzzy import fuzz
+from urllib.parse import quote_plus
 
 
 def searchItem(item=None, bookid=None, cat=None):

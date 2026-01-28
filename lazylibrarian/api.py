@@ -17,10 +17,9 @@ import shutil
 import sys
 import threading
 
-# noinspection PyUnresolvedReferences
-from lib.six.moves import configparser, queue
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import urlsplit, urlunsplit
+import configparser
+import queue
+from urllib.parse import urlsplit, urlunsplit
 
 import cherrypy
 import lazylibrarian
@@ -50,7 +49,10 @@ from lazylibrarian.rssfeed import genFeed
 from lazylibrarian.searchbook import search_book
 from lazylibrarian.searchmag import search_magazines, get_issue_date
 from lazylibrarian.searchrss import search_rss_book, search_wishlist
-from lib.six import PY2, string_types
+
+# Python 3 compatibility
+PY2 = False
+string_types = (str,)
 
 cmd_dict = {'help': 'list available commands. ' +
                     'Time consuming commands take an optional &wait parameter if you want to wait for completion, ' +

@@ -17,9 +17,11 @@ import traceback
 from hashlib import sha1
 
 import lazylibrarian
-from lib.six import PY2
 
 from lazylibrarian import database, logger
+
+# Python 3 compatibility
+PY2 = False
 from lazylibrarian.common import safe_move
 from lazylibrarian.formatter import getList, is_valid_booktype, plural, makeUnicode, makeBytestr, \
     replace_all, check_year

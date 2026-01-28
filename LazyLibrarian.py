@@ -14,9 +14,7 @@ import shutil
 import lazylibrarian
 from lazylibrarian import webStart, logger, versioncheck, dbupgrade
 from lazylibrarian.formatter import check_int
-
-# noinspection PyUnresolvedReferences
-from lib.six.moves import configparser
+import configparser
 
 # The following should probably be made configurable at the settings level
 # This fix is put in place for systems with broken SSL (like QNAP)

@@ -25,6 +25,21 @@ version.txt
 #  Compiled source   #
 ######################
 *.py[co]
+__pycache__/
+
+#  Virtual Environment  #
+#########################
+venv/
+.venv/
+ENV/
+env/
+
+#  Package build files  #
+#########################
+*.egg-info/
+dist/
+build/
+*.egg
 
 #  Prebuilt packages #
 ######################

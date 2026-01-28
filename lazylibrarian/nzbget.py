@@ -25,8 +25,8 @@ from base64 import standard_b64encode
 import lazylibrarian
 from lazylibrarian import logger
 from lazylibrarian.formatter import check_int
-# noinspection PyUnresolvedReferences
-from lib.six.moves import xmlrpc_client, http_client
+import xmlrpc.client as xmlrpc_client
+import http.client as http_client
 
 
 def checkLink():

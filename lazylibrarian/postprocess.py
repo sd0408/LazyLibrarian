@@ -22,15 +22,10 @@ import threading
 import traceback
 
 import lazylibrarian
-from lib.six import PY2
+import zipfile
 
-try:
-    import zipfile
-except ImportError:
-    if PY2:
-        import lib.zipfile as zipfile
-    else:
-        import lib3.zipfile as zipfile
+# Python 3 compatibility
+PY2 = False
 
 from lazylibrarian import database, logger, utorrent, transmission, qbittorrent, \
     deluge, rtorrent, synology, sabnzbd, nzbget
@@ -47,8 +42,8 @@ from lazylibrarian.librarysync import get_book_info, find_book_in_db, LibrarySca
 from lazylibrarian.magazinescan import create_id
 from lazylibrarian.images import createMagCover
 from lazylibrarian.notifiers import notify_download, custom_notify_download
-from lib.deluge_client import DelugeRPCClient
-from lib.fuzzywuzzy import fuzz
+from vendor.deluge_client import DelugeRPCClient
+from fuzzywuzzy import fuzz
 
 # Need to remove characters we don't want in the filename BEFORE adding to drive identifier
 # as windows drive identifiers have colon, eg c:  but no colons allowed elsewhere in pathname
@@ -243,7 +238,7 @@ def unpack_archive(archivename, download_dir, title):
         returns new directory in download_dir with book in it, or empty string """
     # noinspection PyBroadException
     try:
-        from lib.unrar import rarfile
+        from vendor.unrar import rarfile
     except Exception:
         rarfile = None
 

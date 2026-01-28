@@ -24,29 +24,18 @@ import shutil
 import threading
 import time
 import traceback
-from lib.six import PY2
+import zipfile
 from subprocess import Popen, PIPE
 
-try:
-    import zipfile
-except ImportError:
-    if PY2:
-        import lib.zipfile as zipfile
-    else:
-        import lib3.zipfile as zipfile
+# Python 3 compatibility
+PY2 = False
 
 import re
 import ssl
 import sqlite3
 import cherrypy
 
-# some mac versions include requests _without_ urllib3, our copy bundles it
-try:
-    # noinspection PyUnresolvedReferences
-    import urllib3
-    import requests
-except ImportError:
-    import lib.requests as requests
+import requests
 
 import lazylibrarian
 from lazylibrarian import logger, database
@@ -870,8 +859,11 @@ def logHeader():
         else:
             header += '%s: %s\n' % (item.lower(), lazylibrarian.CONFIG[item])
     header += "Python version: %s\n" % sys.version.split('\n')
-    # noinspection PyDeprecation
-    header += "Distribution: %s\n" % str(platform.dist())
+    # platform.dist() was removed in Python 3.8
+    try:
+        header += "Distribution: %s\n" % str(platform.freedesktop_os_release())
+    except (AttributeError, OSError):
+        header += "Distribution: N/A\n"
     header += "System: %s\n" % str(platform.system())
     header += "Machine: %s\n" % str(platform.machine())
     header += "Platform: %s\n" % str(platform.platform())
@@ -898,7 +890,7 @@ def logHeader():
         header += 'sqlite3: missing required functionality. Try upgrading to v3.5.4 or newer. You have '
     header += "sqlite3: %s\n" % getattr(sqlite3, 'sqlite_version', None)
     try:
-        from lib.unrar import rarfile
+        from vendor.unrar import rarfile
         version = rarfile.unrarlib.RARGetDllVersion()
         header += "unrar: DLL version %s\n" % version
     except Exception as e:
@@ -962,7 +954,7 @@ def logHeader():
     except Exception:
         # noinspection PyBroadException
         try:
-            import lib.magic as magic
+            import vendor.magic as magic
         except Exception:
             magic = None
 

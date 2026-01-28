@@ -21,12 +21,11 @@ import time
 import traceback
 from shutil import copyfile, rmtree
 
-# noinspection PyUnresolvedReferences
-from lib.six.moves.urllib_parse import quote_plus, unquote_plus, urlsplit, urlunsplit
+from urllib.parse import quote_plus, unquote_plus, urlsplit, urlunsplit
+import json as simplejson
 
 import cherrypy
 import lazylibrarian
-import lib.simplejson as simplejson
 from cherrypy.lib.static import serve_file
 from lazylibrarian import logger, database, notifiers, versioncheck, magazinescan, \
     qbittorrent, utorrent, rtorrent, transmission, sabnzbd, nzbget, deluge, synology, grsync
@@ -55,9 +54,12 @@ from lazylibrarian.searchrss import search_wishlist
 from lazylibrarian.rssfeed import genFeed
 from lazylibrarian.opds import OPDS
 from lazylibrarian.bookrename import nameVars
-from lib.deluge_client import DelugeRPCClient
-from lib.six import PY2, text_type
+from vendor.deluge_client import DelugeRPCClient
 from mako import exceptions
+
+# Python 3 compatibility
+PY2 = False
+text_type = str
 from mako.lookup import TemplateLookup
 
 

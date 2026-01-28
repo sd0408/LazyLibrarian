@@ -21,7 +21,7 @@ from lazylibrarian.formatter import plural, is_valid_booktype, check_int, replac
     makeUnicode, makeBytestr, multibook
 
 try:
-    from lib.tinytag import TinyTag
+    from vendor.tinytag import TinyTag
 except ImportError:
     TinyTag = None
 
