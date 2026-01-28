@@ -1,5 +1,6 @@
 #  Lazy User Related   #
 ######################
+.coverage
 cache/*
 cache.db*
 config.ini
