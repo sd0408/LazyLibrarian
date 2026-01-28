@@ -17,7 +17,7 @@
           <th class="bookid">Match</th>
           <th class="filename">Title</th>
           <th class="provider">Provider</th>
-          <th class="size text-right">Size</th>
+          <th class="size text-end">Size</th>
           <th class="dateadded">Date</th>
           <th class="status">Status</th>
         </tr>
@@ -27,8 +27,8 @@
         <tr>
           <td class="bookid">${item['score']} %</td>
           <td class="filename">${item['title']}</td>
-          <td class="provider"><a data-toggle="tooltip" title="${item['mode']}">${item['provider']}</a></td>
-          <td class="size text-right">${item['size']}</td>
+          <td class="provider"><a data-bs-toggle="tooltip" title="${item['mode']}">${item['provider']}</a></td>
+          <td class="size text-end">${item['size']}</td>
           <td class="dateadded">${item['date']}</td>
           <td class="status text-center"> <a class="btn btn-xs btn-info button"
                     href="snatchBook?bookid=${bookid}&mode=${item['mode']}&provider=${item['provider']}&size=${item['size']}&library=${library}&url=${item['url']}" title="Snatch">Snatch</a></td>

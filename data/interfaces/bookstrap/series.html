@@ -16,11 +16,11 @@
         %if perm&lazylibrarian.perm_search:
         <div class="col-xs-12 col-md-4">
         <div class="form-group">
-          <label class="sr-only">Search</label>
+          <label class="visually-hidden">Search</label>
           <div class="input-group">
             <input type="text" class="form-control deletable input-sm col-xs-12" value="" onfocus="if(this.value==this.defaultValue) this.value='';" name="name" placeholder="Title / Author / ISBN" id="searchbox" name="searchbox">
             <span class="input-group-btn">
-              <button type="submit" value="Book" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="bottom" title="Search for book"><i class="fa fa-search"></i></button>
+              <button type="submit" value="Book" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Search for book"><i class="fa fa-search"></i></button>
             </span>
           </div>
         </div>
@@ -85,7 +85,7 @@
         %endif
       </select>
     </div>
-    <input type="submit" class="markSeries btn btn-sm btn-default" value="Go">
+    <input type="submit" class="markSeries btn btn-sm btn-secondary" value="Go">
     %endif
   </form>
   <p>&nbsp;</p>
@@ -135,7 +135,7 @@
                         bar = '<div class="progress center-block" style="width: 120px;"><div class="progress-bar-' +
                         css + ' progress-bar progress-bar-striped" role="progressbar" aria-valuenow="' + percent +
                         '" aria-valuemin="0" aria-valuemax="100" style="width: ' + percent +
-                        '%;"><span class="sr-only">' + percent +
+                        '%;"><span class="visually-hidden">' + percent +
                         '% Complete</span><span class="progressbar-front-text">' + row[6] + '/' + row[7] +
                         '</span></div></div>';
                         return bar;}

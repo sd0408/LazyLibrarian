@@ -49,7 +49,7 @@
                 <a href="followAuthor?AuthorID=${author['AuthorID']}" class="btn btn-sm btn-primary"><i class="fa fa-times"></i> Not Following</a>
               %endif
             %endif
-            <div class="form-group pull-right">
+            <div class="form-group float-end">
             %if len(types) > 1:
               %if  perm&lazylibrarian.perm_audio:
                 <label for="chooselib"><small>&nbsp;Library</small></label>
@@ -81,7 +81,7 @@
     %if lazylibrarian.CONFIG['AUTHOR_IMG']:
     <div id="authorart_container" class="col-md-3">
         <div id="authorart_menu">
-            <img src="${author['AuthorImg']}" class="box-shadow img-responsive" alt="${author['AuthorName']}" title="${author['AuthorName']}">
+            <img src="${author['AuthorImg']}" class="box-shadow img-fluid" alt="${author['AuthorName']}" title="${author['AuthorName']}">
         </div>
     </div>
     %endif
@@ -133,7 +133,7 @@
   <div class="col-xs-4">
     <div class="progress">
       <div class="progress-bar" role="progressbar" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100" style="width: ${percent}%;">
-        <span class="sr-only">${percent}% Complete</span>
+        <span class="visually-hidden">${percent}% Complete</span>
       </div>
     </div>
   </div>
@@ -271,14 +271,14 @@
                         'class': 'text-center',
                         'visible': showimg,
                         'render': function(data, type, row) {
-                        return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" class="bookcover-sm img-responsive"></a>';} },
+                        return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" class="bookcover-sm img-fluid"></a>';} },
                     { targets: [2], 'class': "hidden" },
                     { targets: [3], 'render': function(data, type, row) {
                         var pre = data.split('<');
                         var limit = window.innerWidth / 30;
                         var title = truncateOnWord(pre[0], limit);
                         var tail = data.slice(pre[0].length);
-                        btn = '<button onclick="bookinfo(\'' + row[9] + '\')" class="button btn-link text-left" type="button" '
+                        btn = '<button onclick="bookinfo(\'' + row[9] + '\')" class="button btn-link text-start" type="button" '
                         return btn + ' title="' + pre[0] + '">' + title + '</button>' + tail ;
                         }
                     },
@@ -326,14 +326,14 @@
                             %if perm&lazylibrarian.perm_status:
                             btn = '<a class="button btn btn-xs btn-info">' + btn + '</a>'
                             %else:
-                            btn = '<p><a class="button btn btn-xs btn-default grey" href="requestBook?bookid=' + row[9] + '&library=${library}" target="_self">Request</a></p>'
+                            btn = '<p><a class="button btn btn-xs btn-secondary grey" href="requestBook?bookid=' + row[9] + '&library=${library}" target="_self">Request</a></p>'
                             %endif
                             }
                         else {
                             %if perm&lazylibrarian.perm_status:
-                            btn = '<a class="button btn btn-xs btn-default grey">' + btn + '</a>'
+                            btn = '<a class="button btn btn-xs btn-secondary grey">' + btn + '</a>'
                             %else:
-                            btn = '<p><a class="button btn btn-xs btn-default grey" href="requestBook?bookid=' + row[9] + '&library=${library}" target="_self">Request</a></p>'
+                            btn = '<p><a class="button btn btn-xs btn-secondary grey" href="requestBook?bookid=' + row[9] + '&library=${library}" target="_self">Request</a></p>'
                             %endif
                             }
                         return btn;} }

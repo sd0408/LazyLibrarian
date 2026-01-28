@@ -31,7 +31,7 @@
                     <th class="bookid">ID</th>
                     <th class="provider">Provider</th>
                     <th class="dateadded">Date</th>
-                    <th class="size text-right">Size</th>
+                    <th class="size text-end">Size</th>
                     <th class="status text-center">Status</th>
                     <th class="hidden">percent</th>
                 </tr>
@@ -117,9 +117,9 @@
                     { targets: [4],
                         'class': 'text-center',
                         'render': function(data, type, row) {
-                            return '<a data-toggle="tooltip" title="' + row[11] + '">' + row[4] + '</a>';} },
+                            return '<a data-bs-toggle="tooltip" title="' + row[11] + '">' + row[4] + '</a>';} },
                     { targets: [5], 'render': function(data, type, row) {
-                        return '<div class="text-right">' + data + '</div>';} },
+                        return '<div class="text-end">' + data + '</div>';} },
                     { targets: [6],
                         'class': 'text-center',
                         'render': function(data, type, row) {
@@ -139,7 +139,7 @@
                             bar = '<div class="progress center-block" style="width: 120px;"><div class="progress-bar-' +
                             css + ' progress-bar progress-bar-striped" role="progressbar aria-valuenow="' + row[9] +
                             '" aria-valuemin="0" aria-valuemax="100" style="width: ' + row[9] +
-                            '%;"><span class="sr-only">' + row[9] +
+                            '%;"><span class="visually-hidden">' + row[9] +
                             '% Complete</span><span class="progressbar-front-text">' + row[9] + '%</span></div></div>'
                             };
                         return bar;} },

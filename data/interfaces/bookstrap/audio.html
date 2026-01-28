@@ -13,7 +13,7 @@
         %endif
         <a href="audioWall" class="button btn btn-sm btn-primary"><i class="fa fa-calendar-check"></i> Recent AudioBooks</a>
         %if lazylibrarian.CONFIG['USER_ACCOUNTS'] == True:
-        <a href="rssFeed?user=${user}&type=AudioBook&limit=10.xml" class="button btn btn-sm btn-primary" data-toggle="tooltip" title="RSS feed of recent downloads"><i class="fa fa-rss"></i></a>
+        <a href="rssFeed?user=${user}&type=AudioBook&limit=10.xml" class="button btn btn-sm btn-primary" data-bs-toggle="tooltip" title="RSS feed of recent downloads"><i class="fa fa-rss"></i></a>
         <link rel="alternate" type="application/rss+xml" title="LazyLibrarian latest AudioBooks" href="rssFeed?user=${user}&type=AudioBook&limit=10.xml">
         %endif
       </div>
@@ -122,7 +122,7 @@
                 { targets: [1],
                     'visible': showimg,
                     'render': function(data, type, row) {
-                    return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" class="bookcover-sm img-responsive"></a>';} },
+                    return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" class="bookcover-sm img-fluid"></a>';} },
                 { targets: [2], 'render': function(data, type, row) {
                   %if perm&lazylibrarian.perm_authorbooks:
                     btn = '<a href=\'authorPage?AuthorID=' + row[8] + '\'">' + data + '</a>'
@@ -136,7 +136,7 @@
                     var limit = window.innerWidth / 30;
                     var title = truncateOnWord(pre[0], limit);
                     var tail = data.slice(pre[0].length);
-                    btn = '<button onclick="bookinfo(\'' + row[9] + '\')" class="button btn-link text-left" type="button" '
+                    btn = '<button onclick="bookinfo(\'' + row[9] + '\')" class="button btn-link text-start" type="button" '
                     if (title == pre[0]) { return btn + '>' + title + '</button>' + tail ; }
                     return btn + ' title="' + pre[0] + '">' + title + '</button>' + tail ;
                     }
@@ -178,7 +178,7 @@
                         %if perm&lazylibrarian.perm_force:
                             btn = '<p><a class="a btn btn-xs btn-danger">' + btn + '</a></p><p><a class="b btn btn-xs btn-success" href="searchForBook?bookid=' + row[9] + '&library=AudioBook" target="_self"><i class="fa fa-search"></i> Search</a></p>'
                         %else:
-                            btn = '<a class="button btn btn-xs btn-default grey">' + btn + '</a>'
+                            btn = '<a class="button btn btn-xs btn-secondary grey">' + btn + '</a>'
                         %endif
                     }
                     else if ( btn.indexOf('Snatched') >= 0 ) {
@@ -186,7 +186,7 @@
                     else if ( btn.indexOf('Have') >= 0 ) {
                         btn = '<a class="button btn btn-xs btn-info">' + btn + '</a>'}
                     else {
-                        btn = '<a class="button btn btn-xs btn-default grey">' + btn + '</a>'}
+                        btn = '<a class="button btn btn-xs btn-secondary grey">' + btn + '</a>'}
                     return btn;} }
                 ],
             "oLanguage": {

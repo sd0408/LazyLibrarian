@@ -11,11 +11,11 @@
         %if perm&lazylibrarian.perm_search:
         <div class="col-xs-12 col-md-4">
         <div class="form-group">
-          <label class="sr-only">Search</label>
+          <label class="visually-hidden">Search</label>
           <div class="input-group">
             <input type="text" class="form-control deletable input-sm col-xs-12" value="" onfocus="if(this.value==this.defaultValue) this.value='';" name="name" placeholder="Title / Author / ISBN" id="searchbox" name="searchbox">
             <span class="input-group-btn">
-              <button type="submit" value="Book" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="bottom" title="Search for book"><i class="fa fa-search"></i></button>
+              <button type="submit" value="Book" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Search for book"><i class="fa fa-search"></i></button>
             </span>
           </div>
         </div>
@@ -42,7 +42,7 @@
                 <th class="stars text-center hidden-sm hidden-xs">Rating</th>
                 <th class="stars text-center hidden-sm hidden-xs">Rating count</th>
                 <th class="addAuthor text-center no-sort">Add</th>
-                <th class="fuzz text-right">Match</th>
+                <th class="fuzz text-end">Match</th>
              </tr>
         </thead>
 
@@ -104,7 +104,7 @@
                                 but_class2 = "btn-success"
                             else:
                                 destination2 = "#"
-                                but_class2 = "btn-default"
+                                but_class2 = "btn-secondary"
                         else:
                             destination2 = "addBook?bookid="+result['bookid']
                             value2 = "Add Book"
@@ -131,7 +131,7 @@
     </p>
     <p><a class="${but_class2} btn btn-xs" href="${destination2}">${value2}</a></p>
   </td>
-  <td class="fuzz text-right">${result['highest_fuzz']}%</td>
+  <td class="fuzz text-end">${result['highest_fuzz']}%</td>
 </tr>
 %endfor
 %endif

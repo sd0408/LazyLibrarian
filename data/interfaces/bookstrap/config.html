@@ -5,7 +5,7 @@
 <%def name="headerIncludes()">
 <div id="subhead_container">
     <div id="subhead_menu">
-      <a onclick="self.shutdownQA(this)" class="button btn btn-sm btn-danger" data-toggle="tooltip" data-placement="bottom" title="Terminate the LazyLibrarian process - Be careful if you're doing this remotely"><i class="fa fa-power-off"></i> Shutdown</a>
+      <a onclick="self.shutdownQA(this)" class="button btn btn-sm btn-danger" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terminate the LazyLibrarian process - Be careful if you're doing this remotely"><i class="fa fa-power-off"></i> Shutdown</a>
       <a class="button btn btn-sm btn-warning" onclick="self.restartQA(this, '', '')"><i class="fa fa-sync"></i> Restart</a>
       <button class="button btn btn-sm btn-primary" type="button" value="System Info" id="sysinfo"><i class="fa fa-cogs"></i> System Info</button>
       <button class="button btn btn-sm btn-primary" type="button" value="Show Jobs" id="show_Jobs"><i class="fa fa-list-ul"></i> Job Status</button>
@@ -23,7 +23,7 @@
        even if the user fiddles with the page encoding -->
   <form accept-charset="UTF-8" action="configUpdate" method="post">
 <h1>${title}
-    <div class="pull-right table_wrapper_button">
+    <div class="float-end table_wrapper_button">
       <input type="submit" value="Save changes" id="add" class="btn btn-primary">
     </div>
 </h1>
@@ -33,14 +33,14 @@
       <input name="utf8" type="hidden" value="&#x2713;" />
       <div>
         <ul class="nav nav-tabs" role="tablist" id="configtabs">
-        <li role="presentation" id="1" aria-controls="webinterface"><a role="tab" data-toggle="tab" aria-controls="webinterface" href="#webinterface">Interface</a></li>
-        <li role="presentation" id="2" aria-controls="importoptions"><a role="tab" data-toggle="tab" aria-controls="importoptions" href="#importoptions">Importing</a></li>
-        <li role="presentation" id="3" aria-controls="downloadsettings"><a role="tab" data-toggle="tab" aria-controls="downloadsettings" href="#downloadsettings">Downloaders</a></li>
-        <li role="presentation" id="4" aria-controls="providers"><a role="tab" data-toggle="tab" aria-controls="providers" href="#providers">Providers</a></li>
-        <li role="presentation" id="5" aria-controls="searchprocessing"><a role="tab" data-toggle="tab" aria-controls="searchprocessing" href="#searchprocessing">Processing</a></li>
-        <li role="presentation" id="6" aria-controls="notifications"><a role="tab" data-toggle="tab" aria-controls="notifications" href="#notifications">Notifications</a></li>
-        <li role="presentation" id="7" aria-controls="capabilities"><a role="tab" data-toggle="tab" aria-controls="capabilities" href="#capabilities">Categories</a></li>
-        <li role="presentation" id="8" aria-controls="filters"><a role="tab" data-toggle="tab" aria-controls="filters" href="#filters">Filters</a></li>
+        <li role="presentation" id="1" aria-controls="webinterface"><a role="tab" data-bs-toggle="tab" aria-controls="webinterface" href="#webinterface">Interface</a></li>
+        <li role="presentation" id="2" aria-controls="importoptions"><a role="tab" data-bs-toggle="tab" aria-controls="importoptions" href="#importoptions">Importing</a></li>
+        <li role="presentation" id="3" aria-controls="downloadsettings"><a role="tab" data-bs-toggle="tab" aria-controls="downloadsettings" href="#downloadsettings">Downloaders</a></li>
+        <li role="presentation" id="4" aria-controls="providers"><a role="tab" data-bs-toggle="tab" aria-controls="providers" href="#providers">Providers</a></li>
+        <li role="presentation" id="5" aria-controls="searchprocessing"><a role="tab" data-bs-toggle="tab" aria-controls="searchprocessing" href="#searchprocessing">Processing</a></li>
+        <li role="presentation" id="6" aria-controls="notifications"><a role="tab" data-bs-toggle="tab" aria-controls="notifications" href="#notifications">Notifications</a></li>
+        <li role="presentation" id="7" aria-controls="capabilities"><a role="tab" data-bs-toggle="tab" aria-controls="capabilities" href="#capabilities">Categories</a></li>
+        <li role="presentation" id="8" aria-controls="filters"><a role="tab" data-bs-toggle="tab" aria-controls="filters" href="#filters">Filters</a></li>
         </ul>
         <div class="tab-content">
           <div role="tabpanel" class="tab-pane" id="webinterface">
@@ -501,11 +501,11 @@
                         </div>
                       </div>
                       <div class="form-group">
-                        <input type="button" value="Request oAuth1" id="grauthStep1" class="btn btn-default" />
-                        <input type="button" value="Request oAuth2" id="grauthStep2" class="btn btn-default" />
+                        <input type="button" value="Request oAuth1" id="grauthStep1" class="btn btn-secondary" />
+                        <input type="button" value="Request oAuth2" id="grauthStep2" class="btn btn-secondary" />
                       </div>
                       <div class="form-group">
-                        <input type="button" value="Test Authorization" id="testgrauth" class="btn btn-default" />
+                        <input type="button" value="Test Authorization" id="testgrauth" class="btn btn-secondary" />
                       </div>
                     </fieldset>
                   </div>
@@ -1227,7 +1227,7 @@
                   <div class="col-md-4 form-group">
                     <div class="input-group">
                       <span class="input-group-addon">Name</span>
-                      <label for="newznab_${loop.index}_dispname" class="sr-only">Newznab Name</label>
+                      <label for="newznab_${loop.index}_dispname" class="visually-hidden">Newznab Name</label>
                       <input type="text" id="newznab_${loop.index}_dispname" name="newznab_${loop.index}_dispname" value="${provider['DISPNAME']}" class="form-control" placeholder="display name">
                       <span class="input-group-addon">
                       &nbsp;<input type="checkbox" id="newznab_${loop.index}_enabled" name="newznab_${loop.index}_enabled" value="1" ${checked} />&nbsp;
@@ -1235,13 +1235,13 @@
                     </div>
                     <div class="input-group">
                     <span class="input-group-addon"></span>
-                      <label for="newznab_${loop.index}_host" class="sr-only">Newznab URL</label>
+                      <label for="newznab_${loop.index}_host" class="visually-hidden">Newznab URL</label>
                       <input type="text" placeholder="Newznab URL #${loop.index}" id="newznab_${loop.index}_host" name="newznab_${loop.index}_host" value="${provider['HOST']}" class="form-control">
                       <span class="input-group-addon"></span>
                     </div>
                     <div class="input-group">
                     <span class="input-group-addon"></span>
-                    <label for="newznab_${loop.index}_api" class="sr-only">Newznab API Key</label>
+                    <label for="newznab_${loop.index}_api" class="visually-hidden">Newznab API Key</label>
                     <input type="text" placeholder="Newznab API #${loop.index}" id="newznab_${loop.index}_api" name="newznab_${loop.index}_api" value="${provider['API']}" class="form-control">
                     <span class="input-group-addon"></span>
                       </div>
@@ -1272,7 +1272,7 @@
                   <div class="col-md-4 form-group">
                     <div class="input-group">
                       <span class="input-group-addon">Name</span>
-                      <label for="torznab_${loop.index}_host" class="sr-only">Torznab Name</label>
+                      <label for="torznab_${loop.index}_host" class="visually-hidden">Torznab Name</label>
                       <input type="text" id="torznab_${loop.index}_dispname" name="torznab_${loop.index}_dispname" value="${provider['DISPNAME']}" class="form-control" placeholder="display name">
                       <span class="input-group-addon">
                         &nbsp;<input type="checkbox" id="torznab_${loop.index}_enabled" name="torznab_${loop.index}_enabled" value="1" ${checked} />&nbsp;
@@ -1280,13 +1280,13 @@
                     </div>
                     <div class="input-group">
                       <span class="input-group-addon"></span>
-                      <label for="torznab_${loop.index}_host" class="sr-only">Torznab URL</label>
+                      <label for="torznab_${loop.index}_host" class="visually-hidden">Torznab URL</label>
                       <input type="text" placeholder="Torznab URL #${loop.index}" id="torznab_${loop.index}_host" name="torznab_${loop.index}_host" value="${provider['HOST']}" class="form-control">
                       <span class="input-group-addon"></span>
                     </div>
                     <div class="input-group">
                     <span class="input-group-addon"></span>
-                    <label for="torznab_${loop.index}_api" class="sr-only">Torznab API Key</label>
+                    <label for="torznab_${loop.index}_api" class="visually-hidden">Torznab API Key</label>
                     <input type="text" placeholder="Torznab API #${loop.index}" id="torznab_${loop.index}_api" name="torznab_${loop.index}_api" value="${provider['API']}" class="form-control">
                     <span class="input-group-addon"></span>
                     </div>
@@ -1317,7 +1317,7 @@
                   <div class="col-md-4 form-group">
                     <div class="input-group">
                       <span class="input-group-addon">Name</span>
-                      <label for="rss_${loop.index}_host" class="sr-only">RSS Name</label>
+                      <label for="rss_${loop.index}_host" class="visually-hidden">RSS Name</label>
                       <input type="text" id="rss_${loop.index}_dispname" name="rss_${loop.index}_dispname" value="${provider['DISPNAME']}" class="form-control" placeholder="display name">
                       <span class="input-group-addon">
                         &nbsp;<input type="checkbox" id="rss_${loop.index}_enabled" name="rss_${loop.index}_enabled" value="1" ${checked} />&nbsp;
@@ -1325,7 +1325,7 @@
                     </div>
                     <div class="input-group">
                       <span class="input-group-addon"></span>
-                      <label for="rss_${loop.index}_host" class="sr-only">RSS URL</label>
+                      <label for="rss_${loop.index}_host" class="visually-hidden">RSS URL</label>
                       <input type="text" placeholder="RSS URL #${loop.index}" id="rss_${loop.index}_host" name="rss_${loop.index}_host" value="${provider['HOST']}" class="form-control" />
                       <span class="input-group-addon"></span>
                     </div>
@@ -1359,7 +1359,7 @@
                         checked = ''
                     %>
                     <div class="col-md-4 form-group">
-                      <label for="kat_host" class="sr-only">KAT Host</label>
+                      <label for="kat_host" class="visually-hidden">KAT Host</label>
                       <div class="input-group">
                         <input type="text" placeholder="KAT Host" id="kat_host" name="kat_host" value="${lazylibrarian.CONFIG['KAT_HOST']}" class="form-control">
                         <span class="input-group-addon">
@@ -1383,7 +1383,7 @@
                         checked = ''
                     %>
                     <div class="col-md-4 form-group">
-                      <label for="tpb_host" class="sr-only">TPB Host</label>
+                      <label for="tpb_host" class="visually-hidden">TPB Host</label>
                       <div class="input-group">
                         <input type="text" placeholder="TPB Host" id="tpb_host" name="tpb_host" value="${lazylibrarian.CONFIG['TPB_HOST']}" class="form-control">
                         <span class="input-group-addon">
@@ -1407,7 +1407,7 @@
                         checked = ''
                     %>
                     <div class="col-md-4 form-group">
-                      <label for="wwt_host" class="sr-only">WWT Host</label>
+                      <label for="wwt_host" class="visually-hidden">WWT Host</label>
                       <div class="input-group">
                         <input type="text" placeholder="WWT Host" id="wwt_host" name="wwt_host" value="${lazylibrarian.CONFIG['WWT_HOST']}" class="form-control">
                         <span class="input-group-addon">
@@ -1431,7 +1431,7 @@
                         checked = ''
                     %>
                     <div class="col-md-4 form-group">
-                      <label for="zoo_host" class="sr-only">zooqle host</label>
+                      <label for="zoo_host" class="visually-hidden">zooqle host</label>
                       <div class="input-group">
                         <input type="text" placeholder="zooqle host" id="zoo_host" name="zoo_host" value="${lazylibrarian.CONFIG['ZOO_HOST']}" class="form-control">
                         <span class="input-group-addon">
@@ -1455,7 +1455,7 @@
                         checked = ''
                     %>
                     <div class="col-md-4 form-group">
-                      <label for="tdl_host" class="sr-only">torrentdownload host</label>
+                      <label for="tdl_host" class="visually-hidden">torrentdownload host</label>
                       <div class="input-group">
                         <input type="text" placeholder="torrentdownload host" id="tdl_host" name="tdl_host" value="${lazylibrarian.CONFIG['TDL_HOST']}" class="form-control">
                         <span class="input-group-addon">
@@ -1479,7 +1479,7 @@
                         checked = ''
                     %>
                     <div class="col-md-4 form-group">
-                      <label for="lime_host" class="sr-only">limetorrent host</label>
+                      <label for="lime_host" class="visually-hidden">limetorrent host</label>
                       <div class="input-group">
                         <input type="text" placeholder="limetorrent host" id="lime_host" name="lime_host" value="${lazylibrarian.CONFIG['LIME_HOST']}" class="form-control">
                         <span class="input-group-addon">
@@ -1510,14 +1510,14 @@
                         checked = ''
                     %>
                     <div class="col-md-4 form-group">
-                      <label for="gen_host" class="sr-only">libgen host</label>
+                      <label for="gen_host" class="visually-hidden">libgen host</label>
                       <div class="input-group">
                         <input type="text" placeholder="libgen host" id="gen_host" name="gen_host" value="${lazylibrarian.CONFIG['GEN_HOST']}" class="form-control">
                         <span class="input-group-addon">
                         <input type="checkbox" id="gen" name="gen" value="1" ${checked} />
                         </span>
                       </div>
-                      <label for="gen_search" class="sr-only">libgen search</label>
+                      <label for="gen_search" class="visually-hidden">libgen search</label>
                       <div class="input-group">
                         <span class="input-group-addon">Search</span>
                         <input type="text" placeholder="libgen search" id="gen_search" name="gen_search" value="${lazylibrarian.CONFIG['GEN_SEARCH']}" class="form-control">
@@ -1540,14 +1540,14 @@
                         checked = ''
                     %>
                     <div class="col-md-4 form-group">
-                      <label for="gen2_host" class="sr-only">libgen host</label>
+                      <label for="gen2_host" class="visually-hidden">libgen host</label>
                       <div class="input-group">
                         <input type="text" placeholder="libgen host" id="gen2_host" name="gen2_host" value="${lazylibrarian.CONFIG['GEN2_HOST']}" class="form-control">
                         <span class="input-group-addon">
                         <input type="checkbox" id="gen2" name="gen2" value="1" ${checked} />
                         </span>
                       </div>
-                      <label for="gen2_search" class="sr-only">libgen search</label>
+                      <label for="gen2_search" class="visually-hidden">libgen search</label>
                       <div class="input-group">
                         <span class="input-group-addon">Search</span>
                         <input type="text" placeholder="libgen search" id="gen2_search" name="gen2_search" value="${lazylibrarian.CONFIG['GEN2_SEARCH']}" class="form-control">
@@ -1733,7 +1733,7 @@
                     <label for="imp_preprocess">PreProcessor program:</label>
                     <input type="text" id="imp_preprocess" name="imp_preprocess" value="${lazylibrarian.CONFIG['IMP_PREPROCESS']}" class="form-control">
                     <span class="help-block">Path to preprocessor to run before importing books into the library</span>
-                    <input type="button" value="Test preprocessor" id="testpreprocessor" class="btn btn-default" />
+                    <input type="button" value="Test preprocessor" id="testpreprocessor" class="btn btn-secondary" />
                   </div>
                 <legend>Calibre</legend>
                   <fieldset>
@@ -1741,7 +1741,7 @@
                     <label for="imp_calibredb">Calibredb import program:</label>
                     <input type="text" id="imp_calibredb" name="imp_calibredb" value="${lazylibrarian.CONFIG['IMP_CALIBREDB']}" class="form-control" placeholder="calibredb program">
                     <span class="help-block">Path to "calibredb" to import books into the library</span>
-                    <input type="button" value="Test calibredb" id="testCalibredb" class="btn btn-default" />
+                    <input type="button" value="Test calibredb" id="testCalibredb" class="btn btn-secondary" />
                   </div>
                   <div class="checkbox">
                       <%
@@ -2195,7 +2195,7 @@
                     </div>
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Request Authorization" id="twitterStep1" class="btn btn-default" />
+                      <input type="button" value="Request Authorization" id="twitterStep1" class="btn btn-secondary" />
                     </div>
                     <div class="form-group">
                       <label for="twitter_key" class="control-label">Twitter Key</label>
@@ -2203,10 +2203,10 @@
                       <span class="help-block">Enter the key from the twitter authorization page here, DO NOT press Enter or save the config. The key is single-use and will not be saved. Press [Verify Key] to complete authorization.</span>
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Verify Key" id="twitterStep2" class="btn btn-default" />
+                      <input type="button" value="Verify Key" id="twitterStep2" class="btn btn-secondary" />
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Twitter" id="testTwitter" class="btn btn-default" />
+                      <input type="button" value="Test Twitter" id="testTwitter" class="btn btn-secondary" />
                     </div>
                   </fieldset>
                 </div>
@@ -2253,7 +2253,7 @@
                       <input type="text" id="boxcar_token" name="boxcar_token" value="${lazylibrarian.CONFIG['BOXCAR_TOKEN']}" placeholder="Boxcar token" class="form-control">
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Boxcar" id="testBoxcar" class="btn btn-default">
+                      <input type="button" value="Test Boxcar" id="testBoxcar" class="btn btn-secondary">
                     </div>
                   </fieldset>
                 </div>
@@ -2304,7 +2304,7 @@
                       <input type="text" id="pushbullet_deviceid" name="pushbullet_deviceid" value="${lazylibrarian.CONFIG['PUSHBULLET_DEVICEID']}" class="form-control" placeholder="Pushbullet DeviceID">
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Pushbullet" id="testPushbullet" class="btn btn-default">
+                      <input type="button" value="Test Pushbullet" id="testPushbullet" class="btn btn-secondary">
                     </div>
                   </fieldset>
                 </div>
@@ -2363,7 +2363,7 @@
                       <input type="text" id="pushover_priority" name="pushover_priority" value="${lazylibrarian.CONFIG['PUSHOVER_PRIORITY']}" class="form-control" placeholder="Pushover Priority">
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Pushover" id="testPushover" class="btn btn-default">
+                      <input type="button" value="Test Pushover" id="testPushover" class="btn btn-secondary">
                     </div>
                   </fieldset>
                 </div>
@@ -2427,7 +2427,7 @@
                       <input type="text" id="androidpn_username" name="androidpn_username"  value="${lazylibrarian.CONFIG['ANDROIDPN_USERNAME']}" class="form-control" placeholder="AndroidPN Username" />
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test AndroidPN" id="testAndroidPN" class="btn btn-default" />
+                      <input type="button" value="Test AndroidPN" id="testAndroidPN" class="btn btn-secondary" />
                     </div>
                   </fieldset>
                 </div>
@@ -2500,7 +2500,7 @@
                       </select>
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Prowl" id="testProwl" class="btn btn-default" />
+                      <input type="button" value="Test Prowl" id="testProwl" class="btn btn-secondary" />
                     </div>
                   </fieldset>
                 </div>
@@ -2549,7 +2549,7 @@
                       <input type="number" id="growl_password" name="growl_password" value="${lazylibrarian.CONFIG['GROWL_PASSWORD']}" class="form-control" placeholder="none">
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Growl" id="testGrowl" class="btn btn-default" />
+                      <input type="button" value="Test Growl" id="testGrowl" class="btn btn-secondary" />
                     </div>
                   </fieldset>
                 </div>
@@ -2603,7 +2603,7 @@
                       <input type="text" id="telegram_userid" name="telegram_userid" value="${lazylibrarian.CONFIG['TELEGRAM_USERID']}" class="form-control" placeholder="Telegram UserID"><small>Contact <a href="http://telegram.me/myidbot">@myidbot</a> to get your user ID</small>
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Telegram" id="testTelegram" class="btn btn-default" />
+                      <input type="button" value="Test Telegram" id="testTelegram" class="btn btn-secondary" />
                     </div>
                   </fieldset>
                 </div>
@@ -2676,7 +2676,7 @@
                       </select>
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test NMA" id="testNMA" class="btn btn-default" />
+                      <input type="button" value="Test NMA" id="testNMA" class="btn btn-secondary" />
                     </div>
                   </fieldset>
                 </div>
@@ -2727,7 +2727,7 @@
                       <input type="text" id="slack_token" name="slack_token" value="${lazylibrarian.CONFIG['SLACK_TOKEN']}" class="form-control" placeholder="Slack Webhook Token">
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Slack" id="testSlack" class="btn btn-default">
+                      <input type="button" value="Test Slack" id="testSlack" class="btn btn-secondary">
                     </div>
                   </fieldset>
                 </div>
@@ -2837,7 +2837,7 @@
                     </div>
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Email" id="testEmail" class="btn btn-default">
+                      <input type="button" value="Test Email" id="testEmail" class="btn btn-secondary">
                     </div>
                   </fieldset>
                 </div>
@@ -2884,7 +2884,7 @@
                       <input type="text" id="custom_script" name="custom_script" value="${lazylibrarian.CONFIG['CUSTOM_SCRIPT']}" class="form-control" placeholder="Custom Script">
                     </div>
                     <div class="form-group">
-                      <input type="button" value="Test Custom" id="testCustom" class="btn btn-default">
+                      <input type="button" value="Test Custom" id="testCustom" class="btn btn-secondary">
                     </div>
                   </fieldset>
                 </div>
@@ -3148,8 +3148,8 @@
                 %endfor
                 <div class="col-md-6">
                 <label>Settings:</label><br>
-                <input type="button" value="Export Filters" id="savefilters" class="btn btn-default" />
-                <input type="button" value="Import Filters" id="loadfilters" class="btn btn-default" />
+                <input type="button" value="Export Filters" id="savefilters" class="btn btn-secondary" />
+                <input type="button" value="Import Filters" id="loadfilters" class="btn btn-secondary" />
                 </div>
             </div>
             <br>

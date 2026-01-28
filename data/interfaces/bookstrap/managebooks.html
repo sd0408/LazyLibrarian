@@ -6,7 +6,7 @@
 <%def name="headerIncludes()">
     <div id="subhead_container">
       <form id="subhead_menu" action="search" method="get">
-        <div class="col-xs-10">
+        <div class="col-10 subhead-buttons">
           %if perm&lazylibrarian.perm_force:
             %if library != 'AudioBook':
               <a href="importAlternate" class="button btn btn-sm btn-primary"><i class="fa fa-book"></i> Import eBooks</a>
@@ -32,9 +32,9 @@
           </div>
             %if len(types) > 1:
               %if  perm&lazylibrarian.perm_audio:
-                <div class="form-group pull-right">
+                <div class="form-group float-end">
                 <!--label for="chooselib"><small>Library</small></label-->
-                <select class="form-control input-sm" name="chooselib" id="chooselib">
+                <select class="form-select form-select-sm" name="chooselib" id="chooselib">
                   %for item in types:
                     <option value="${item}"
                         %if library == item:
@@ -131,7 +131,7 @@
         %endif
       </select>
     </div>
-    <input type="submit" class="markBooks btn btn-sm btn-default" value="Go">
+    <input type="submit" class="markBooks btn btn-sm btn-secondary" value="Go">
     %endif
   </form>
   <p>&nbsp;</p>
@@ -237,7 +237,7 @@
                     { targets: [1],
                         'visible': showimg,
                         'render': function(data, type, row) {
-                        return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" class="bookcover-sm img-responsive"></a>';} },
+                        return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" class="bookcover-sm img-fluid"></a>';} },
                     { targets: [2], 'render': function(data, type, row) {
                         return '<a href=\'authorPage?AuthorID=' + row[8] + '\'">' + data + '</a>';}
                     },
@@ -246,7 +246,7 @@
                         var limit = window.innerWidth / 30;
                         var title = truncateOnWord(pre[0], limit);
                         var tail = data.slice(pre[0].length);
-                        btn = '<button onclick="bookinfo(\'' + row[9] + '\')" class="button btn-link text-left" type="button" '
+                        btn = '<button onclick="bookinfo(\'' + row[9] + '\')" class="button btn-link text-start" type="button" '
                         if (title == pre[0]) { return btn + '>' + title + '</button>' + tail ; }
                         return btn + ' title="' + pre[0] + '">' + title + '</button>' + tail ;
                         }
@@ -320,7 +320,7 @@
         $.get('bookdesc', {'bookid': bookid},
         function(data) {
             var $textAndPic = $('<div></div>');
-            $textAndPic.append('<img src="./cache/book/' + bookid + '.jpg" class="box-shadow img-responsive" />');
+            $textAndPic.append('<img src="./cache/book/' + bookid + '.jpg" class="box-shadow img-fluid" />');
             var res = data.split('^');
             var title = res[0]
             var desc = res[1]

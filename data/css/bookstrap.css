@@ -1,7 +1,11 @@
 /*
-
-Bookstrap Styles
+Bookstrap Styles - Updated for Bootstrap 5
 */
+
+/* Fixed navbar spacing - push content below fixed navbar */
+body {
+    padding-top: 56px; /* Height of navbar */
+}
 
 #authorart_menu img {
     box-shadow: 0 4px 5px 0 rgba(0, 0, 0, .14), 0 1px 10px 0 rgba(0, 0, 0, .12), 0 2px 4px -1px rgba(0, 0, 0, .2);
@@ -12,26 +16,195 @@ Bookstrap Styles
     margin-top: 20px;
     margin-bottom: 20px;
 }
+
+/* Subnav styling - the grey bar below main nav */
 #subnav {
-/*    position: fixed;
-    top: 60px;
-    z-index: 1030; */
     position: relative;
-    float: bottom;
     width: 100%;
-    padding-top: 10px;
-    padding-bottom: 5px;
-}
-#headercontainer {
-/*    position: fixed;
-    top: 60px;
-    z-index: 1030; */
-    position: relative;
-    float: top;
-    width: 100%;
-    padding-top: 10px;
+    padding: 0.5rem 0;
+    margin-bottom: 0;
 }
 
+#subnav .container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Subhead container - holds buttons and search */
+#subhead_container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+#subhead_container > form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 100%;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+/* Left side - buttons */
+#subhead_menu {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1 1 auto;
+}
+
+#subhead_menu .btn {
+    white-space: nowrap;
+    margin: 0;
+}
+
+/* When subhead_menu is a form (managebooks.html structure) */
+form#subhead_menu {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+form#subhead_menu > .col-xs-10,
+form#subhead_menu > .col-10,
+form#subhead_menu > .subhead-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    min-width: 0; /* Allow shrinking */
+}
+
+form#subhead_menu > .form-group.float-end,
+form#subhead_menu > .form-group {
+    float: none !important;
+    margin: 0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto !important;
+    flex: 0 0 auto;
+    order: 99; /* Always appear at the end */
+}
+
+form#subhead_menu > .form-group label {
+    margin: 0;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+/* Style Bootstrap 3 select as Bootstrap 5 dropdown */
+form#subhead_menu select.form-control,
+form#subhead_menu select.form-control.input-sm,
+#subhead_container select.form-control,
+select.form-control.input-sm {
+    display: block;
+    width: auto;
+    min-width: 120px;
+    padding: 0.25rem 2rem 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--bs-body-color, #c8c8c8);
+    background-color: var(--bs-body-bg, #3a3f44);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23c8c8c8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 16px 12px;
+    border: 1px solid var(--bs-border-color, #52575c);
+    border-radius: 0.25rem;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+form#subhead_menu select.form-control:focus,
+select.form-control.input-sm:focus,
+form#subhead_menu select.form-select:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Bootstrap 5 form-select styling for dark theme */
+form#subhead_menu select.form-select,
+#subhead_container select.form-select {
+    min-width: 120px;
+    background-color: var(--bs-body-bg, #3a3f44);
+    color: var(--bs-body-color, #c8c8c8);
+    border-color: var(--bs-border-color, #52575c);
+}
+
+/* Right side - search box */
+#subhead_container .col-md-4,
+#subhead_container > form > .col-md-4,
+#subhead_container > form > .col-xs-12.col-md-4 {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 250px;
+    max-width: 350px;
+    padding: 0;
+}
+
+/* Search input group in subnav */
+#subhead_container .input-group {
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
+#subhead_container .input-group .form-control {
+    flex: 1 1 auto;
+    min-width: 120px;
+}
+
+#subhead_container .form-group {
+    width: 100%;
+    margin: 0;
+}
+
+/* Hide the clearfix divider on larger screens */
+#subhead_container .clearfix.visible-xs {
+    display: none !important;
+}
+
+@media (max-width: 767.98px) {
+    #subhead_container > form > .col-md-4,
+    #subhead_container > form > .col-xs-12.col-md-4 {
+        width: 100%;
+        max-width: none;
+        min-width: auto;
+        margin-top: 0.5rem;
+    }
+
+    #subhead_menu {
+        width: 100%;
+    }
+
+    #subhead_container .clearfix.visible-xs {
+        display: none !important;
+    }
+}
+
+/* Main content area */
+#main.main {
+    padding-top: 15px;
+    padding-bottom: 30px;
+}
+
+/* Book covers */
 .bookcover-sm {
     width: 100px;
     margin: auto auto;
@@ -40,13 +213,41 @@ Bookstrap Styles
     width: 50px;
     margin: auto auto;
 }
+
+/* Table styling - ensure full width */
 .table-responsive {
     border: 0;
+    width: 100%;
+    overflow-x: auto;
 }
 
-#subhead_container .form-group {
-    margin-bottom: 0;
+table.dataTable {
+    width: 100% !important;
+    max-width: 100% !important;
 }
+
+/* Ensure DataTables wrapper spans full width */
+.dataTables_wrapper {
+    width: 100% !important;
+}
+
+.dataTables_wrapper .row {
+    width: 100%;
+    margin: 0;
+}
+
+.dataTables_wrapper .row > div {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Ensure form doesn't constrain table width */
+form .table-responsive,
+.indented .table-responsive {
+    width: 100% !important;
+}
+
+/* Progress bars */
 .progress {
     height: auto;
 }
@@ -55,14 +256,519 @@ Bookstrap Styles
     line-height: inherit;
     min-height: 10px;
 }
+.progressbar-front-text {
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
 
+/* Form styling */
+#subhead_container .mb-3 {
+    margin-bottom: 0 !important;
+}
+
+/* Bootstrap 5 compatibility - btn-xs doesn't exist */
+.btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+}
+
+/* Bootstrap 5 compatibility - center-block replacement */
+.center-block {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Bootstrap 5 compatibility - input-group-btn replacement */
+.input-group-btn {
+    display: flex;
+    flex-shrink: 0;
+}
+.input-group-btn .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    margin-left: -1px;
+}
+
+/* Ensure input-group inputs expand properly */
+.input-group > .form-control {
+    flex: 1 1 auto;
+    width: 1%;
+    min-width: 0;
+}
+
+/* Override col-xs on form controls inside input-group */
+.input-group > .form-control[class*="col-"] {
+    flex: 1 1 auto;
+    max-width: none;
+}
+
+/* Indented content - must span full width even inside form-inline */
+.indented {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 4px;
+    width: 100%;
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Keep form-group and button on same line */
+.indented > .form-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0;
+    flex-wrap: nowrap;
+}
+
+.indented > .btn {
+    flex-shrink: 0;
+}
+
+/* Modal fixes */
 body.modal-open-noscroll {
-  margin-right: 0!important;
-  overflow: hidden;
+    margin-right: 0 !important;
+    overflow: hidden;
 }
-.modal-open-noscroll .navbar-fixed-top, .modal-open .navbar-fixed-bottom {
-  margin-right: 0!important;
+.modal-open-noscroll .fixed-top {
+    margin-right: 0 !important;
 }
-select {
-    font-family: 'FontAwesome', 'sans-serif';
+
+/* Nav link active state */
+.navbar-nav .nav-link.active,
+.navbar-nav .nav-item.active .nav-link {
+    font-weight: bold;
+}
+
+/* Form control sizing */
+.input-sm,
+.form-control.input-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Control label styling */
+.control-label {
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+/* Legacy grid compatibility */
+.col-xs-1 { flex: 0 0 8.333333%; max-width: 8.333333%; }
+.col-xs-2 { flex: 0 0 16.666667%; max-width: 16.666667%; }
+.col-xs-3 { flex: 0 0 25%; max-width: 25%; }
+.col-xs-4 { flex: 0 0 33.333333%; max-width: 33.333333%; }
+.col-xs-5 { flex: 0 0 41.666667%; max-width: 41.666667%; }
+.col-xs-6 { flex: 0 0 50%; max-width: 50%; }
+.col-xs-7 { flex: 0 0 58.333333%; max-width: 58.333333%; }
+.col-xs-8 { flex: 0 0 66.666667%; max-width: 66.666667%; }
+.col-xs-9 { flex: 0 0 75%; max-width: 75%; }
+.col-xs-10 { flex: 0 0 83.333333%; max-width: 83.333333%; }
+.col-xs-11 { flex: 0 0 91.666667%; max-width: 91.666667%; }
+.col-xs-12 { flex: 0 0 100%; max-width: 100%; }
+
+/* Visible/hidden utilities for xs */
+.visible-xs {
+    display: none !important;
+}
+@media (max-width: 575.98px) {
+    .visible-xs {
+        display: block !important;
+    }
+    .hidden-xs {
+        display: none !important;
+    }
+}
+
+/* Config tabs styling */
+.nav-tabs .nav-link {
+    color: inherit;
+}
+.nav-tabs .nav-link.active {
+    background-color: var(--bs-body-bg, #272b30);
+    border-bottom-color: var(--bs-body-bg, #272b30);
+}
+
+/* DataTables integration - minimal overrides */
+.dataTables_wrapper {
+    width: 100%;
+}
+.dataTables_wrapper .dataTables_filter input {
+    margin-left: 0.5rem;
+}
+
+/* Checkbox alignment in tables */
+.table td input[type="checkbox"] {
+    margin: 0;
+}
+
+/* Button link styling */
+.btn-link.text-start {
+    text-align: left !important;
+    padding-left: 0;
+}
+
+/* Box shadow utility */
+.box-shadow {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Bootstrap 5 compatibility - input-group-addon (now input-group-text) */
+.input-group-addon {
+    display: flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--bs-body-color);
+    text-align: center;
+    white-space: nowrap;
+    background-color: var(--bs-tertiary-bg, #434950);
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+}
+.input-group > .input-group-addon:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: 0;
+}
+.input-group > .input-group-addon:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.input-group > .form-control:not(:first-child):not(:last-child) {
+    border-radius: 0;
+}
+
+/* Bootstrap 5 compatibility - form-inline (removed in BS5) */
+.form-inline {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+}
+.form-inline .form-control {
+    display: inline-block;
+    width: auto;
+    vertical-align: middle;
+}
+.form-inline .form-group {
+    display: flex;
+    flex: 0 0 auto;
+    flex-flow: row wrap;
+    align-items: center;
+    margin-bottom: 0;
+}
+.form-inline label {
+    margin-bottom: 0;
+    margin-right: 0.25rem;
+}
+/* Allow table-responsive to break onto its own line and span full width */
+.form-inline .table-responsive,
+.form-inline .indented .table-responsive {
+    flex-basis: 100%;
+    width: 100%;
+}
+
+/* Bootstrap 5 compatibility - form-group (replaced by mb-3) */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+/* Bootstrap 5 compatibility - checkbox/radio styling */
+.checkbox,
+.radio {
+    position: relative;
+    display: block;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.checkbox label,
+.radio label {
+    padding-left: 0.25rem;
+    cursor: pointer;
+}
+
+/* Bootstrap 5 tabs - support Bootstrap 3 structure */
+.nav-tabs > li {
+    display: inline-block;
+    margin-bottom: -1px;
+}
+.nav-tabs > li > a {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-top-left-radius: var(--bs-border-radius);
+    border-top-right-radius: var(--bs-border-radius);
+}
+.nav-tabs > li > a:hover,
+.nav-tabs > li > a:focus {
+    border-color: var(--bs-border-color) var(--bs-border-color) transparent;
+    isolation: isolate;
+}
+.nav-tabs > li.active > a,
+.nav-tabs > li > a.active {
+    color: var(--bs-emphasis-color);
+    background-color: var(--bs-body-bg);
+    border-color: var(--bs-border-color) var(--bs-border-color) var(--bs-body-bg);
+}
+
+/* Tab content */
+.tab-content > .tab-pane {
+    display: none;
+}
+.tab-content > .tab-pane.active {
+    display: block;
+}
+
+/* Config table layout */
+.configtable {
+    padding: 1rem 0;
+}
+.configtable fieldset {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+}
+.configtable legend {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    padding: 0 0.25rem;
+    width: auto;
+}
+
+/* Hidden class */
+.hidden {
+    display: none !important;
+}
+
+/* ============================================
+   Dark Theme Support for DataTables
+   Override Bootstrap table variables for dark themes
+   ============================================ */
+
+/* Override DataTables CSS variables for dark theme */
+:root {
+    --dt-row-stripe: 255, 255, 255;
+    --dt-row-hover: 255, 255, 255;
+    --dt-column-ordering: 255, 255, 255;
+    --dt-html-background: #272b30;
+}
+
+/* Set Bootstrap table CSS variables for dark theme compatibility */
+.table,
+table.dataTable {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--bs-body-color);
+    --bs-table-border-color: var(--bs-border-color);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-striped-color: var(--bs-body-color);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.075);
+    --bs-table-hover-color: var(--bs-body-color);
+    border-collapse: collapse !important;
+    background-color: var(--bs-body-bg, #272b30);
+}
+
+/* Table header - force dark background */
+table.dataTable > thead > tr > th,
+table.dataTable > thead > tr > td,
+.table > thead > tr > th,
+.table > thead > tr > td,
+.dataTables_wrapper table.dataTable thead th,
+.dataTables_wrapper table.dataTable thead td {
+    background-color: #3a3f44 !important;
+    background: #3a3f44 !important;
+    color: #c8c8c8 !important;
+    border-bottom: 2px solid #1c1e22 !important;
+    border-top: none !important;
+}
+
+/* Table body rows - force dark background */
+table.dataTable > tbody > tr,
+.table > tbody > tr,
+.dataTables_wrapper table.dataTable tbody tr {
+    background-color: #272b30 !important;
+    background: #272b30 !important;
+}
+
+table.dataTable > tbody > tr > td,
+.table > tbody > tr > td,
+.dataTables_wrapper table.dataTable tbody td {
+    color: #aaa !important;
+    border-color: #1c1e22 !important;
+    background-color: inherit !important;
+}
+
+/* Striped rows - subtle alternation */
+table.dataTable.table-striped > tbody > tr:nth-of-type(odd),
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: #32383e !important;
+    background: #32383e !important;
+}
+
+table.dataTable.table-striped > tbody > tr:nth-of-type(odd) > td,
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: inherit !important;
+    color: #aaa !important;
+}
+
+table.dataTable.table-striped > tbody > tr:nth-of-type(even),
+.table-striped > tbody > tr:nth-of-type(even) {
+    background-color: #272b30 !important;
+    background: #272b30 !important;
+}
+
+/* Hover state */
+table.dataTable.table-hover > tbody > tr:hover,
+.table-hover > tbody > tr:hover {
+    background-color: #3e444a !important;
+    background: #3e444a !important;
+}
+
+table.dataTable.table-hover > tbody > tr:hover > td,
+.table-hover > tbody > tr:hover > td {
+    background-color: inherit !important;
+    color: #fff !important;
+}
+
+/* DataTables wrapper background */
+.dataTables_wrapper {
+    background-color: transparent;
+}
+
+/* DataTables pagination - legacy classes */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    background-color: var(--bs-tertiary-bg, #3a3f44) !important;
+    color: var(--bs-body-color, #aaa) !important;
+    border-color: var(--bs-border-color, #1c1e22) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background-color: var(--bs-secondary-bg, #32383e) !important;
+    color: var(--bs-body-color, #fff) !important;
+    border-color: var(--bs-border-color, #1c1e22) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background-color: var(--bs-primary, #3a9bdc) !important;
+    color: #fff !important;
+    border-color: var(--bs-primary, #3a9bdc) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+    background-color: var(--bs-tertiary-bg, #3a3f44) !important;
+    color: var(--bs-secondary-color, #7a8288) !important;
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* DataTables pagination - Bootstrap 5 classes */
+.dataTables_wrapper .pagination .page-link {
+    background-color: var(--bs-tertiary-bg, #3a3f44);
+    color: var(--bs-body-color, #aaa);
+    border-color: var(--bs-border-color, #1c1e22);
+}
+
+.dataTables_wrapper .pagination .page-link:hover {
+    background-color: var(--bs-secondary-bg, #32383e);
+    color: #fff;
+    border-color: var(--bs-border-color, #1c1e22);
+}
+
+.dataTables_wrapper .pagination .page-item.active .page-link {
+    background-color: var(--bs-primary, #3a9bdc);
+    color: #fff;
+    border-color: var(--bs-primary, #3a9bdc);
+}
+
+.dataTables_wrapper .pagination .page-item.disabled .page-link {
+    background-color: var(--bs-tertiary-bg, #3a3f44);
+    color: var(--bs-secondary-color, #7a8288);
+    border-color: var(--bs-border-color, #1c1e22);
+    opacity: 0.65;
+}
+
+/* DataTables info text */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info {
+    color: var(--bs-body-color, #aaa) !important;
+}
+
+/* DataTables controls */
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    background-color: var(--bs-body-bg, #272b30) !important;
+    color: var(--bs-body-color, #aaa) !important;
+    border-color: var(--bs-border-color, #1c1e22) !important;
+}
+
+/* Empty table message */
+table.dataTable tbody tr.odd td.dataTables_empty,
+table.dataTable tbody tr.even td.dataTables_empty,
+table.dataTable tbody td.dataTables_empty,
+.dataTables_empty {
+    background-color: #272b30 !important;
+    background: #272b30 !important;
+    color: #7a8288 !important;
+}
+
+/* Force table-responsive and wrapper backgrounds */
+.table-responsive,
+.dataTables_wrapper {
+    background-color: transparent !important;
+}
+
+/* Override any Bootstrap table cell backgrounds */
+.table > :not(caption) > * > * {
+    background-color: inherit !important;
+    box-shadow: none !important;
+}
+
+/* Form controls - use Bootstrap theme with fallbacks */
+.form-control,
+.form-select {
+    background-color: var(--bs-body-bg, #272b30);
+    color: var(--bs-body-color, #aaa);
+    border-color: var(--bs-border-color, #1c1e22);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--bs-body-bg, #272b30);
+    color: var(--bs-body-color, #aaa);
+    border-color: var(--bs-primary, #3a9bdc);
+    box-shadow: 0 0 0 0.25rem rgba(58, 155, 220, 0.25);
+}
+
+/* Select dropdowns */
+select.form-control,
+select:not([class]) {
+    background-color: var(--bs-body-bg, #272b30);
+    color: var(--bs-body-color, #aaa);
+    border: 1px solid var(--bs-border-color, #1c1e22);
+}
+
+/* Input fields */
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="email"],
+input[type="password"] {
+    background-color: var(--bs-body-bg, #272b30);
+    color: var(--bs-body-color, #aaa);
+    border-color: var(--bs-border-color, #1c1e22);
 }

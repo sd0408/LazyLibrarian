@@ -14,18 +14,18 @@
         %endif
         <a href="magWall" class="button btn btn-sm btn-primary"><i class="fa fa-calendar-check"></i> Recent Issues</a>
         %if lazylibrarian.CONFIG['USER_ACCOUNTS'] == True:
-        <a href="rssFeed?user=${user}&type=Magazine&limit=10.xml" class="button btn btn-sm btn-primary" data-toggle="tooltip" title="RSS feed of recent downloads"><i class="fa fa-rss"></i></a>
+        <a href="rssFeed?user=${user}&type=Magazine&limit=10.xml" class="button btn btn-sm btn-primary" data-bs-toggle="tooltip" title="RSS feed of recent downloads"><i class="fa fa-rss"></i></a>
         <link rel="alternate" type="application/rss+xml" title="LazyLibrarian latest magazines" href="rssFeed?user=${user}&type=Magazine&limit=10.xml">
         %endif
       </div>
       <div class="clearfix visible-xs"><hr/></div>
       <div class="col-xs-12 col-md-4">
         <div class="form-group">
-          <label class="sr-only">Magazine Title</label>
+          <label class="visually-hidden">Magazine Title</label>
           <div class="input-group">
             <input type="text" placeholder="Magazine Title" name="title" class="form-control input-sm col-xs-12">
             <span class="input-group-btn">
-              <button type="submit" value="Magazine" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="bottom" title="Search and add Magazine"><i class="fa fa-search-plus"></i><span> Magazine</span></button>
+              <button type="submit" value="Magazine" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Search and add Magazine"><i class="fa fa-search-plus"></i><span> Magazine</span></button>
             </span>
           </div>
         </div>
@@ -114,7 +114,7 @@
                         'class': 'text-center',
                         'visible': showimg,
                         'render': function(data, type, row) {
-                        return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" class="bookcover-sm img-responsive"></a>';} },
+                        return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" class="bookcover-sm img-fluid"></a>';} },
                     { targets: [2],
                         'class': 'text-center',
                         'render': function(data, type, row) {
@@ -147,7 +147,7 @@
                             btn = '<a class="button btn btn-xs btn-info">' + btn + '</a>'}
                         else if ( btn.indexOf('Have') >= 0 ) {
                             btn = '<a class="button btn btn-xs btn-info">' + btn + '</a>'}
-                        else { btn = '<a class="button btn btn-xs btn-default grey">' + btn + '</a>'}
+                        else { btn = '<a class="button btn btn-xs btn-secondary grey">' + btn + '</a>'}
                         return btn;} },
                         ],
                 "oLanguage": {

@@ -2,7 +2,7 @@
     import lazylibrarian
 %>
 <!doctype html>
-<html>
+<html data-bs-theme="dark">
   <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -13,13 +13,12 @@
     <link rel="shortcut icon" type="image/png"  href="images/ll.ico">
     <link rel="apple-touch-icon" href="images/ll.png">
     <link rel="manifest" href="images/manifest.json">
-    <link rel="stylesheet" type="text/css" href="css/datatables.min.css"/>
     %if lazylibrarian.BOOKSTRAP_THEMELIST:
-    <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.6/${lazylibrarian.CONFIG['BOOKSTRAP_THEME']}/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/${lazylibrarian.CONFIG['BOOKSTRAP_THEME']}/bootstrap.min.css" rel="stylesheet">
     %else:
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap5.min.css" rel="stylesheet">
     %endif
-    <!--link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous"-->
+    <link rel="stylesheet" type="text/css" href="css/datatables.bootstrap5.min.css"/>
     <link href="css/fontawesome/fontawesome-all.css" rel="stylesheet">
     <link href="css/bookstrap.css" rel="stylesheet">
     <style>
@@ -66,8 +65,9 @@
           $('td input:checkbox', table).prop('checked', e.checked);
       }
     </script>
-    <script type="text/javascript" src="js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="js/datatables.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap5.bundle.min.js"></script>
+    <script type="text/javascript" src="js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="js/datatables.bootstrap5.min.js"></script>
     <script type="text/javascript" src="js/natural.js"></script>
     <script type="text/javascript" src="js/bootbox.min.js"></script>
     <script type="text/javascript" src="js/bootstrap-notify.min.js"></script>
@@ -130,68 +130,63 @@
   <body>
     <div id="container">
       <header>
-        <div id="headercontainer" class="navbar navbar-default navbar-fixed-top">
+        <nav id="headercontainer" class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
           <div class="container">
-            <div class="navbar-header">
-              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#MainNav" aria-expanded="false">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-              </button>
               <a class="navbar-brand" href="home"><i class="fa fa-home"></i> LazyLibrarian</a>
-            </div>
+              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#MainNav" aria-controls="MainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
             <div class="collapse navbar-collapse" id="MainNav">
-              <ul class="nav navbar-nav">
-                <!--li><a href="home" class="navbarele">Authors</a></li-->
+              <ul class="navbar-nav me-auto">
+                <!--li><a href="home" class="nav-link">Authors</a></li-->
                 %if perm > 0:
                   %if lazylibrarian.CONFIG['USER_ACCOUNTS'] == True:
                     %if lazylibrarian.SHOWLOGOUT == 1:
-                      <li><a href="logout" class="navbarele" id="logout">Logout</a></li>
+                      <li class="nav-item"><a href="logout" class="nav-link" id="logout">Logout</a></li>
                     %endif
                     %if perm&lazylibrarian.perm_config == 0:
-                      <li><a href="profile" class="navbarele" id="profile">User</a></li>
+                      <li class="nav-item"><a href="profile" class="nav-link" id="profile">User</a></li>
                     %endif
                   %endif
                 %endif
                 % if perm&lazylibrarian.perm_ebook:
-                <li><a id="books" href="books" class="navbarele">eBooks</a></li>
+                <li class="nav-item"><a id="books" href="books" class="nav-link">eBooks</a></li>
                 %endif
                 % if lazylibrarian.SHOW_SERIES != 0:
                   %if perm&lazylibrarian.perm_series:
-                  <li><a id="series" href="series" class="navbarele">Series</a></li>
+                  <li class="nav-item"><a id="series" href="series" class="nav-link">Series</a></li>
                   % endif
                 % endif
                 % if lazylibrarian.SHOW_AUDIO != 0:
                   %if perm&lazylibrarian.perm_audio:
-                  <li><a id="audio" href="audio" class="navbarele">Audio</a></li>
+                  <li class="nav-item"><a id="audio" href="audio" class="nav-link">Audio</a></li>
                   % endif
                 % endif
                 % if lazylibrarian.SHOW_MAGS != 0:
                   %if perm&lazylibrarian.perm_magazines:
-                  <li><a id="magazines" href="magazines" class="navbarele">Mags</a></li>
+                  <li class="nav-item"><a id="magazines" href="magazines" class="nav-link">Mags</a></li>
                   % endif
                 % endif
                 %if perm&lazylibrarian.perm_managebooks:
-                  <li><a id="manage" href="manage" class="navbarele">Manage</a></li>
+                  <li class="nav-item"><a id="manage" href="manage" class="nav-link">Manage</a></li>
                 % endif
                 %if perm&lazylibrarian.perm_history:
-                  <li><a id="history" href="history" class="navbarele">History</a></li>
+                  <li class="nav-item"><a id="history" href="history" class="nav-link">History</a></li>
                 % endif
                 %if perm&lazylibrarian.perm_logs:
-                  <li><a id="logs" href="logs" class="navbarele">Logs</a></li>
+                  <li class="nav-item"><a id="logs" href="logs" class="nav-link">Logs</a></li>
                 % endif
                 %if perm&lazylibrarian.perm_config:
-                  <li><a id="config" href="config" class="navbarcfg"><i class="fa fa-cog"></i> Config</a></li>
+                  <li class="nav-item"><a id="config" href="config" class="nav-link"><i class="fa fa-cog"></i> Config</a></li>
                 % endif
-                <li><a id="help" href="https://lazylibrarian.gitlab.io/" class="navbarele" target="_new"><i class="fa fa-question-circle"></i> Help</a></li>
+                <li class="nav-item"><a id="help" href="https://lazylibrarian.gitlab.io/" class="nav-link" target="_new"><i class="fa fa-question-circle"></i> Help</a></li>
               </ul>
             </div>
           </div>
-          <div id="subnav" class="navbar-inverse">
-            <div id="subhead" class="container">
-              ${next.headerIncludes()}
-            </div>
+        </nav>
+        <div id="subnav" class="navbar navbar-dark bg-secondary py-2">
+          <div id="subhead" class="container">
+            ${next.headerIncludes()}
           </div>
         </div>
       </header>
@@ -205,18 +200,18 @@
       % if lazylibrarian.CONFIG['INSTALL_TYPE'] == 'git' or lazylibrarian.CONFIG['INSTALL_TYPE'] == 'source':
           title = 'LazyLibrarian Update'
           % if not lazylibrarian.CONFIG['CURRENT_VERSION']:
-              msg = '<div class="input-group">You are running an unknown version of lazylibrarian</div><div class="pull-right"><a href="#" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Ignore the message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Update to the latest release">Update</a></div>'
+              msg = '<div class="input-group">You are running an unknown version of lazylibrarian</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Update to the latest release">Update</a></div>'
           % elif (lazylibrarian.CONFIG['INSTALL_TYPE'] == 'source' and lazylibrarian.CONFIG['CURRENT_VERSION'] == 'No Version File' ):
-              msg = '<div class="input-group">You are running an unknown version via source install</div><div class="pull-right"><a href="#" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Ignore the message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Update to the latest release">Update</a></div>'
+              msg = '<div class="input-group">You are running an unknown version via source install</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Update to the latest release">Update</a></div>'
           % elif lazylibrarian.CONFIG['CURRENT_VERSION'] != lazylibrarian.CONFIG['LATEST_VERSION']:
               % if lazylibrarian.CONFIG['LATEST_VERSION'] == 'Not_Available_From_Git':
-                  msg = '<div class="input-group">Unable to get latest version from git</div><div class="pull-right"><a href="#" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Ignore the warning for 24 hours" id="ignoreUpdate">Ignore</a></div>'
+                  msg = '<div class="input-group">Unable to get latest version from git</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the warning for 24 hours" id="ignoreUpdate">Ignore</a></div>'
               % elif lazylibrarian.CONFIG['COMMITS_BEHIND'] < 0:
-                  msg = '<div class="input-group">Running a local updated version. Push changes to git or rollback to Master release</div><div class="pull-right"><a href="#" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Ignore the warning for 24 hours" id="ignoreUpdate">Ignore</a></div>'
+                  msg = '<div class="input-group">Running a local updated version. Push changes to git or rollback to Master release</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the warning for 24 hours" id="ignoreUpdate">Ignore</a></div>'
               % elif lazylibrarian.CONFIG['COMMITS_BEHIND'] > 1:
-                  msg = '<div class="input-group">New version available. You are ${lazylibrarian.CONFIG['COMMITS_BEHIND']} commits behind.</div><div class="pull-right"><a href="#" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Ignore the update message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Update to the latest release" id="doUpdate">Update</a></div>'
+                  msg = '<div class="input-group">New version available. You are ${lazylibrarian.CONFIG['COMMITS_BEHIND']} commits behind.</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the update message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Update to the latest release" id="doUpdate">Update</a></div>'
               % elif lazylibrarian.CONFIG['COMMITS_BEHIND'] == 1:
-                  msg = '<div class="input-group">New version available. You are one commit behind.</div><div class="pull-right"><a href="#" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Ignore the update message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-toggle="tooltip" title="Update to the latest release" id="doUpdate">Update</a></div>'
+                  msg = '<div class="input-group">New version available. You are one commit behind.</div><div class="float-end"><a href="#" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Ignore the update message for 24 hours" id="ignoreUpdate">Ignore</a>&nbsp;<a href="update" class="btn btn-xs btn-primary" data-bs-toggle="tooltip" title="Update to the latest release" id="doUpdate">Update</a></div>'
               % endif
           % endif
       % endif
@@ -245,9 +240,12 @@
         });
       });
 
-      // Initialise tooltips
-      $(function () {
-        $('[data-toggle="tooltip"]').tooltip()
+      // Initialise tooltips (Bootstrap 5)
+      document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
       })
 
         function truncateOnWord(str, limit) {
@@ -312,7 +310,7 @@
         $.get('bookdesc', {'bookid': bookid},
         function(data) {
             var $textAndPic = $('<div></div>');
-            $textAndPic.append('<img src="./cache/book/' + bookid + '.jpg" class="box-shadow img-responsive" />');
+            $textAndPic.append('<img src="./cache/book/' + bookid + '.jpg" class="box-shadow img-fluid" />');
             var res = data.split('^');
             var title = res[0]
             var desc = res[1]
