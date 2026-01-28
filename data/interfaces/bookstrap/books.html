@@ -48,31 +48,40 @@
         <label for="markBooks" class="control-label">Mark selected as</label>
         <select class="markBooks form-control input-sm" id="action" name="action">
         %if perm&lazylibrarian.perm_status:
-          <option value="Wanted">Wanted</option>
-          <option value="Have">Have</option>
-          <option value="Ignored">Ignored</option>
-          <option value="Skipped">Skipped</option>
-          <option value="Remove">Remove</option>
-          <option value="Delete">Delete</option>
+          <optgroup label="Status">
+            <option value="Wanted">Wanted</option>
+            <option value="Have">Have</option>
+            <option value="Ignored">Ignored</option>
+            <option value="Skipped">Skipped</option>
+          </optgroup>
           %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
+          <optgroup label="Reading List">
             <option value="Unread">Unread</option>
             <option value="Read">Read</option>
             <option value="ToRead">To Read</option>
+          </optgroup>
           %endif
+          <optgroup label="Destructive">
+            <option value="Remove">⚠ Remove from list</option>
+            <option value="Delete">🗑 Delete files</option>
+          </optgroup>
         %endif
         </select>
       </div>
       <button type="submit" class="btn btn-sm btn-primary" onclick="validateForm()">Go</button>
       %endif
       %if lazylibrarian.CONFIG['TOGGLES'] == True:
-      &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Cover - </a>
-      <a class="toggle-vis" data-column="2">Author - </a>
-      <a class="toggle-vis" data-column="3">Title - </a>
-      <a class="toggle-vis" data-column="4">Series - </a>
-      <a class="toggle-vis hidden-sm hidden-xs" data-column="5">Rating - </a>
-      <a class="toggle-vis" data-column="6">Date - </a>
-      <a class="toggle-vis" data-column="7">Added - </a>
-      <a class="toggle-vis" data-column="8">Status</a>
+      <span class="ms-3 text-muted small">Toggle:</span>
+      <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Cover</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Author</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">Title</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Series</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active hidden-sm hidden-xs" data-column="5">Rating</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="6">Date</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="7">Added</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="8">Status</button>
+      </div>
       %endif
     <p>&nbsp;</p>
     </div>
@@ -240,10 +249,11 @@
         $('.dataTables_filter input').attr("placeholder", "Results filter");
         //$(window).resize(function() {table.draw('page')});
 
-        $('a.toggle-vis').click(function (e) {
+        $('button.toggle-vis').click(function (e) {
             e.preventDefault();
             var column = table.column( $(this).attr('data-column') );
             column.visible( ! column.visible() );
+            $(this).toggleClass('active');
         } );
         //enable datatables console logging
         //table.on(function ( e ) {

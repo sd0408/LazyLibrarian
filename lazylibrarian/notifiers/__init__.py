@@ -26,12 +26,10 @@ from . import growl
 from . import pushbullet
 from . import pushover
 from . import slack
-from . import tweet
 from . import telegram
 from lazylibrarian import logger
 
 # online
-twitter_notifier = tweet.TwitterNotifier()
 boxcar_notifier = boxcar.BoxcarNotifier()
 pushbullet_notifier = pushbullet.PushbulletNotifier()
 pushover_notifier = pushover.PushoverNotifier()
@@ -46,7 +44,6 @@ telegram_notifier = telegram.Telegram_Notifier()
 custom_notifier = custom_notify.CustomNotifier()
 
 notifiers = [
-    twitter_notifier,
     boxcar_notifier,
     pushbullet_notifier,
     pushover_notifier,

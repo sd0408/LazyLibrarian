@@ -7,48 +7,25 @@
     <div id="subhead_container">
       <form id="subhead_menu" action="search" method="get">
         <div class="col-10 subhead-buttons">
-          %if perm&lazylibrarian.perm_force:
-            %if library != 'AudioBook':
-              <a href="importAlternate" class="button btn btn-sm btn-primary"><i class="fa fa-book"></i> Import eBooks</a>
-              <a href="includeAlternate" class="button btn btn-sm btn-primary"><i class="fa fa-book"></i> Include eBooks</a>
-              %if lazylibrarian.CONFIG['USER_ACCOUNTS'] == True:
-                <button class="button btn btn-sm btn-primary" type="button" value="synctocalibre" id="synctocalibre">
-                <i class="fa fa-link"></i> Calibre Sync</button>
-              %endif
-            %else:
-              <a href="importAlternate?library=AudioBook" class="button btn btn-sm btn-primary"><i class="fa fa-book"></i> Import AudioBooks</a>
-              <a href="includeAlternate?library=AudioBook" class="button btn btn-sm btn-primary"><i class="fa fa-book"></i> Include AudioBooks</a>
-            %endif
-            <a href="forceWish?source=books" class="button btn btn-sm btn-primary"><i class="fa fa-search"></i> WishLists</a>
-            <button class="button btn btn-sm btn-primary" type="button" value="importcsv" id="importcsv">
-            <i class="fa fa-download"></i> Import CSV</button>
-            <button class="button btn btn-sm btn-primary" type="button" value="exportcsv" id="exportcsv">
-            <i class="fa fa-upload"></i> Export CSV</button>
-            %if lazylibrarian.CONFIG['GR_SYNC'] == True:
-              <button class="button btn btn-sm btn-primary" type="button" value="synctogoodreads" id="synctogoodreads">
-              <i class="fa fa-link"></i> Goodreads Sync</button>
-            %endif
+          <span class="text-muted"><i class="fa fa-filter"></i> Filter by status, use <strong>Tools</strong> menu for import/export</span>
+        </div>
+        %if len(types) > 1:
+          %if perm&lazylibrarian.perm_audio:
+            <div class="form-group float-end">
+              <select class="form-select form-select-sm" name="chooselib" id="chooselib">
+                %for item in types:
+                  <option value="${item}"
+                      %if library == item:
+                          selected = "selected"
+                      %endif
+                  >${item}</option>
+                %endfor
+              </select>
+            </div>
           %endif
-          </div>
-            %if len(types) > 1:
-              %if  perm&lazylibrarian.perm_audio:
-                <div class="form-group float-end">
-                <!--label for="chooselib"><small>Library</small></label-->
-                <select class="form-select form-select-sm" name="chooselib" id="chooselib">
-                  %for item in types:
-                    <option value="${item}"
-                        %if library == item:
-                            selected = "selected"
-                        %endif
-                    >${item}</option>
-                  %endfor
-                </select>
-                </div>
-              %endif
-            %endif
+        %endif
       </form>
     </div>
-    <button class="hidden" onclick="" id="myAlert" title=""><i class="fa fa-circle-notch fa-spin"></i> Syncing, please wait...</button>
 </%def>
 <%def name="body()">
   <h1>${title}</h1>
@@ -79,14 +56,17 @@
     </div>
 
     %if lazylibrarian.CONFIG['TOGGLES'] == True:
-    &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Cover - </a>
-    <a class="toggle-vis" data-column="2">Author - </a>
-    <a class="toggle-vis" data-column="3">Title - </a>
-    <a class="toggle-vis" data-column="4">Series - </a>
-    <a class="toggle-vis hidden-sm hidden-xs" data-column="5">Rating - </a>
-    <a class="toggle-vis" data-column="6">Released - </a>
-    <a class="toggle-vis" data-column="7">Delay - </a>
-    <a class="toggle-vis" data-column="8">Search</a>
+    <span class="ms-3 text-muted small">Toggle:</span>
+    <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Cover</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Author</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">Title</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Series</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active hidden-sm hidden-xs" data-column="5">Rating</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="6">Released</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="7">Delay</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="8">Search</button>
+    </div>
     %endif
   </form>
   <br>
@@ -156,74 +136,7 @@
             window.location = new_settings
         })
 
-        $('#exportcsv').on('click', function(e) {
-            $.get('exportCSV', {'library': $('#chooselib').val()}, function(data) {
-                bootbox.dialog({
-                    title: 'CSV Export Result',
-                    message: '<pre>'+data+'</pre>',
-                    buttons: {
-                        primary: {
-                            label: "Close",
-                            className: 'btn-primary'
-                        },
-                    }
-                });
-            });
-        });
-
-        $('#synctogoodreads').on('click', function(e) {
-            $("#myAlert").removeClass('hidden');
-            $.get('syncToGoodreads', function(data) {
-                $("#myAlert").addClass('hidden');
-                bootbox.dialog({
-                    title: 'Goodreads Sync Result',
-                    message: '<pre>'+data+'</pre>',
-                    buttons: {
-                        primary: {
-                            label: "Close",
-                            className: 'btn-primary'
-                        },
-                    }
-                });
-            });
-        });
-
-        $('#synctocalibre').on('click', function(e) {
-            $("#myAlert").removeClass('hidden');
-            $.get('syncToCalibre', function(data) {
-                $("#myAlert").addClass('hidden');
-                bootbox.dialog({
-                    title: 'Calibre Sync Result',
-                    message: '<pre>'+data+'</pre>',
-                    buttons: {
-                        primary: {
-                            label: "Close",
-                            className: 'btn-primary'
-                        },
-                    }
-                });
-            });
-        });
-
-        $('#importcsv').on('click', function(e) {
-            $.get('importCSV', {'library': $('#chooselib').val()}, function(data) {
-                var myModal = bootbox.dialog({
-                    title: 'CSV Import Info',
-                    message: '<pre>'+data+'</pre>',
-                    buttons: {
-                        primary: {
-                            label: "Close",
-                            className: 'btn-primary'
-                        },
-                    }
-                });
-                setTimeout(function(){
-                myModal.modal('hide');
-                }, 5000);
-            });
-        });
-
-         var table = $('#book_table').DataTable(
+        var table = $('#book_table').DataTable(
             {
                 "bAutoWidth": false,
                 "stateSave": true,
@@ -309,10 +222,11 @@
             });
         $('.dataTables_filter input').attr("placeholder", "Results filter");
         //$(window).resize(function() {oTable.draw(false)});
-        $('a.toggle-vis').click(function (e) {
+        $('button.toggle-vis').click(function (e) {
             e.preventDefault();
             var column = table.column( $(this).attr('data-column') );
             column.visible( ! column.visible() );
+            $(this).toggleClass('active');
         } );
     });
 

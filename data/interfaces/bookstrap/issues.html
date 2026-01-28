@@ -27,14 +27,24 @@
       <div class="form-group">
         <label for="action" class="control-label">Selected issues:</label>
         <select name="action" id="action" class="form-control input-sm">
-          <option value="Remove" selected>Remove</option>
-          <option value="Delete">Delete</option>
-          <option value="reCover1">Cover Page 1</option>
-          <option value="reCover2">Cover Page 2</option>
+          <optgroup label="Cover">
+            <option value="reCover1">Cover Page 1</option>
+            <option value="reCover2">Cover Page 2</option>
+          </optgroup>
+          <optgroup label="Destructive">
+            <option value="Remove">⚠ Remove from list</option>
+            <option value="Delete">🗑 Delete files</option>
+          </optgroup>
         </select>
-        <button type="submit" class=" btn btn-m btn-primary" onclick="validateForm()">Go</button>
+        <button type="submit" class="btn btn-sm btn-primary" onclick="validateForm()">Go</button>
         %if lazylibrarian.CONFIG['TOGGLES'] == True:
-        &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Cover</a> - <a class="toggle-vis" data-column="2">Issue</a> - <a class="toggle-vis" data-column="3">Added</a> - <a class="toggle-vis" data-column="4">Select</a>
+        <span class="ms-3 text-muted small">Toggle:</span>
+        <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Cover</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Issue</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">Added</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Select</button>
+        </div>
         %endif
       </div>
       <p>&nbsp;</p>
@@ -120,10 +130,11 @@
                 },
             });
             $('.dataTables_filter input').attr("placeholder", "Results filter");
-            $('a.toggle-vis').click(function (e) {
+            $('button.toggle-vis').click(function (e) {
                 e.preventDefault();
                 var column = table.column( $(this).attr('data-column') );
                 column.visible( ! column.visible() );
+                $(this).toggleClass('active');
             } );
     });
 

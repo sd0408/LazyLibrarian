@@ -28,7 +28,7 @@ import cherrypy
 import lazylibrarian
 from cherrypy.lib.static import serve_file
 from lazylibrarian import logger, database, notifiers, versioncheck, magazinescan, \
-    qbittorrent, utorrent, rtorrent, transmission, sabnzbd, nzbget, deluge, synology, grsync
+    qbittorrent, utorrent, rtorrent, transmission, sabnzbd, nzbget, deluge, synology
 from lazylibrarian.bookwork import setSeries, deleteEmptySeries, getSeriesAuthors
 from lazylibrarian.cache import cache_img
 from lazylibrarian.calibre import calibreTest, syncCalibreList, calibredb
@@ -40,7 +40,6 @@ from lazylibrarian.formatter import unaccented, unaccented_str, plural, now, tod
     safe_unicode, cleanName, surnameFirst, sortDefinite, getList, makeUnicode, makeBytestr, md5_utf8, dateFormat, \
     check_year, dispName
 from lazylibrarian.gb import GoogleBooks
-from lazylibrarian.gr import GoodReads
 from lazylibrarian.images import getBookCover, createMagCover
 from lazylibrarian.importer import addAuthorToDB, addAuthorNameToDB, update_totals, search_for
 from lazylibrarian.librarysync import LibraryScan
@@ -1398,44 +1397,6 @@ class WebInterface(object):
             raise cherrypy.HTTPRedirect("home")
 
     @cherrypy.expose
-    def followAuthor(self, AuthorID):
-        # empty GRfollow is not-yet-used, zero means manually unfollowed so sync leaves it alone
-        myDB = database.DBConnection()
-        authorsearch = myDB.match('SELECT AuthorName, GRfollow from authors WHERE AuthorID=?', (AuthorID,))
-        if authorsearch:
-            if authorsearch['GRfollow'] and authorsearch['GRfollow'] != '0':
-                logger.warn("Already Following %s" % authorsearch['AuthorName'])
-            else:
-                msg = grsync.grfollow(AuthorID, True)
-                if msg.startswith('Unable'):
-                    logger.warn(msg)
-                else:
-                    logger.info(msg)
-                    followid = msg.split("followid=")[1]
-                    myDB.action("UPDATE authors SET GRfollow=? WHERE AuthorID=?", (followid, AuthorID))
-        else:
-            logger.error("Invalid authorid to follow (%s)" % AuthorID)
-        raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s" % AuthorID)
-
-    @cherrypy.expose
-    def unfollowAuthor(self, AuthorID):
-        myDB = database.DBConnection()
-        authorsearch = myDB.match('SELECT AuthorName, GRfollow from authors WHERE AuthorID=?', (AuthorID,))
-        if authorsearch:
-            if not authorsearch['GRfollow'] or authorsearch['GRfollow'] == '0':
-                logger.warn("Not Following %s" % authorsearch['AuthorName'])
-            else:
-                msg = grsync.grfollow(AuthorID, False)
-                if msg.startswith('Unable'):
-                    logger.warn(msg)
-                else:
-                    myDB.action("UPDATE authors SET GRfollow='0' WHERE AuthorID=?", (AuthorID,))
-                    logger.info(msg)
-        else:
-            logger.error("Invalid authorid to unfollow (%s)" % AuthorID)
-        raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s" % AuthorID)
-
-    @cherrypy.expose
     def libraryScanAuthor(self, AuthorID, **kwargs):
         myDB = database.DBConnection()
         authorsearch = myDB.match('SELECT AuthorName from authors WHERE AuthorID=?', (AuthorID,))
@@ -1895,14 +1856,9 @@ class WebInterface(object):
             AuthorID = match['AuthorID']
             update_totals(AuthorID)
         else:
-            if lazylibrarian.CONFIG['BOOK_API'] == "GoogleBooks":
-                GB = GoogleBooks(bookid)
-                t = threading.Thread(target=GB.find_book, name='GB-BOOK', args=[bookid, "Wanted"])
-                t.start()
-            else:  # lazylibrarian.CONFIG['BOOK_API'] == "GoodReads":
-                GR = GoodReads(bookid)
-                t = threading.Thread(target=GR.find_book, name='GR-BOOK', args=[bookid, "Wanted"])
-                t.start()
+            GB = GoogleBooks(bookid)
+            t = threading.Thread(target=GB.find_book, name='GB-BOOK', args=[bookid, "Wanted"])
+            t.start()
             t.join(timeout=10)  # 10 s to add book before redirect
         if lazylibrarian.CONFIG['IMP_AUTOSEARCH']:
             books = [{"bookid": bookid}]
@@ -2342,7 +2298,7 @@ class WebInterface(object):
         seriesdict = myDB.select(cmd, (bookid,))
         if bookdata:
             covers = []
-            for source in ['current', 'cover', 'goodreads', 'librarything', 'whatwork',
+            for source in ['current', 'cover', 'librarything', 'whatwork',
                            'openlibrary', 'googleisbn', 'googleimage']:
                 cover, _ = getBookCover(bookid, source)
                 if cover:
@@ -2425,8 +2381,6 @@ class WebInterface(object):
                     covertype = '_lt'
                 elif cover == 'whatwork':
                     covertype = '_ww'
-                elif cover == 'goodreads':
-                    covertype = '_gr'
                 elif cover == 'openlibrary':
                     covertype = '_ol'
                 elif cover == 'googleisbn':
@@ -4158,80 +4112,7 @@ class WebInterface(object):
                 msg = "No userid found"
         return msg
 
-    @cherrypy.expose
-    def syncToGoodreads(self):
-        if 'GRSync' not in [n.name for n in [t for t in threading.enumerate()]]:
-            cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-            self.label_thread('GRSync')
-            msg = grsync.sync_to_gr()
-            self.label_thread('WEBSERVER')
-        else:
-            msg = 'Goodreads Sync is already running'
-        return msg
-
-    @cherrypy.expose
-    def grauthStep1(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        if 'gr_api' in kwargs:
-            lazylibrarian.CONFIG['GR_API'] = kwargs['gr_api']
-        if 'gr_secret' in kwargs:
-            lazylibrarian.CONFIG['GR_SECRET'] = kwargs['gr_secret']
-        GA = grsync.grauth()
-        res = GA.goodreads_oauth1()
-        return res
-
-    @cherrypy.expose
-    def grauthStep2(self):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        GA = grsync.grauth()
-        return GA.goodreads_oauth2()
-
-    @cherrypy.expose
-    def testGRAuth(self, **kwargs):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        if 'gr_api' in kwargs:
-            lazylibrarian.CONFIG['GR_API'] = kwargs['gr_api']
-        if 'gr_secret' in kwargs:
-            lazylibrarian.CONFIG['GR_SECRET'] = kwargs['gr_secret']
-        if 'gr_oauth_token' in kwargs:
-            lazylibrarian.CONFIG['GR_OAUTH_TOKEN'] = kwargs['gr_oauth_token']
-        if 'gr_oauth_secret' in kwargs:
-            lazylibrarian.CONFIG['GR_OAUTH_SECRET'] = kwargs['gr_oauth_secret']
-        res = grsync.test_auth()
-        if res.startswith('Pass:'):
-            lazylibrarian.config_write('API')
-        return res
-
     # NOTIFIERS #########################################################
-
-    @cherrypy.expose
-    def twitterStep1(self):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        return notifiers.twitter_notifier._get_authorization()
-
-    @cherrypy.expose
-    def twitterStep2(self, key):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        if key:
-            result = notifiers.twitter_notifier._get_credentials(key)
-            if result:
-                lazylibrarian.config_write('Twitter')
-                return "Key verification successful"
-            else:
-                return "Unable to verify key"
-        else:
-            return "No Key provided"
-
-    @cherrypy.expose
-    def testTwitter(self):
-        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
-        threading.currentThread().name = "WEBSERVER"
-        result = notifiers.twitter_notifier.test_notify()
-        if result:
-            return "Tweet successful, check your twitter to make sure it worked"
-        else:
-            return "Error sending tweet"
 
     @cherrypy.expose
     def testAndroidPN(self, **kwargs):
@@ -4509,7 +4390,7 @@ class WebInterface(object):
         types = ['eBook']
         if lazylibrarian.SHOW_AUDIO:
             types.append('AudioBook')
-        return serve_template(templatename="managebooks.html", title="Manage %ss" % library,
+        return serve_template(templatename="managebooks.html", title="%ss by Status" % library,
                               books=[], types=types, library=library, whichStatus=whichStatus)
 
     @cherrypy.expose

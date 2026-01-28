@@ -10,9 +10,7 @@
 # - httpagentparser: User agent parsing
 # - magic: File type detection
 # - mobi: MOBI file parsing
-# - oauth2: Pinned version for Goodreads API compatibility
 # - pynma: Notify My Android notifications
-# - pythontwitter: Depends on pinned oauth2
 # - tinytag: Modified with composer field + m4b support
 # - unrar: RAR extraction
 # - rfeed: RSS feed generation

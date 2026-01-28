@@ -19,7 +19,7 @@ from urllib.parse import quote_plus, quote, urlencode
 
 import lazylibrarian
 from lazylibrarian import logger, database
-from lazylibrarian.cache import fetchURL, gr_xml_request, gb_json_request
+from lazylibrarian.cache import fetchURL, gb_json_request
 from lazylibrarian.common import proxyList
 from lazylibrarian.formatter import safe_unicode, plural, cleanName, unaccented, formatAuthorName, \
     check_int, replace_all, check_year, getList
@@ -59,22 +59,15 @@ def setBookAuthors(book):
         authorlist = getBookAuthors(book['bookid'])
         for author in authorlist:
             role = ''
-            if 'id' in author:
-                # it's a goodreads data source
-                authorname = author['name']
-                exists = myDB.match('select authorid from authors where authorid=?', (author['id'],))
-                if 'role' in author:
-                    role = author['role']
-            else:
-                # it's a librarything data source
-                authorname = formatAuthorName(author['name'])
-                exists = myDB.match('select authorid from authors where authorname=?', (authorname,))
-                if 'type' in author:
-                    authtype = author['type']
-                    if authtype in ['primary author', 'main author', 'secondary author']:
-                        role = authtype
-                    elif author['role'] in ['Author', '&mdash;'] and author['work'] == 'all editions':
-                        role = 'Author'
+            # librarything data source
+            authorname = formatAuthorName(author['name'])
+            exists = myDB.match('select authorid from authors where authorname=?', (authorname,))
+            if 'type' in author:
+                authtype = author['type']
+                if authtype in ['primary author', 'main author', 'secondary author']:
+                    role = authtype
+                elif author['role'] in ['Author', '&mdash;'] and author['work'] == 'all editions':
+                    role = 'Author'
             if exists:
                 authorid = exists['authorid']
             else:
@@ -99,14 +92,9 @@ def setAllBookSeries():
     if books:
         logger.info('Checking series for %s book%s' % (len(books), plural(len(books))))
         for book in books:
-            if lazylibrarian.CONFIG['BOOK_API'] == 'GoodReads':
-                workid = book['WorkID']
-                if not workid:
-                    logger.debug("No workid for book %s: %s" % (book['BookID'], book['BookName']))
-            else:
-                workid = book['BookID']
-                if not workid:
-                    logger.debug("No bookid for book: %s" % book['BookName'])
+            workid = book['BookID']
+            if not workid:
+                logger.debug("No bookid for book: %s" % book['BookName'])
             if workid:
                 serieslist = getWorkSeries(workid)
                 if serieslist:
@@ -285,68 +273,10 @@ def setWorkPages():
 
 
 def setWorkID(books=None):
-    """ Set the goodreads workid for any books that don't already have one
-        books is a comma separated list of bookids or if empty, select from database
-        Paginate requests to reduce api hits """
-
-    myDB = database.DBConnection()
-    pages = []
-    if books:
-        page = books
-        pages.append(page)
-    else:
-        cmd = "select BookID,BookName from books where WorkID='' or WorkID is null"
-        books = myDB.select(cmd)
-        if books:
-            counter = 0
-            logger.debug('Setting WorkID for %s book%s' % (len(books), plural(len(books))))
-            page = ''
-            for book in books:
-                bookid = book['BookID']
-                if not bookid:
-                    logger.debug("No bookid for %s" % book['BookName'])
-                else:
-                    if page:
-                        page = page + ','
-                    page = page + bookid
-                    counter += 1
-                    if counter == 50:
-                        counter = 0
-                        pages.append(page)
-                        page = ''
-            if page:
-                pages.append(page)
-
-    counter = 0
-    params = {"key": lazylibrarian.CONFIG['GR_API']}
-    for page in pages:
-        URL = 'https://www.goodreads.com/book/id_to_work_id/' + page + '?' + urlencode(params)
-        try:
-            rootxml, in_cache = gr_xml_request(URL, useCache=False)
-            if rootxml is None:
-                logger.debug("Error requesting id_to_work_id page")
-            else:
-                resultxml = rootxml.find('work-ids')
-                if len(resultxml):
-                    ids = resultxml.getiterator('item')
-                    books = getList(page)
-                    cnt = 0
-                    for item in ids:
-                        workid = item.text
-                        if not workid:
-                            logger.debug("No workid returned for %s" % books[cnt])
-                        else:
-                            counter += 1
-                            controlValueDict = {"BookID": books[cnt]}
-                            newValueDict = {"WorkID": workid}
-                            myDB.upsert("books", newValueDict, controlValueDict)
-                        cnt += 1
-
-        except Exception as e:
-            logger.error("%s parsing id_to_work_id page: %s" % (type(e).__name__, str(e)))
-
-    msg = 'Updated %s id%s' % (counter, plural(counter))
-    logger.debug("setWorkID complete: " + msg)
+    """ WorkID was a Goodreads-specific feature that is no longer available
+        since Goodreads API has been deprecated """
+    msg = 'WorkID feature not available (requires deprecated Goodreads API)'
+    logger.debug(msg)
     return msg
 
 
@@ -557,62 +487,29 @@ def getAllSeriesAuthors():
 
 
 def getBookAuthors(bookid):
-    """ Get a list of authors contributing to a book from the goodreads bookpage or the librarything bookwork file """
+    """ Get a list of authors contributing to a book from the librarything bookwork file """
     authorlist = []
-    if lazylibrarian.CONFIG['BOOK_API'] == 'GoodReads':
-        params = {"key": lazylibrarian.CONFIG['GR_API']}
-        URL = 'https://www.goodreads.com/book/show/' + bookid + '?' + urlencode(params)
+    data = getBookWork(bookid, "Authors")
+    if data:
         try:
-            rootxml, in_cache = gr_xml_request(URL)
-            if rootxml is None:
-                logger.debug("Error requesting book %s" % bookid)
-                return []
-        except Exception as e:
-            logger.error("%s finding book %s: %s" % (type(e).__name__, bookid, str(e)))
-            return []
+            data = data.split('otherauthors_container')[1].split('</table>')[0].split('<table')[1].split('>', 1)[1]
+        except IndexError:
+            data = ''
 
-        book = rootxml.find('book')
-        authors = book.find('authors')
-        anames = authors.getiterator('author')
-        if anames is None:
-            logger.warn('No authors found for %s' % bookid)
-            return []
-        for aname in anames:
-            author = {}
-            if aname.find('id') is not None:
-                author['id'] = aname.find('id').text
-            if aname.find('name') is not None:
-                author['name'] = aname.find('name').text
-            if aname.find('role') is not None:
-                role = aname.find('role').text
-                if not role:
-                    role = ''
-                author['role'] = role
-            if author:
+    if data and 'Work?' in data:
+        try:
+            rows = data.split('<tr')
+            for row in rows[2:]:
+                author = {}
+                col = row.split('<td>')
+                author['name'] = col[1].split('">')[1].split('<')[0]
+                author['role'] = col[2].split('<')[0]
+                author['type'] = col[3].split('<')[0]
+                author['work'] = col[4].split('<')[0]
+                author['status'] = col[5].split('<')[0]
                 authorlist.append(author)
-    else:
-        data = getBookWork(bookid, "Authors")
-        if data:
-            try:
-                data = data.split('otherauthors_container')[1].split('</table>')[0].split('<table')[1].split('>', 1)[1]
-            except IndexError:
-                data = ''
-
-        authorlist = []
-        if data and 'Work?' in data:
-            try:
-                rows = data.split('<tr')
-                for row in rows[2:]:
-                    author = {}
-                    col = row.split('<td>')
-                    author['name'] = col[1].split('">')[1].split('<')[0]
-                    author['role'] = col[2].split('<')[0]
-                    author['type'] = col[3].split('<')[0]
-                    author['work'] = col[4].split('<')[0]
-                    author['status'] = col[5].split('<')[0]
-                    authorlist.append(author)
-            except IndexError:
-                logger.debug('Error parsing authorlist for %s' % bookid)
+        except IndexError:
+            logger.debug('Error parsing authorlist for %s' % bookid)
     return authorlist
 
 
@@ -626,99 +523,18 @@ def getSeriesAuthors(seriesid):
     result = myDB.match('select SeriesName from series where SeriesID=?', (seriesid,))
     seriesname = result['SeriesName']
     members, api_hits = getSeriesMembers(seriesid, seriesname)
-    dic = {u'\u2018': "", u'\u2019': "", u'\u201c': '', u'\u201d': '', "'": "", '"': ''}
 
     if members:
         myDB = database.DBConnection()
         for member in members:
-            # order = member[0]
-            bookname = member[1]
             authorname = member[2]
-            # workid = member[3]
             authorid = member[4]
-            # pubyear = member[5]
-            bookname = replace_all(bookname, dic)
-            if not authorid:
-                # goodreads gives us all the info we need, librarything/google doesn't
-                base_url = 'https://www.goodreads.com/search.xml?q='
-                params = {"key": lazylibrarian.CONFIG['GR_API']}
-                searchname = bookname + ' ' + authorname
-                searchname = cleanName(unaccented(searchname))
-                if PY2:
-                    searchname = searchname.encode(lazylibrarian.SYS_ENCODING)
-                searchterm = quote_plus(searchname)
-                set_url = base_url + searchterm + '&' + urlencode(params)
-                try:
-                    rootxml, in_cache = gr_xml_request(set_url)
-                    if not in_cache:
-                        api_hits += 1
-                    if rootxml is None:
-                        logger.warn('Error getting XML for %s' % searchname)
-                    else:
-                        resultxml = rootxml.getiterator('work')
-                        for item in resultxml:
-                            try:
-                                booktitle = item.find('./best_book/title').text
-                                booktitle = replace_all(booktitle, dic)
-                            except (KeyError, AttributeError):
-                                booktitle = ""
-                            book_fuzz = fuzz.token_set_ratio(booktitle, bookname)
-                            if book_fuzz >= 98:
-                                try:
-                                    author = item.find('./best_book/author/name').text
-                                except (KeyError, AttributeError):
-                                    author = ""
-                                # try:
-                                #     workid = item.find('./work/id').text
-                                # except (KeyError, AttributeError):
-                                #     workid = ""
-                                try:
-                                    authorid = item.find('./best_book/author/id').text
-                                except (KeyError, AttributeError):
-                                    authorid = ""
-                                logger.debug("Author Search found %s %s, authorid %s" %
-                                             (author, booktitle, authorid))
-                                break
-                    if not authorid:  # try again with title only
-                        searchname = cleanName(unaccented(bookname))
-                        if PY2:
-                            searchname = searchname.encode(lazylibrarian.SYS_ENCODING)
-                        searchterm = quote_plus(searchname)
-                        set_url = base_url + searchterm + '&' + urlencode(params)
-                        rootxml, in_cache = gr_xml_request(set_url)
-                        if not in_cache:
-                            api_hits += 1
-                        if rootxml is None:
-                            logger.warn('Error getting XML for %s' % searchname)
-                        else:
-                            resultxml = rootxml.getiterator('work')
-                            for item in resultxml:
-                                booktitle = item.find('./best_book/title').text
-                                booktitle = replace_all(booktitle, dic)
-                                book_fuzz = fuzz.token_set_ratio(booktitle, bookname)
-                                if book_fuzz >= 98:
-                                    try:
-                                        author = item.find('./best_book/author/name').text
-                                    except (KeyError, AttributeError):
-                                        author = ""
-                                    # try:
-                                    #     workid = item.find('./work/id').text
-                                    # except (KeyError, AttributeError):
-                                    #     workid = ""
-                                    try:
-                                        authorid = item.find('./best_book/author/id').text
-                                    except (KeyError, AttributeError):
-                                        authorid = ""
-                                    logger.debug("Title Search found %s %s, authorid %s" %
-                                                 (author, booktitle, authorid))
-                                    break
-                    if not authorid:
-                        logger.warn("GoodReads doesn't know about %s %s" % (authorname, bookname))
-                except Exception as e:
-                    logger.error("Error finding goodreads results: %s %s" % (type(e).__name__, str(e)))
 
             if authorid:
                 lazylibrarian.importer.addAuthorToDB(refresh=False, authorid=authorid)
+            elif authorname:
+                # Try to add author by name since we don't have an authorid
+                lazylibrarian.importer.addAuthorNameToDB(authorname, False, False)
 
     result = myDB.match("select count(*) as counter from authors")
     finish = int(result['counter'])
@@ -728,205 +544,110 @@ def getSeriesAuthors(seriesid):
 
 
 def getSeriesMembers(seriesID=None, seriesname=None):
-    """ Ask librarything or goodreads for details on all books in a series
+    """ Ask librarything for details on all books in a series
         order, bookname, authorname, workid, authorid
-        (workid and authorid are goodreads only)
         Return as a list of lists """
     results = []
     api_hits = 0
-    if lazylibrarian.CONFIG['BOOK_API'] == 'GoodReads':
-        params = {"format": "xml", "key": lazylibrarian.CONFIG['GR_API']}
-        URL = 'https://www.goodreads.com/series/%s?%s' % (seriesID, urlencode(params))
+    data = getBookWork(None, "SeriesPage", seriesID)
+    if data:
         try:
-            rootxml, in_cache = gr_xml_request(URL)
-            if not in_cache:
-                api_hits += 1
-            if rootxml is None:
-                logger.debug("Series %s:%s not recognised at goodreads" % (seriesID, seriesname))
-                return [], api_hits
-        except Exception as e:
-            logger.error("%s finding series %s: %s" % (type(e).__name__, seriesID, str(e)))
-            return [], api_hits
-
-        works = rootxml.find('series/series_works')
-        books = works.getiterator('series_work')
-        if books is None:
-            logger.warn('No books found for %s' % seriesID)
-            return [], api_hits
-        for book in books:
-            mydict = {}
-            for mykey, location in [('order', 'user_position'),
-                                    ('bookname', 'work/best_book/title'),
-                                    ('authorname', 'work/best_book/author/name'),
-                                    ('workid', 'work/id'),
-                                    ('authorid', 'work/best_book/author/id'),
-                                    ('pubyear', 'work/original_publication_year')
-                                    ]:
-                if book.find(location) is not None:
-                    mydict[mykey] = book.find(location).text
-                else:
-                    mydict[mykey] = ""
-            results.append([mydict['order'], mydict['bookname'], mydict['authorname'],
-                            mydict['workid'], mydict['authorid'], mydict['pubyear']])
-    else:
-        api_hits = 0
-        data = getBookWork(None, "SeriesPage", seriesID)
-        if data:
-            try:
-                table = data.split('class="worksinseries"')[1].split('</table>')[0]
-                rows = table.split('<tr')
-                for row in rows:
-                    if 'href=' in row:
-                        booklink = row.split('href="')[1]
-                        bookname = booklink.split('">')[1].split('<')[0]
-                        # booklink = booklink.split('"')[0]
-                        try:
-                            authorlink = row.split('href="')[2]
-                            authorname = authorlink.split('">')[1].split('<')[0]
-                            # authorlink = authorlink.split('"')[0]
-                            order = row.split('class="order">')[1].split('<')[0]
-                            results.append([order, bookname, authorname, '', ''])
-                        except IndexError:
-                            logger.debug('Incomplete data in series table for series %s' % seriesID)
-            except IndexError:
-                if 'class="worksinseries"' in data:  # error parsing, or just no series data available?
-                    logger.debug('Error in series table for series %s' % seriesID)
+            table = data.split('class="worksinseries"')[1].split('</table>')[0]
+            rows = table.split('<tr')
+            for row in rows:
+                if 'href=' in row:
+                    booklink = row.split('href="')[1]
+                    bookname = booklink.split('">')[1].split('<')[0]
+                    try:
+                        authorlink = row.split('href="')[2]
+                        authorname = authorlink.split('">')[1].split('<')[0]
+                        order = row.split('class="order">')[1].split('<')[0]
+                        results.append([order, bookname, authorname, '', ''])
+                    except IndexError:
+                        logger.debug('Incomplete data in series table for series %s' % seriesID)
+        except IndexError:
+            if 'class="worksinseries"' in data:  # error parsing, or just no series data available?
+                logger.debug('Error in series table for series %s' % seriesID)
     return results, api_hits
 
 
 def get_book_desc(isbn=None, author=None, title=None):
-    """ GoodReads does not always have a book description in its api results
-        due to restrictive TOS from some of its providers.
-        Try to get missing descriptions from googlebooks
+    """ Try to get missing book descriptions from googlebooks
         Return description, empty string if not found, None if error"""
     if not author or not title:
         return ''
 
     author = cleanName(author)
     title = cleanName(title)
-    if lazylibrarian.CONFIG['BOOK_API'] == 'GoodReads':
-        baseurl = 'https://www.googleapis.com/books/v1/volumes?q='
+    baseurl = 'https://www.googleapis.com/books/v1/volumes?q='
 
-        urls = [baseurl + quote_plus('inauthor:%s intitle:%s' % (author, title))]
-        if isbn:
-            urls.insert(0, baseurl + quote_plus('isbn:' + isbn))
+    urls = [baseurl + quote_plus('inauthor:%s intitle:%s' % (author, title))]
+    if isbn:
+        urls.insert(0, baseurl + quote_plus('isbn:' + isbn))
 
-        for url in urls:
-            if lazylibrarian.CONFIG['GB_API']:
-                url += '&key=' + lazylibrarian.CONFIG['GB_API']
-            if lazylibrarian.CONFIG['GB_COUNTRY'] and len(lazylibrarian.CONFIG['GB_COUNTRY'] == 2):
-                url += '&country=' + lazylibrarian.CONFIG['GB_COUNTRY']
-            results, cached = gb_json_request(url)
-            if results is None:  # there was an error
-                return None
-            if results and not cached:
-                time.sleep(1)
-            if results and 'items' in results:
-                for item in results['items']:
-                    # noinspection PyBroadException
-                    try:
-                        auth = item['volumeInfo']['authors'][0]
-                        book = item['volumeInfo']['title']
-                        desc = item['volumeInfo']['description']
-                        book_fuzz = fuzz.token_set_ratio(book, title)
-                        auth_fuzz = fuzz.token_set_ratio(auth, author)
-                        if book_fuzz > 98 and auth_fuzz > 80:
-                            return desc
-                    except Exception:
-                        pass
+    for url in urls:
+        if lazylibrarian.CONFIG['GB_API']:
+            url += '&key=' + lazylibrarian.CONFIG['GB_API']
+        if lazylibrarian.CONFIG['GB_COUNTRY'] and len(lazylibrarian.CONFIG['GB_COUNTRY'] == 2):
+            url += '&country=' + lazylibrarian.CONFIG['GB_COUNTRY']
+        results, cached = gb_json_request(url)
+        if results is None:  # there was an error
+            return None
+        if results and not cached:
+            time.sleep(1)
+        if results and 'items' in results:
+            for item in results['items']:
+                # noinspection PyBroadException
+                try:
+                    auth = item['volumeInfo']['authors'][0]
+                    book = item['volumeInfo']['title']
+                    desc = item['volumeInfo']['description']
+                    book_fuzz = fuzz.token_set_ratio(book, title)
+                    auth_fuzz = fuzz.token_set_ratio(auth, author)
+                    if book_fuzz > 98 and auth_fuzz > 80:
+                        return desc
+                except Exception:
+                    pass
     return ''
 
 
 def getWorkSeries(bookID=None):
-    """ Return the series names and numbers in series for the given id as a list of tuples
-        For goodreads the id is a WorkID, for librarything it's a BookID """
-    myDB = database.DBConnection()
+    """ Return the series names and numbers in series for the given BookID as a list of tuples
+        Uses LibraryThing for series data """
     serieslist = []
     if not bookID:
         logger.error("getWorkSeries - No bookID")
         return serieslist
 
-    if lazylibrarian.CONFIG['BOOK_API'] == 'GoodReads':
-        URL = "https://www.goodreads.com/work/"
-        seriesurl = URL + bookID + "/series?format=xml&key=" + lazylibrarian.CONFIG['GR_API']
-
-        rootxml, in_cache = gr_xml_request(seriesurl)
-        if rootxml is None:
-            logger.warn('Error getting XML for %s' % seriesurl)
-        else:
-            resultxml = rootxml.getiterator('series_work')
-            for item in resultxml:
+    work = getBookWork(bookID, "Series")
+    if work:
+        try:
+            slist = work.split('<h3><b>Series:')[1].split('</h3>')[0].split('<a href="/series/')
+            for item in slist[1:]:
                 try:
-                    seriesname = item.find('./series/title').text
-                    seriesname = seriesname.strip('\n').strip('\n').strip()
-                    seriesid = item.find('./series/id').text
-                    seriesnum = item.find('./user_position').text
-                except (KeyError, AttributeError):
-                    continue
-                if seriesname and seriesid:
-                    seriesname = cleanName(unaccented(seriesname), '&/')
+                    series = item.split('">')[1].split('</a>')[0]
+                    if series and '(' in series:
+                        seriesnum = series.split('(')[1].split(')')[0].strip()
+                        series = series.split(' (')[0].strip()
+                    else:
+                        seriesnum = ''
+                        series = series.strip()
+                    seriesname = cleanName(unaccented(series), '&/')
+                    seriesnum = cleanName(unaccented(seriesnum))
                     if seriesname:
-                        seriesnum = cleanName(unaccented(seriesnum))
-                        serieslist.append((seriesid, seriesnum, seriesname))
-                        match = myDB.match('SELECT SeriesID from series WHERE SeriesName=?', (seriesname,))
-                        if not match:
-                            match = myDB.match('SELECT SeriesName from series WHERE SeriesID=?', (seriesid,))
-                            if not match:
-                                myDB.action('INSERT INTO series VALUES (?, ?, ?, ?, ?)',
-                                            (seriesid, seriesname, "Active", 0, 0))
-                            else:
-                                logger.warn("Name mismatch for series %s, [%s][%s]" % (
-                                            seriesid, seriesname, match['SeriesName']))
-                        elif match['SeriesID'] != seriesid:
-                            myDB.action('UPDATE series SET SeriesID=? WHERE SeriesName=?', (seriesid, seriesname))
-    else:
-        work = getBookWork(bookID, "Series")
-        if work:
-            try:
-                slist = work.split('<h3><b>Series:')[1].split('</h3>')[0].split('<a href="/series/')
-                for item in slist[1:]:
-                    try:
-                        series = item.split('">')[1].split('</a>')[0]
-                        if series and '(' in series:
-                            seriesnum = series.split('(')[1].split(')')[0].strip()
-                            series = series.split(' (')[0].strip()
-                        else:
-                            seriesnum = ''
-                            series = series.strip()
-                        seriesname = cleanName(unaccented(series), '&/')
-                        seriesnum = cleanName(unaccented(seriesnum))
-                        if seriesname:
-                            serieslist.append(('', seriesnum, seriesname))
-                    except IndexError:
-                        pass
-            except IndexError:
-                pass
+                        serieslist.append(('', seriesnum, seriesname))
+                except IndexError:
+                    pass
+        except IndexError:
+            pass
 
     return serieslist
 
 
 def get_book_pubdate(bookid, refresh=False):
-    URL = 'https://www.goodreads.com/book/show/' + bookid + '.xml?key=' + lazylibrarian.CONFIG['GR_API']
-    bookdate = "0000"
-    try:
-        rootxml, in_cache = gr_xml_request(URL, useCache=not refresh)
-    except Exception as e:
-        logger.error("%s fetching book publication date: %s" % (type(e).__name__, str(e)))
-        return bookdate, False
-
-    if rootxml is None:
-        logger.debug("Error requesting book publication date")
-        return bookdate, in_cache
-
-    try:
-        bookdate = rootxml.find('book/work/original_publication_year').text
-        if bookdate is None:
-            bookdate = '0000'
-    except (KeyError, AttributeError):
-        logger.error("Error reading pubdate for GoodReads bookid %s pubdate [%s]" % (bookid, bookdate))
-
-    logger.debug("GoodReads bookid %s pubdate [%s] %s" % (bookid, bookdate, in_cache))
-    return bookdate, in_cache
+    """ Book publication date lookup was a Goodreads-specific feature
+        that is no longer available since Goodreads API has been deprecated """
+    return "0000", False
 
 
 def thingLang(isbn):

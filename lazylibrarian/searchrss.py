@@ -57,8 +57,8 @@ def search_wishlist():
         # for each item in resultlist, add to database if necessary, and mark as wanted
         logger.debug('Processing %s item%s in wishlists' % (len(resultlist), plural(len(resultlist))))
         for book in resultlist:
-            # we get rss_author, rss_title, maybe rss_isbn, rss_bookid (goodreads bookid)
-            # we can just use bookid if goodreads, or try isbn and name matching on author/title if not
+            # we get rss_author, rss_title, maybe rss_isbn, rss_bookid (GoogleBooks bookid)
+            # we can just use bookid if available, or try isbn and name matching on author/title if not
             # eg NYTimes wishlist
             if 'E' in book['types']:
                 ebook_status = "Wanted"
@@ -68,7 +68,7 @@ def search_wishlist():
                 audio_status = "Wanted"
             else:
                 audio_status = "Skipped"
-            if lazylibrarian.CONFIG['BOOK_API'] == "GoodReads" and book['rss_bookid']:
+            if book['rss_bookid']:
                 cmd = 'select books.Status as Status,AudioStatus,authors.Status as AuthorStatus,'
                 cmd += 'AuthorName,BookName,Requester,AudioRequester from books,authors '
                 cmd += 'where books.AuthorID = authors.AuthorID and bookid=?'

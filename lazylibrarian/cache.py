@@ -26,17 +26,6 @@ from lazylibrarian.common import getUserAgent, proxyList
 from lazylibrarian.formatter import check_int, md5_utf8, makeBytestr, makeUnicode, seconds_to_midnight
 
 
-def gr_api_sleep():
-    time_now = time.time()
-    delay = time_now - lazylibrarian.LAST_GOODREADS
-    if delay < 1.0:
-        sleep_time = 1.0 - delay
-        lazylibrarian.GR_SLEEP += sleep_time
-        logger.debug("GoodReads sleep %.3f, total %.3f" % (sleep_time, lazylibrarian.GR_SLEEP))
-        time.sleep(sleep_time)
-    lazylibrarian.LAST_GOODREADS = time_now
-
-
 def fetchURL(URL, headers=None, retry=True, raw=None):
     """ Return the result of fetching a URL and True if success
         Otherwise return error message and False
@@ -166,12 +155,6 @@ def cache_img(img_type, img_ID, img_url, refresh=False):
             return str(e), False, False
 
 
-def gr_xml_request(my_url, useCache=True):
-    # respect goodreads api limit
-    result, in_cache = get_cached_request(url=my_url, useCache=useCache, cache="XML")
-    return result, in_cache
-
-
 def gb_json_request(my_url, useCache=True):
     result, in_cache = get_cached_request(url=my_url, useCache=useCache, cache="JSON")
     return result, in_cache
@@ -238,7 +221,6 @@ def get_cached_request(url, useCache=True, cache="XML"):
     else:
         lazylibrarian.CACHE_MISS = int(lazylibrarian.CACHE_MISS) + 1
         if cache == 'XML':
-            gr_api_sleep()
             result, success = fetchURL(url, raw=True)
         else:
             result, success = fetchURL(url)
@@ -285,7 +267,5 @@ def get_cached_request(url, useCache=True, cache="XML"):
                     return None, False
         else:
             logger.debug("Got error response for %s: %s" % (url, result.split('<')[0]))
-            if 'goodreads' in url and '503' in result:
-                time.sleep(1)
             return None, False
     return source, valid_cache

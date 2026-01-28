@@ -213,23 +213,8 @@
         <td>
           <h3>Book API</h3>
           <BR>
-          <%
-            if lazylibrarian.CONFIG['BOOK_API'] == "GoodReads":
-                gr_selected = 'selected="selected"'
-            else:
-                gr_selected = ''
-
-            if lazylibrarian.CONFIG['BOOK_API'] == "GoogleBooks":
-                gb_selected = 'selected="selected"'
-            else:
-                gb_selected = ''
-          %>
-          <label>Book Search API           .</label><select name="book_api"  style="float:right;">
-            <option value = "GoodReads" ${gr_selected}>GoodReads</option>
-            <option value = "GoogleBooks" ${gb_selected}>GoogleBooks</option>
-          </select>
-          <BR>
-          <label>Goodreads API:</label><input type="text" id="gr_api" name="gr_api" value="${lazylibrarian.CONFIG['GR_API']}" size="30">
+          <input type="hidden" name="book_api" value="GoogleBooks">
+          <label>Book Search API           .</label>GoogleBooks
           <BR>
           <label>GoogleBooks API:</label><input type="text" id="gb_api" name="gb_api" value="${lazylibrarian.CONFIG['GB_API']}" size="30">
           <label>GoogleBooks Country:</label><input type="text" id="gb_country" name="gb_country" value="${lazylibrarian.CONFIG['GB_COUNTRY']}" size="8">
@@ -267,11 +252,9 @@
           <label>Import languages:</label><input type="text" id="imp_preflang" name="imp_preflang" value="${lazylibrarian.CONFIG['IMP_PREFLANG']}" size="20">
           <br>
           <i class="smalltext">Comma separated country shortcodes:
-            <br>
-             GoodReads e.g: eng, en-US, spa, ita
             <BR> GoogleBooks e.g: en, es, it
             <BR> Default: en, eng, en-US, en-GB
-            <BR> Try adding "Unknown" to list if GoodReads is missing results, or "All" if you don't want to check for language</i>
+            <BR> Try adding "Unknown" to list if missing results, or "All" if you don't want to check for language</i>
           <BR><BR>
           <label>Languages for month names:</label><input type="text" id="text" name="imp_monthlang" value="${lazylibrarian.CONFIG['IMP_MONTHLANG']}" size="20">
           <br>
@@ -1322,52 +1305,6 @@
         <tr>
           <td>
             <fieldset>
-              <h3>Twitter</h3>
-              <div class="row checkbox">
-                <%
-                    if lazylibrarian.CONFIG['USE_TWITTER'] == True:
-                        checked = 'checked="checked"'
-                    else:
-                        checked = ''
-                    %>
-                <input type="checkbox" name="use_twitter" id="twitter" value="1" ${checked} />
-                <label>Enable Twitter Notifications</label>
-              </div>
-              <div id="twitteroptions">
-                <div class="row">
-                  <%
-                    if lazylibrarian.CONFIG['TWITTER_NOTIFY_ONSNATCH'] == True:
-                        checked = 'checked="checked"'
-                    else:
-                        checked = ''
-                    %>
-                  <input type="checkbox" id="twitter_notify_onsnatch" name="twitter_notify_onsnatch" value="1" ${checked} />Notify on snatch
-                </div>
-                <div class="row">
-                  <%
-                    if lazylibrarian.CONFIG['TWITTER_NOTIFY_ONDOWNLOAD'] == True:
-                        checked = 'checked="checked"'
-                    else:
-                        checked = ''
-                    %>
-                  <input type="checkbox" id="twitter_notify_ondownload" name="twitter_notify_ondownload" value="1" ${checked} />Notify on download
-                </div>
-                <div class="row">
-                  <input type="button" value="Request Authorization" id="twitterStep1" />
-                </div>
-                <div class="row">
-                  <input type="text" id="twitter_key" value="" size="26" placeholder="Input Authorization Key"/>
-                </div>
-                <div class="row">
-                  <input type="button" value="Verify Key" id="twitterStep2" />
-                </div>
-                <div class="row">
-                  <input type="button" value="Test Twitter" id="testTwitter" />
-                </div>
-              </div>
-            </fieldset>
-            <fieldset>
-              <BR>
               <h3>Boxcar2</h3>
               <div class="row checkbox">
                 <%
@@ -2341,26 +2278,6 @@
                 }
         });
 
-        if ($("#twitter").is(":checked"))
-                {
-                        $("#twitteroptions").show();
-                }
-        else
-                {
-                        $("#twitteroptions").hide();
-                }
-
-        $("#twitter").click(function(){
-                if ($("#twitter").is(":checked"))
-                {
-                        $("#twitteroptions").slideDown();
-                }
-                else
-                {
-                        $("#twitteroptions").slideUp();
-                }
-        });
-
         if ($("#boxcar").is(":checked"))
                 {
                         $("#boxcaroptions").show();
@@ -2683,24 +2600,6 @@
             var label = $.trim($("#rtorrent_label").val());
             $.get("testrTorrent", {'host': host, 'dir': dir, 'user': user, 'pwd': pwd, 'label': label},
                 function (data) { alert(data); });
-        });
-
-        $('#twitterStep1').click(function () {
-            $('#testTwitter-result').html('');
-            $.get("twitterStep1", function (data) {window.open(data); })
-                .done(function () { $('#testTwitter-result').html('<b>Step1:</b> Confirm Authorization'); });
-        });
-
-        $('#twitterStep2').click(function () {
-            $('#testTwitter-result').html('');
-            var twitter_key = $("#twitter_key").val();
-            $.get("twitterStep2", {'key': twitter_key},
-                function (data) { $('#testTwitter-result').html(data); });
-        });
-
-        $('#testTwitter').click(function () {
-            $.get("testTwitter",
-                function (data) { $('#testTwitter-result').html(data); });
         });
 
         $('#testBoxcar').click(function () {

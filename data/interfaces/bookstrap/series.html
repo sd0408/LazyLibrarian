@@ -46,10 +46,13 @@
       </select>
     </div>
     %if lazylibrarian.CONFIG['TOGGLES'] == True:
-    &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Author - </a>
-    <a class="toggle-vis" data-column="2">Series - </a>
-    <a class="toggle-vis" data-column="3">Have - </a>
-    <a class="toggle-vis" data-column="4">Status</a>
+    <span class="ms-3 text-muted small">Toggle:</span>
+    <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Author</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Series</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">Have</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Status</button>
+    </div>
     %endif
   </form>
   <br>
@@ -61,7 +64,7 @@
             %if perm&lazylibrarian.perm_status:
             <th class="select text-center no-sort"><input type="checkbox" onClick="toggleAll(this)" /></th>
             %else:
-            <td class="hidden"></td>
+            <th class="hidden"></th>
             %endif
             <th class="authorname">Author</th>
             <th class="series">Series Name</th>
@@ -73,19 +76,23 @@
     </div>
     %if perm&lazylibrarian.perm_status:
     <div class="form-group">
-      <label for="markSeries" class="control-label">Change selected series to: </label>
+      <label for="markSeries" class="control-label">Mark selected as</label>
       <select id="markSeries" class="markSeries form-control input-sm" name="action">
-        %for item in ['Skipped', 'Wanted', 'Active', 'Ignored']:
-        <option value="${item}">${item}</option>
-        %endfor
+        <optgroup label="Status">
+          %for item in ['Skipped', 'Wanted', 'Active', 'Ignored']:
+          <option value="${item}">${item}</option>
+          %endfor
+        </optgroup>
         %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
-        <option value="Unread">Unread</option>
-        <option value="Read">Read</option>
-        <option value="ToRead">To Read</option>
+        <optgroup label="Reading List">
+          <option value="Unread">Unread</option>
+          <option value="Read">Read</option>
+          <option value="ToRead">To Read</option>
+        </optgroup>
         %endif
       </select>
     </div>
-    <input type="submit" class="markSeries btn btn-sm btn-secondary" value="Go">
+    <input type="submit" class="markSeries btn btn-sm btn-primary" value="Go">
     %endif
   </form>
   <p>&nbsp;</p>
@@ -172,10 +179,11 @@
             });
         $('.dataTables_filter input').attr("placeholder", "Results filter");
         //$(window).resize(function() {oTable.draw(false)});
-        $('a.toggle-vis').click(function (e) {
+        $('button.toggle-vis').click(function (e) {
             e.preventDefault();
             var column = oTable.column( $(this).attr('data-column') );
             column.visible( ! column.visible() );
+            $(this).toggleClass('active');
         } );
     });
   </script>

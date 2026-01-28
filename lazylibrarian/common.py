@@ -519,11 +519,6 @@ def scheduleJob(action='Start', target=None):
             lazylibrarian.SCHED.add_interval_job(
                 lazylibrarian.versioncheck.checkForUpdates, hours=hours)
             logger.debug("%s %s job in %s hour%s" % (action, target, hours, plural(hours)))
-        elif 'syncToGoodreads' in target and lazylibrarian.CONFIG['GR_SYNC']:
-            if check_int(lazylibrarian.CONFIG['GOODREADS_INTERVAL'], 0):
-                hours = check_int(lazylibrarian.CONFIG['GOODREADS_INTERVAL'], 0)
-                lazylibrarian.SCHED.add_interval_job(lazylibrarian.grsync.cron_sync_to_gr, hours=hours)
-                logger.debug("%s %s job in %s hour%s" % (action, target, hours, plural(hours)))
         elif 'authorUpdate' in target and check_int(lazylibrarian.CONFIG['CACHE_AGE'], 0):
             # Try to get all authors scanned evenly inside the cache age
             maxage = check_int(lazylibrarian.CONFIG['CACHE_AGE'], 0)
@@ -542,7 +537,7 @@ def scheduleJob(action='Start', target=None):
                     minutes = int(minutes / total)
                     minutes -= 5  # average update time
 
-                if minutes < 10:  # set a minimum interval of 10 minutes so we don't upset goodreads/librarything api
+                if minutes < 10:  # set a minimum interval of 10 minutes so we don't upset librarything api
                     minutes = 10
                 if minutes <= 600:  # for bigger intervals switch to hours
                     lazylibrarian.SCHED.add_interval_job(authorUpdate, minutes=minutes)
@@ -614,7 +609,6 @@ def restartJobs(start='Restart'):
     scheduleJob(start, 'search_magazines')
     scheduleJob(start, 'checkForUpdates')
     scheduleJob(start, 'authorUpdate')
-    scheduleJob(start, 'syncToGoodreads')
 
 
 def ensureRunning(jobname):
@@ -673,7 +667,7 @@ def showStats():
     result = ["Cache %i hit%s, %i miss, " % (check_int(lazylibrarian.CACHE_HIT, 0),
                                              plural(check_int(lazylibrarian.CACHE_HIT, 0)),
                                              check_int(lazylibrarian.CACHE_MISS, 0)),
-              "Sleep %.3f goodreads, %.3f librarything" % (lazylibrarian.GR_SLEEP, lazylibrarian.LT_SLEEP),
+              "Sleep %.3f librarything" % lazylibrarian.LT_SLEEP,
               "GoogleBooks API %i calls, %s" % (lazylibrarian.GB_CALLS, gb_status)]
 
     myDB = database.DBConnection()
@@ -765,8 +759,6 @@ def showJobs():
             jobname = "PostProcessor"
         elif "authorUpdate" in job:
             jobname = "Update authors"
-        elif "sync_to_gr" in job:
-            jobname = "Goodreads Sync"
         else:
             jobname = job.split(' ')[0].split('.')[2]
 

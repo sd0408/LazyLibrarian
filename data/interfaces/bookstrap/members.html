@@ -45,26 +45,35 @@
         %endif
         <label for="action" class=""> as </label>
         <select class="markBooks form-control input-sm" id="action" name="action">
-          // would be nice to use fontawesome icons here but options are not styleable
-          // and some browsers don't show them, eg linux firefox, android chrome
-          // They only show icons on closed select, not in dropdown
-          %for item in ["Wanted", "Have", "Ignored", "Skipped", "Remove", "Delete"]:
-            <option value="${item}">${item}</option>
-          %endfor
+          <optgroup label="Status">
+            <option value="Wanted">Wanted</option>
+            <option value="Have">Have</option>
+            <option value="Ignored">Ignored</option>
+            <option value="Skipped">Skipped</option>
+          </optgroup>
           %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
+          <optgroup label="Reading List">
             <option value="Unread">Unread</option>
             <option value="Read">Read</option>
             <option value="ToRead">To Read</option>
+          </optgroup>
           %endif
+          <optgroup label="Destructive">
+            <option value="Remove">⚠ Remove from list</option>
+            <option value="Delete">🗑 Delete files</option>
+          </optgroup>
         </select>
       </div>
       <input type="submit" class="markBooks btn btn-sm btn-primary" value="Go">
       %endif
     %if lazylibrarian.CONFIG['TOGGLES'] == True:
-    &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Cover - </a>
-    <a class="toggle-vis" data-column="2">Title - </a>
-    <a class="toggle-vis"  data-column="4">Num - </a>
-    <a class="toggle-vis" data-column="5">Status</a>
+    <span class="ms-3 text-muted small">Toggle:</span>
+    <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Cover</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Title</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Num</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="5">Status</button>
+    </div>
     %endif
     </div>
     <p>&nbsp;</p>
@@ -75,7 +84,7 @@
             %if perm&lazylibrarian.perm_status:
             <th class="select text-center no-sort"><input type="checkbox" onClick="toggleAll(this)" /></th>
             %else:
-            <td class="hidden"></td>
+            <th class="hidden"></th>
             %endif
             <th class="bookart text-center no-sort hidden-xs">Cover</th>
             <th class="bookname">Title</th>
@@ -99,7 +108,7 @@
             <td class="bookart text-center hidden-xs"><a href="${result['BookImg']}" target="_blank" rel="noreferrer"><img src="${result['BookImg']}" class="bookcover-xs img-fluid" alt="Cover"></a></td>
             <td class="bookname">
             <button onclick="bookinfo(${result['BookID']})" class="button btn-link text-start" type="button">${result['BookName']}</button><br>
-              <a href="${result['BookLink']}" target="_new"><small><i>GoodReads</i></small></a>&nbsp;
+              <a href="${result['BookLink']}" target="_new"><small><i>GoogleBooks</i></small></a>&nbsp;
               <a href="${result['WorkPage']}" target="_new"><small><i>LibraryThing</i></small></a>&nbsp;
               %if perm&lazylibrarian.perm_edit:
               <a href="editBook?bookid=${result['BookID']}" target="_new"><small><i>Manual</i></small></a>
@@ -162,10 +171,11 @@
             });
         $('.dataTables_filter input').attr("placeholder", "Results filter");
         //$(window).resize(function() {oTable.draw(false)});
-        $('a.toggle-vis').click(function (e) {
+        $('button.toggle-vis').click(function (e) {
             e.preventDefault();
             var column = oTable.column( $(this).attr('data-column') );
             column.visible( ! column.visible() );
+            $(this).toggleClass('active');
         } );
     });
 

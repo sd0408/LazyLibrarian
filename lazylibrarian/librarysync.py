@@ -22,12 +22,11 @@ import lazylibrarian
 from lazylibrarian import logger, database
 from lazylibrarian.bookwork import setWorkPages
 from lazylibrarian.bookrename import bookRename, audioProcess, id3read
-from lazylibrarian.cache import cache_img, gr_xml_request
+from lazylibrarian.cache import cache_img
 from lazylibrarian.common import opf_file, any_file
 from lazylibrarian.formatter import plural, is_valid_isbn, is_valid_booktype, getList, unaccented, \
     cleanName, replace_all, split_title, now, makeUnicode, makeBytestr
 from lazylibrarian.gb import GoogleBooks
-from lazylibrarian.gr import GoodReads
 from lazylibrarian.importer import update_totals, addAuthorNameToDB
 from fuzzywuzzy import fuzz
 from vendor.mobi import Mobi
@@ -759,15 +758,10 @@ def LibraryScan(startdir=None, library='eBook', authid=None, remove=True):
                                         match = myDB.match('SELECT BookID FROM books where BookID=?', (bookid,))
                                         if not match:
                                             msg = 'Unable to find book %s by %s in database, trying to add it using '
-                                            if bookid == gr_id:
-                                                msg += "GoodReads ID " + gr_id
                                             if bookid == gb_id:
                                                 msg += "GoogleBooks ID " + gb_id
                                             logger.debug(msg % (book, author))
-                                            if lazylibrarian.CONFIG['BOOK_API'] == "GoodReads" and gr_id:
-                                                GR_ID = GoodReads(gr_id)
-                                                GR_ID.find_book(gr_id)
-                                            elif lazylibrarian.CONFIG['BOOK_API'] == "GoogleBooks" and gb_id:
+                                            if gb_id:
                                                 GB_ID = GoogleBooks(gb_id)
                                                 GB_ID.find_book(gb_id)
                                             # see if it's there now...
@@ -802,89 +796,8 @@ def LibraryScan(startdir=None, library='eBook', authid=None, remove=True):
                                 # at this point if we still have no bookid, it looks like we
                                 # have author and book title but no database entry for it
                                 if not bookid:
-                                    if lazylibrarian.CONFIG['BOOK_API'] == "GoodReads":
-                                        # Either goodreads doesn't have the book or it didn't match language prefs
-                                        # or it's under a different author (pseudonym)
-                                        # Since we have the book anyway, try and reload it
-                                        rescan_count += 1
-                                        base_url = 'https://www.goodreads.com/search.xml?q='
-                                        params = {"key": lazylibrarian.CONFIG['GR_API']}
-                                        if author[1] in '. ':
-                                            surname = author
-                                            forename = ''
-                                            while surname and surname[1] in '. ':
-                                                forename = forename + surname[0] + '.'
-                                                surname = surname[2:].strip()
-                                            if author != forename + ' ' + surname:
-                                                logger.debug('Stripped authorname [%s] to [%s %s]' %
-                                                             (author, forename, surname))
-                                                author = forename + ' ' + surname
-
-                                        author = ' '.join(author.split())  # ensure no extra whitespace
-
-                                        searchname = author + ' ' + book
-                                        searchname = cleanName(unaccented(searchname))
-                                        if PY2:
-                                            searchname = searchname.encode(lazylibrarian.SYS_ENCODING)
-                                        searchterm = quote_plus(searchname)
-                                        set_url = base_url + searchterm + '&' + urlencode(params)
-                                        # noinspection PyBroadException
-                                        try:
-                                            rootxml, in_cache = gr_xml_request(set_url)
-                                            if rootxml is None:
-                                                logger.warn("Error requesting GoodReads for %s" % searchname)
-                                                logger.debug(set_url)
-                                            else:
-                                                book, _ = split_title(author, book)
-                                                dic = {u'\u2018': "", u'\u2019': "", u'\u201c': '', u'\u201d': '',
-                                                       "'": "", '"': ''}
-                                                book = replace_all(book, dic)
-                                                resultxml = rootxml.getiterator('work')
-                                                for item in resultxml:
-                                                    try:
-                                                        booktitle = item.find('./best_book/title').text
-                                                        booktitle, _ = split_title(author, booktitle)
-                                                        booktitle = replace_all(booktitle, dic)
-                                                    except (KeyError, AttributeError):
-                                                        booktitle = ""
-                                                    book_fuzz = fuzz.token_set_ratio(booktitle, book)
-                                                    if book_fuzz >= 98:
-                                                        rescan_hits += 1
-                                                        try:
-                                                            bookid = item.find('./best_book/id').text
-                                                        except (KeyError, AttributeError):
-                                                            bookid = ""
-                                                        logger.debug("Rescan found %s : %s: %s" %
-                                                                     (booktitle, language, bookid))
-
-                                                        if bookid:
-                                                            cmd = 'SELECT * from books WHERE BookID=?'
-                                                            check_status = myDB.match(cmd, (bookid,))
-                                                            if check_status:
-                                                                logger.debug("%s matched on rescan for %s" %
-                                                                             (bookid, booktitle))
-                                                            else:
-                                                                logger.debug("Adding %s on rescan for %s" %
-                                                                             (bookid, booktitle))
-                                                                GR_ID = GoodReads(bookid)
-                                                                GR_ID.find_book(bookid)
-                                                                if language and language != "Unknown":
-                                                                    # set language from book metadata
-                                                                    logger.debug(
-                                                                        "Setting language from metadata %s : %s" % (
-                                                                            booktitle, language))
-                                                                    myDB.action(
-                                                                        'UPDATE books SET BookLang=? WHERE BookID=?',
-                                                                        (language, bookid))
-                                                            break
-                                                if not bookid:
-                                                    logger.warn("GoodReads doesn't know about %s" % book)
-                                        except Exception:
-                                            logger.error('Error finding rescan results: %s' % traceback.format_exc())
-                                    elif lazylibrarian.CONFIG['BOOK_API'] == "GoogleBooks":
-                                        # if we get here using googlebooks it's because googlebooks
-                                        # doesn't have the book. No point in looking for it again.
-                                        logger.warn("GoogleBooks doesn't know about %s" % book)
+                                    # GoogleBooks doesn't have the book. No point in looking for it again.
+                                    logger.warn("GoogleBooks doesn't know about %s" % book)
 
                                 # see if it's there now...
                                 if bookid:
@@ -1042,11 +955,6 @@ def LibraryScan(startdir=None, library='eBook', authid=None, remove=True):
                              (st['GR_book_hits'], plural(st['GR_book_hits'])))
                 logger.debug("GoogleBooks language was changed %s time%s" %
                              (st['GB_lang_change'], plural(st['GB_lang_change'])))
-            if lazylibrarian.CONFIG['BOOK_API'] == "GoodReads":
-                logger.debug("GoodReads was hit %s time%s for books" %
-                             (st['GR_book_hits'], plural(st['GR_book_hits'])))
-                logger.debug("GoodReads was hit %s time%s for languages" %
-                             (st['GR_lang_hits'], plural(st['GR_lang_hits'])))
             logger.debug("LibraryThing was hit %s time%s for languages" %
                          (st['LT_lang_hits'], plural(st['LT_lang_hits'])))
             logger.debug("Language cache was hit %s time%s" %

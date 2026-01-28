@@ -35,8 +35,6 @@ from lazylibrarian.common import clearLog, cleanCache, restartJobs, showJobs, ch
 from lazylibrarian.csvfile import import_CSV, export_CSV, dump_table
 from lazylibrarian.formatter import today, formatAuthorName, check_int, plural, makeUnicode, makeBytestr, replace_all
 from lazylibrarian.gb import GoogleBooks
-from lazylibrarian.gr import GoodReads
-from lazylibrarian.grsync import grfollow, grsync
 from lazylibrarian.images import getAuthorImage, getAuthorImages, getBookCover, getBookCovers, createMagCovers, \
     createMagCover
 from lazylibrarian.importer import addAuthorToDB, addAuthorNameToDB, update_totals
@@ -104,8 +102,8 @@ cmd_dict = {'help': 'list available commands. ' +
             'shutdown': 'stop lazylibrarian',
             'restart': 'restart lazylibrarian',
             'update': 'update lazylibrarian',
-            'findAuthor': '&name= search goodreads/googlebooks for named author',
-            'findBook': '&name= search goodreads/googlebooks for named book',
+            'findAuthor': '&name= search googlebooks for named author',
+            'findBook': '&name= search googlebooks for named book',
             'addBook': '&id= add book details to the database',
             'moveBooks': '&fromname= &toname= move all books from one author to another by AuthorName',
             'moveBook': '&id= &toid= move one book to new author by BookID and AuthorID',
@@ -119,7 +117,7 @@ cmd_dict = {'help': 'list available commands. ' +
             'readCFG': '&name=&group= read value of config variable "name" in section "group"',
             'writeCFG': '&name=&group=&value= set config variable "name" in section "group" to value',
             'loadCFG': 'reload config from file',
-            'getBookCover': '&id= [&src=] fetch cover link from cache/cover/librarything/goodreads/google for BookID',
+            'getBookCover': '&id= [&src=] fetch cover link from cache/cover/librarything/google for BookID',
             'getAllBooks': 'list all books in the database',
             'listNoLang': 'list all books in the database with unknown language',
             'listNoDesc': 'list all books in the database with no description',
@@ -137,7 +135,7 @@ cmd_dict = {'help': 'list available commands. ' +
             'showThreads': 'show threaded processes',
             'checkRunningJobs': 'ensure all needed jobs are running',
             'vacuum': 'vacuum the database',
-            'getWorkSeries': '&id= Get series from Librarything BookWork using BookID or GoodReads using WorkID',
+            'getWorkSeries': '&id= Get series from Librarything BookWork using BookID',
             'getSeriesMembers': '&id= Get list of series members using SeriesID',
             'getSeriesAuthors': '&id= Get all authors for a series and import them',
             'getWorkPage': '&id= Get url of Librarything BookWork using BookID',
@@ -147,17 +145,13 @@ cmd_dict = {'help': 'list available commands. ' +
             'deleteEmptySeries': 'Delete any book series that have no members',
             'setNoDesc': 'Set book descriptions for all books without one',
             'setWorkPages': '[&wait] Set the WorkPages links in the database',
-            'setAllBookSeries': '[&wait] Set the series details from goodreads or librarything workpages',
+            'setAllBookSeries': '[&wait] Set the series details from librarything workpages',
             'setAllBookAuthors': '[&wait] Set all authors for all books from book workpages',
             'setWorkID': '[&wait] [&bookids] Set WorkID for all books that dont have one, or bookids',
             'importAlternate': '[&wait] [&dir=] Import books from named or alternate folder and any subfolders',
             'includeAlternate': '[&wait] [&dir=] Include books from named or alternate folder and any subfolders',
             'importCSVwishlist': '[&wait] [&dir=] Import a CSV wishlist from named or alternate directory',
             'exportCSVwishlist': '[&wait] [&dir=] Export a CSV wishlist to named or alternate directory',
-            'grSync': '&status= &shelf= [&library=] Sync books with given status to a goodreads shelf',
-            'grFollow': '&id= Follow an author on goodreads',
-            'grFollowAll': 'Follow all lazylibrarian authors on goodreads',
-            'grUnfollow': '&id= Unfollow an author on goodreads',
             'writeOPF': '&id= [&refresh] write out an opf file for a bookid, optionally overwrite existing opf',
             'writeAllOPF': '[&refresh] write out opf files for all books, optionally overwrite existing opf',
             'renameAudio': '&id Rename an audiobook using configured pattern',
@@ -494,7 +488,7 @@ class Api(object):
         for item in sys.modules:
             data = str(sys.modules[item]).replace('<', '').replace('>', '')
             for libname in ['apscheduler', 'bs4', 'deluge_client', 'feedparser', 'fuzzywuzzy', 'html5lib',
-                            'httplib2', 'mobi', 'oauth2', 'pynma', 'pythontwitter', 'requests', 'simplejson',
+                            'httplib2', 'mobi', 'pynma', 'requests', 'simplejson',
                             'unrar', 'six', 'webencodings']:
                 if libname in data and 'dist-packages' in data:
                     lst.append("%s: %s" % (item, data))
@@ -964,17 +958,10 @@ class Api(object):
             return
 
         authorname = formatAuthorName(kwargs['name'])
-        if lazylibrarian.CONFIG['BOOK_API'] == "GoogleBooks":
-            GB = GoogleBooks(authorname)
-            myqueue = queue.Queue()
-            search_api = threading.Thread(target=GB.find_results, name='API-GBRESULTS', args=[authorname, myqueue])
-            search_api.start()
-        else:  # lazylibrarian.CONFIG['BOOK_API'] == "GoodReads":
-            GR = GoodReads(authorname)
-            myqueue = queue.Queue()
-            search_api = threading.Thread(target=GR.find_results, name='API-GRRESULTS', args=[authorname, myqueue])
-            search_api.start()
-
+        GB = GoogleBooks(authorname)
+        myqueue = queue.Queue()
+        search_api = threading.Thread(target=GB.find_results, name='API-GBRESULTS', args=[authorname, myqueue])
+        search_api.start()
         search_api.join()
         self.data = myqueue.get()
 
@@ -983,17 +970,10 @@ class Api(object):
             self.data = 'Missing parameter: name'
             return
 
-        if lazylibrarian.CONFIG['BOOK_API'] == "GoogleBooks":
-            GB = GoogleBooks(kwargs['name'])
-            myqueue = queue.Queue()
-            search_api = threading.Thread(target=GB.find_results, name='API-GBRESULTS', args=[kwargs['name'], myqueue])
-            search_api.start()
-        else:  # lazylibrarian.CONFIG['BOOK_API'] == "GoodReads":
-            GR = GoodReads(kwargs['name'])
-            myqueue = queue.Queue()
-            search_api = threading.Thread(target=GR.find_results, name='API-GRRESULTS', args=[kwargs['name'], myqueue])
-            search_api.start()
-
+        GB = GoogleBooks(kwargs['name'])
+        myqueue = queue.Queue()
+        search_api = threading.Thread(target=GB.find_results, name='API-GBRESULTS', args=[kwargs['name'], myqueue])
+        search_api.start()
         search_api.join()
         self.data = myqueue.get()
 
@@ -1002,12 +982,8 @@ class Api(object):
             self.data = 'Missing parameter: id'
             return
 
-        if lazylibrarian.CONFIG['BOOK_API'] == "GoogleBooks":
-            GB = GoogleBooks(kwargs['id'])
-            threading.Thread(target=GB.find_book, name='API-GBRESULTS', args=[kwargs['id']]).start()
-        else:  # lazylibrarian.CONFIG['BOOK_API'] == "GoodReads":
-            GR = GoodReads(kwargs['id'])
-            threading.Thread(target=GR.find_book, name='API-GRRESULTS', args=[kwargs['id']]).start()
+        GB = GoogleBooks(kwargs['id'])
+        threading.Thread(target=GB.find_book, name='API-GBRESULTS', args=[kwargs['id']]).start()
 
     def _moveBook(self, **kwargs):
         if 'id' not in kwargs:
@@ -1084,64 +1060,6 @@ class Api(object):
             self.id = kwargs['id']
         try:
             self.data = addAuthorToDB(refresh=False, authorid=self.id)
-        except Exception as e:
-            self.data = "%s %s" % (type(e).__name__, str(e))
-
-    def _grFollowAll(self):
-        myDB = database.DBConnection()
-        cmd = 'SELECT AuthorName,AuthorID,GRfollow FROM authors where '
-        cmd += 'Status="Active" or Status="Wanted" or Status="Loading"'
-        authors = myDB.select(cmd)
-        count = 0
-        for author in authors:
-            followid = check_int(author['GRfollow'], 0)
-            if followid > 0:
-                logger.debug('%s is already followed' % author['AuthorName'])
-            elif author['GRfollow'] == "0":
-                logger.debug('%s is manually unfollowed' % author['AuthorName'])
-            else:
-                res = grfollow(author['AuthorID'], True)
-                if res.startswith('Unable'):
-                    logger.warn(res)
-                try:
-                    followid = res.split("followid=")[1]
-                    logger.debug('%s marked followed' % author['AuthorName'])
-                    count += 1
-                except IndexError:
-                    followid = ''
-                myDB.action('UPDATE authors SET GRfollow=? WHERE AuthorID=?', (followid, author['AuthorID']))
-        self.data = "Added follow to %s author%s" % (count, plural(count))
-
-    def _grSync(self, **kwargs):
-        if 'shelf' not in kwargs:
-            self.data = 'Missing parameter: shelf'
-            return
-        if 'status' not in kwargs:
-            self.data = 'Missing parameter: status'
-            return
-        library = 'eBook'
-        if 'library' in kwargs:
-            library = kwargs['library']
-        try:
-            self.data = grsync(kwargs['status'], kwargs['shelf'], library)
-        except Exception as e:
-            self.data = "%s %s" % (type(e).__name__, str(e))
-
-    def _grFollow(self, **kwargs):
-        if 'id' not in kwargs:
-            self.data = 'Missing parameter: id'
-            return
-        try:
-            self.data = grfollow(authorid=kwargs['id'], follow=True)
-        except Exception as e:
-            self.data = "%s %s" % (type(e).__name__, str(e))
-
-    def _grUnfollow(self, **kwargs):
-        if 'id' not in kwargs:
-            self.data = 'Missing parameter: id'
-            return
-        try:
-            self.data = grfollow(authorid=kwargs['id'], follow=False)
         except Exception as e:
             self.data = "%s %s" % (type(e).__name__, str(e))
 

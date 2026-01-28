@@ -33,14 +33,14 @@
       <input name="utf8" type="hidden" value="&#x2713;" />
       <div>
         <ul class="nav nav-tabs" role="tablist" id="configtabs">
-        <li role="presentation" id="1" aria-controls="webinterface"><a role="tab" data-bs-toggle="tab" aria-controls="webinterface" href="#webinterface">Interface</a></li>
-        <li role="presentation" id="2" aria-controls="importoptions"><a role="tab" data-bs-toggle="tab" aria-controls="importoptions" href="#importoptions">Importing</a></li>
-        <li role="presentation" id="3" aria-controls="downloadsettings"><a role="tab" data-bs-toggle="tab" aria-controls="downloadsettings" href="#downloadsettings">Downloaders</a></li>
-        <li role="presentation" id="4" aria-controls="providers"><a role="tab" data-bs-toggle="tab" aria-controls="providers" href="#providers">Providers</a></li>
-        <li role="presentation" id="5" aria-controls="searchprocessing"><a role="tab" data-bs-toggle="tab" aria-controls="searchprocessing" href="#searchprocessing">Processing</a></li>
-        <li role="presentation" id="6" aria-controls="notifications"><a role="tab" data-bs-toggle="tab" aria-controls="notifications" href="#notifications">Notifications</a></li>
-        <li role="presentation" id="7" aria-controls="capabilities"><a role="tab" data-bs-toggle="tab" aria-controls="capabilities" href="#capabilities">Categories</a></li>
-        <li role="presentation" id="8" aria-controls="filters"><a role="tab" data-bs-toggle="tab" aria-controls="filters" href="#filters">Filters</a></li>
+        <li class="nav-item" role="presentation" id="1" aria-controls="webinterface"><a class="nav-link" role="tab" data-bs-toggle="tab" aria-controls="webinterface" href="#webinterface">Interface</a></li>
+        <li class="nav-item" role="presentation" id="2" aria-controls="importoptions"><a class="nav-link" role="tab" data-bs-toggle="tab" aria-controls="importoptions" href="#importoptions">Importing</a></li>
+        <li class="nav-item" role="presentation" id="3" aria-controls="downloadsettings"><a class="nav-link" role="tab" data-bs-toggle="tab" aria-controls="downloadsettings" href="#downloadsettings">Downloaders</a></li>
+        <li class="nav-item" role="presentation" id="4" aria-controls="providers"><a class="nav-link" role="tab" data-bs-toggle="tab" aria-controls="providers" href="#providers">Providers</a></li>
+        <li class="nav-item" role="presentation" id="5" aria-controls="searchprocessing"><a class="nav-link" role="tab" data-bs-toggle="tab" aria-controls="searchprocessing" href="#searchprocessing">Processing</a></li>
+        <li class="nav-item" role="presentation" id="6" aria-controls="notifications"><a class="nav-link" role="tab" data-bs-toggle="tab" aria-controls="notifications" href="#notifications">Notifications</a></li>
+        <li class="nav-item" role="presentation" id="7" aria-controls="capabilities"><a class="nav-link" role="tab" data-bs-toggle="tab" aria-controls="capabilities" href="#capabilities">Categories</a></li>
+        <li class="nav-item" role="presentation" id="8" aria-controls="filters"><a class="nav-link" role="tab" data-bs-toggle="tab" aria-controls="filters" href="#filters">Filters</a></li>
         </ul>
         <div class="tab-content">
           <div role="tabpanel" class="tab-pane" id="webinterface">
@@ -425,21 +425,10 @@
                 <fieldset>
                   <legend>Information Sources</legend>
                   <div class="form-group">
-                    <%
-                    if lazylibrarian.CONFIG['BOOK_API'] == "GoodReads":
-                        gr_selected = 'selected="selected"'
-                        gb_selected = ''
-                    else:
-                        gr_selected = ''
-                        gb_selected = 'selected="selected"'
-                    %>
                     <label for="book_api" class="control-label">Book Information</label>
-                    <select id="book_api" name="book_api" class="form-control">
-                      <option value = "GoodReads" ${gr_selected}>GoodReads</option>
-                      <option value = "GoogleBooks" ${gb_selected}>GoogleBooks</option>
-                    </select>
+                    <input type="hidden" id="book_api" name="book_api" value="GoogleBooks">
+                    <span class="form-control-plaintext">GoogleBooks</span>
                   </div>
-                  <fieldset id="gb_options">
                   <div class="form-group">
                     <label for="gb_api" class="control-label">GoogleBooks API:</label>
                     <input type="text" id="gb_api" name="gb_api" value="${lazylibrarian.CONFIG['GB_API']}" class="form-control">
@@ -449,67 +438,6 @@
                     <input type="text" id="gb_country" name="gb_country" value="${lazylibrarian.CONFIG['GB_COUNTRY']}" class="form-control">
                     <span class="help-block">Two letter country code for geographically restricted content e.g: US GB ES</span>
                   </div>
-                  </fieldset>
-                  <fieldset id="gr_options">
-                  <div class="form-group">
-                    <label for="gr_api">Goodreads API:</label>
-                    <input type="text" id="gr_api" name="gr_api" value="${lazylibrarian.CONFIG['GR_API']}" class="form-control"     placeholder="Goodreads API">
-                    <div class="checkbox">
-                      <%
-                        if lazylibrarian.CONFIG['GR_SYNC'] == True:
-                            checked = 'checked="checked"'
-                        else:
-                            checked = ''
-                      %>
-                      <label for="gr_sync" class="control-label">
-                        <input type="checkbox" id="gr_sync" name="gr_sync" value="1" ${checked} />
-                        Enable GoodReads Sync</label>
-                    </div>
-                    <fieldset id="grsync_options">
-                      <label for="gr_secret">Goodreads Secret:</label>
-                      <input type="text" id="gr_secret" name="gr_secret" value="${lazylibrarian.CONFIG['GR_SECRET']}" class="form-control">
-                      <label for="gr_oauth_token">Goodreads OAuth Token:</label>
-                      <input type="text" id="gr_oauth_token" name="gr_oauth_token" value="${lazylibrarian.CONFIG['GR_OAUTH_TOKEN']}" class="form-control">
-                      <label for="gr_oauth_secret">Goodreads OAuth Secret:</label>
-                      <input type="text" id="gr_oauth_secret" name="gr_oauth_secret" value="${lazylibrarian.CONFIG['GR_OAUTH_SECRET']}" class="form-control">
-                      <label for="gr_wanted">Sync Wanted eBooks to Goodreads shelf:</label>
-                      <input type="text" id="gr_wanted" name="gr_wanted" value="${lazylibrarian.CONFIG['GR_WANTED']}" class="form-control" placeholder="eg: to-read">
-                      <label for="gr_owned">Sync Open/Have eBooks to Goodreads shelf:</label>
-                      <input type="text" id="gr_owned" name="gr_owned" value="${lazylibrarian.CONFIG['GR_OWNED']}" class="form-control" placeholder="eg: owned">
-                      <fieldset id="graudio_options">
-                        <label for="gr_awanted">Sync Wanted AudioBooks to Goodreads shelf:</label>
-                        <input type="text" id="gr_awanted" name="gr_awanted" value="${lazylibrarian.CONFIG['GR_AWANTED']}" class="form-control" placeholder="eg: audio_wanted">
-                        <label for="gr_owned">Sync Open/Have AudioBooks to Goodreads shelf:</label>
-                        <input type="text" id="gr_aowned" name="gr_aowned" value="${lazylibrarian.CONFIG['GR_AOWNED']}"class="form-control" placeholder="eg: audio_owned">
-                      </fieldset>
-                        <div class="checkbox">
-                          <%
-                            if lazylibrarian.CONFIG['GR_UNIQUE'] == True:
-                                checked = 'checked="checked"'
-                            else:
-                                checked = ''
-                          %>
-                          <label for="gr_unique" class="control-label">
-                            <input type="checkbox" id="gr_unique" name="gr_unique" value="1" ${checked} />
-                            Delete from GoodReads Wanted shelf if also on Open/Have shelf</label>
-                        </div>
-                      <div class="form-group">
-                        <label for="goodreads_interval" class="control-label">Goodreads Sync Interval:</label>
-                        <div class="input-group">
-                          <input type="number" id="goodreads_interval" name="goodreads_interval" value="${lazylibrarian.CONFIG['GOODREADS_INTERVAL']}" class="form-control" placeholder="Goodreads Sync interval (hours)" >
-                          <span class="input-group-addon">Hours</span>
-                        </div>
-                      </div>
-                      <div class="form-group">
-                        <input type="button" value="Request oAuth1" id="grauthStep1" class="btn btn-secondary" />
-                        <input type="button" value="Request oAuth2" id="grauthStep2" class="btn btn-secondary" />
-                      </div>
-                      <div class="form-group">
-                        <input type="button" value="Test Authorization" id="testgrauth" class="btn btn-secondary" />
-                      </div>
-                    </fieldset>
-                  </div>
-                  </fieldset>
                   <div class="form-group">
                     <label for="lt_devkey" class="control-label">LibraryThing Developer Key:</label>
                     <input type="text" id="lt_devkey" name="lt_devkey" value="${lazylibrarian.CONFIG['LT_DEVKEY']}" class="form-control" placeholder="optional">
@@ -664,10 +592,9 @@
                     <label for="imp_preflang" class="control-label">Import languages:</label>
                     <input type="text" id="imp_preflang" name="imp_preflang" value="${lazylibrarian.CONFIG['IMP_PREFLANG']}" class="form-control" placeholder="Import Languages">
                     <span class="help-block">Comma separated country shortcodes:<br/>
-                      GoodReads e.g: eng, en-US, spa, ita<br/>
                       GoogleBooks e.g: en, es, it<br/>
                       Default: en, eng, en-US<br/>
-                      Try adding "Unknown" to list if GoodReads is missing results, or "All" if you don't want to check for language</span>
+                      Try adding "Unknown" to list if missing results, or "All" if you don't want to check for language</span>
                   </div>
                   <div class="form-group">
                     <label for="imp_monthlang" class="control=label">Languages for month names:</label>
@@ -2158,60 +2085,6 @@
               <div class="col-md-6">
                 <div class="checkbox">
                   <%
-                    if lazylibrarian.CONFIG['USE_TWITTER'] == True:
-                        checked = 'checked="checked"'
-                    else:
-                        checked = ''
-                    %>
-                  <label for="use_twitter">
-                    <input type="checkbox" id="use_twitter" name="use_twitter" value="1" ${checked} />
-                    Enable Twitter Notifications</label>
-                </div>
-                <div id="twitteroptions">
-                  <fieldset>
-                    <legend>Twitter</legend>
-                    <div class="row checkbox">
-                    <div class="col-md-6">
-                      <%
-                        if lazylibrarian.CONFIG['TWITTER_NOTIFY_ONSNATCH'] == True:
-                            checked = 'checked="checked"'
-                        else:
-                            checked = ''
-                        %>
-                      <label for="twitter_notify_onsnatch" class="control-label">
-                        <input type="checkbox" id="twitter_notify_onsnatch" name="twitter_notify_onsnatch" value="1" ${checked} />
-                        Notify on snatch</label>
-                    </div>
-                    <div class="col-md-6">
-                      <%
-                        if lazylibrarian.CONFIG['TWITTER_NOTIFY_ONDOWNLOAD'] == True:
-                            checked = 'checked="checked"'
-                        else:
-                            checked = ''
-                        %>
-                      <label for="twitter_notify_ondownload">
-                        <input type="checkbox" id="twitter_notify_ondownload" name="twitter_notify_ondownload" value="1" ${checked} />
-                        Notify on download</label>
-                    </div>
-                    </div>
-                    <div class="form-group">
-                      <input type="button" value="Request Authorization" id="twitterStep1" class="btn btn-secondary" />
-                    </div>
-                    <div class="form-group">
-                      <label for="twitter_key" class="control-label">Twitter Key</label>
-                      <input type="text" id="twitter_key" name="twitter_key" value="" placeholder="Twitter Authorization Key" class="form-control" />
-                      <span class="help-block">Enter the key from the twitter authorization page here, DO NOT press Enter or save the config. The key is single-use and will not be saved. Press [Verify Key] to complete authorization.</span>
-                    </div>
-                    <div class="form-group">
-                      <input type="button" value="Verify Key" id="twitterStep2" class="btn btn-secondary" />
-                    </div>
-                    <div class="form-group">
-                      <input type="button" value="Test Twitter" id="testTwitter" class="btn btn-secondary" />
-                    </div>
-                  </fieldset>
-                </div>
-                <div class="checkbox">
-                  <%
                     if lazylibrarian.CONFIG['USE_BOXCAR'] == True:
                         checked = 'checked="checked"'
                     else:
@@ -3192,26 +3065,6 @@
                 }
         });
 
-        if ($("#gr_sync").is(":checked"))
-            {
-                    $("#grsync_options").show();
-            }
-        else
-            {
-                    $("#grsync_options").hide();
-            }
-
-        $("#gr_sync").click(function(){
-                if ($("#gr_sync").is(":checked"))
-                {
-                        $("#grsync_options").slideDown();
-                }
-                else
-                {
-                        $("#grsync_options").slideUp();
-                }
-        });
-
         if ($("#user_accounts").is(":checked"))
             {
                     $("#admin_options").show();
@@ -3807,26 +3660,6 @@
             });
         });
 
-        if ($("#use_twitter").is(":checked"))
-                {
-                        $("#twitteroptions").show();
-                }
-        else
-                {
-                        $("#twitteroptions").hide();
-                }
-
-        $("#use_twitter").click(function(){
-                if ($("#use_twitter").is(":checked"))
-                {
-                        $("#twitteroptions").slideDown();
-                }
-                else
-                {
-                        $("#twitteroptions").slideUp();
-                }
-        });
-
         if ($("#use_boxcar").is(":checked"))
                 {
                         $("#boxcaroptions").show();
@@ -4130,102 +3963,6 @@
         });
 
 
-        $('#testgrauth').click(function () {
-            var gr_api = $.trim($("#gr_api").val());
-            var gr_secret = $.trim($("#gr_secret").val());
-            var oauth_token = $.trim($("#gr_oauth_token").val());
-            var oauth_secret = $.trim($("#gr_oauth_secret").val());
-            $.get("testGRAuth", {'gr_api': gr_api, 'gr_secret': gr_secret, 'oauth_token': oauth_token, 'oauth_secret': oauth_secret},
-                function (data) {
-                    bootbox.dialog({
-                        title: 'GoodReads Auth',
-                        message: '<pre>'+data+'</pre>',
-                        buttons: {
-                            primary: {
-                                label: "Close",
-                                className: 'btn-primary'
-                            }
-                        }
-                    });
-                });
-        });
-
-        $('#grauthStep1').click(function () {
-            var gr_api = $.trim($("#gr_api").val());
-            var gr_secret = $.trim($("#gr_secret").val());
-            $.get("grauthStep1", {'gr_api': gr_api, 'gr_secret': gr_secret},
-                function (data) {
-                if ( data.substr(0, 4) == 'http') { bootbox.dialog({
-                        title: 'GoodReads Auth',
-                        message: '<pre>When you click [OK] a new page will open to authorise lazylibrarian. Follow the prompts, then go back to LazyLibrarian and request oAuth2\nIf the page does not open, visit this link...\n'+data+'</pre>',
-                        buttons: {
-                            primary: {
-                                label: "Close",
-                                className: 'btn-primary'
-                            }
-                        }
-                    });  window.open(data);
-                }
-                else { bootbox.dialog({
-                        title: 'GoodReads Response',
-                        message: '<pre>'+data+'</pre>',
-                        buttons: {
-                            primary: {
-                                label: "Close",
-                                className: 'btn-primary'
-                            }
-                        }
-                    });
-                }
-              })
-        });
-
-        $('#grauthStep2').click(function () {
-            $.get("grauthStep2", {},
-                function (data) { bootbox.dialog({
-                        title: 'GoodReads Confirm',
-                        message: '<pre>'+data+'</pre>',
-                        buttons: {
-                            primary: {
-                                label: "Close",
-                                className: 'btn-primary',
-                                callback: function(){ document.location.reload(true); }
-                            }
-                        }
-                    });
-                })
-        });
-
-
-        $('#twitterStep1').click(function () {
-            $('#testTwitter-result').html('');
-            $.get("twitterStep1", function (data) {window.open(data); })
-                .done(function () { $('#testTwitter-result').html('<b>Step1:</b> Confirm Authorization'); });
-        });
-
-        $('#twitterStep2').click(function () {
-            $('#testTwitter-result').html('');
-            var twitter_key = $("#twitter_key").val();
-            $.get("twitterStep2", {'key': twitter_key},
-                function (data) { $('#testTwitter-result').html(data); });
-        });
-
-        $('#testTwitter').click(function () {
-            $.get("testTwitter", {},
-                function (data) {
-                    bootbox.dialog({
-                        title: 'Twitter Notifier',
-                        message: '<pre>'+data+'</pre>',
-                        buttons: {
-                            primary: {
-                                label: "Close",
-                                className: 'btn-primary'
-                            }
-                        }
-                    });
-                });
-        });
-
         $('#testBoxcar').click(function () {
             var token = $.trim($("#boxcar_token").val());
             $.get("testBoxcar", {'token': token},
@@ -4466,26 +4203,6 @@
                 });
         });
 
-        if ($("#book_api").val() == 'GoodReads')
-            {
-                    $("#gr_options").show();
-                    $("#gb_options").hide();
-            }
-        else
-            {
-                    $("#gr_options").hide();
-                    $("#gb_options").show();
-            }
-        $('#book_api').change(function() {
-            if ($(this).val() == 'GoodReads') {
-                $("#gb_options").slideUp();
-                $("#gr_options").slideDown();
-            } else {
-                $("#gr_options").slideUp();
-                $("#gb_options").slideDown();
-            }
-        });
-
         $('#http_look').change(function() {
             if ($(this).val() == 'bookstrap') {
                 $('#bookstrap_options').removeClass("hidden");
@@ -4495,10 +4212,10 @@
         });
 
         // when the page first loads, hide all tab headers and panels
-        $("li[role='presentation']").attr("aria-selected", "false");
-        $("li[role='presentation']").removeClass('active');
+        $("li[role='presentation'] a").attr("aria-selected", "false");
+        $("li[role='presentation'] a").removeClass('active');
         $("div[role='tabpanel']").attr("aria-hidden", "true");
-        $("div[role='tabpanel']").removeClass('active');
+        $("div[role='tabpanel']").removeClass('show active');
         // which one do we want to show
         var tabnum = $("#current_tab").val();
         var tabid = $("#" + tabnum);
@@ -4506,9 +4223,9 @@
         var tabpanelid = $("#" + tabpanel);
         // show the tab header and panel we want
         tabpanelid.attr("aria-hidden", "false");
-        tabpanelid.addClass('active');
-        tabid.attr("aria-selected", "true");
-        tabid.addClass('active');
+        tabpanelid.addClass('show active');
+        tabid.find('a').attr("aria-selected", "true");
+        tabid.find('a').addClass('active');
         $("div[role='tab-table']").removeClass('hidden');
 
         // when a tab is clicked

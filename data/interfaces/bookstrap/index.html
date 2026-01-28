@@ -47,18 +47,30 @@
       <div class="form-group">
         <label for="markAuthors" class="control-label">Mark selected as</label>
         <select class="markAuthors form-control input-sm" id="action" name="action">
-          <option value="Active">Active</option>
-          <option value="Wanted">Wanted</option>
-          <option value="Ignored">Ignored</option>
-          <option value="Paused">Paused</option>
-          <option value="Remove">Remove</option>
-          <option value="Delete">Delete</option>
+          <optgroup label="Status">
+            <option value="Active">Active</option>
+            <option value="Wanted">Wanted</option>
+            <option value="Ignored">Ignored</option>
+            <option value="Paused">Paused</option>
+          </optgroup>
+          <optgroup label="Destructive">
+            <option value="Remove">⚠ Remove from list</option>
+            <option value="Delete">🗑 Delete files</option>
+          </optgroup>
         </select>
       </div>
       <button type="submit" class="btn btn-sm btn-primary" onclick="validateForm()">Go</button>
       %endif
       %if lazylibrarian.CONFIG['TOGGLES'] == True:
-        &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Image</a> - <a class="toggle-vis" data-column="2">Author</a> - <a class="toggle-vis" data-column="3">Latest</a> - <a class="toggle-vis" data-column="4">Released</a> - <a class="toggle-vis" data-column="5">Downloaded</a> - <a class="toggle-vis" data-column="6">Status</a>
+        <span class="ms-3 text-muted small">Toggle:</span>
+        <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Image</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Author</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">Latest</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Released</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="5">Downloaded</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="6">Status</button>
+        </div>
         <p>&nbsp;</p>
       %endif
   <div class="table-responsive">
@@ -184,10 +196,11 @@
                 "aaSorting": [[2, 'asc']],
             });
         $('.dataTables_filter input').attr("placeholder", "Results filter");
-        $('a.toggle-vis').click(function (e) {
+        $('button.toggle-vis').click(function (e) {
             e.preventDefault();
             var column = table.column( $(this).attr('data-column') );
             column.visible( ! column.visible() );
+            $(this).toggleClass('active');
         } );
     });
 

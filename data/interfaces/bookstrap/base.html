@@ -168,13 +168,39 @@
                   % endif
                 % endif
                 %if perm&lazylibrarian.perm_managebooks:
-                  <li class="nav-item"><a id="manage" href="manage" class="nav-link">Manage</a></li>
+                  <li class="nav-item"><a id="wanted" href="manage" class="nav-link">Wanted</a></li>
                 % endif
                 %if perm&lazylibrarian.perm_history:
                   <li class="nav-item"><a id="history" href="history" class="nav-link">History</a></li>
                 % endif
                 %if perm&lazylibrarian.perm_logs:
                   <li class="nav-item"><a id="logs" href="logs" class="nav-link">Logs</a></li>
+                % endif
+                %if perm&lazylibrarian.perm_force:
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="toolsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="fa fa-wrench"></i> Tools
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="toolsDropdown">
+                      <li><h6 class="dropdown-header">Import Library</h6></li>
+                      <li><a class="dropdown-item" href="importAlternate"><i class="fa fa-book"></i> Import eBooks</a></li>
+                      <li><a class="dropdown-item" href="includeAlternate"><i class="fa fa-book"></i> Include eBooks</a></li>
+                      % if lazylibrarian.SHOW_AUDIO != 0:
+                      <li><a class="dropdown-item" href="importAlternate?library=AudioBook"><i class="fa fa-headphones"></i> Import AudioBooks</a></li>
+                      <li><a class="dropdown-item" href="includeAlternate?library=AudioBook"><i class="fa fa-headphones"></i> Include AudioBooks</a></li>
+                      % endif
+                      <li><hr class="dropdown-divider"></li>
+                      <li><h6 class="dropdown-header">CSV</h6></li>
+                      <li><a class="dropdown-item" href="#" id="nav-importcsv"><i class="fa fa-download"></i> Import CSV</a></li>
+                      <li><a class="dropdown-item" href="#" id="nav-exportcsv"><i class="fa fa-upload"></i> Export CSV</a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li><h6 class="dropdown-header">Sync</h6></li>
+                      %if lazylibrarian.CONFIG['USER_ACCOUNTS'] == True:
+                      <li><a class="dropdown-item" href="#" id="nav-synctocalibre"><i class="fa fa-link"></i> Calibre Sync</a></li>
+                      %endif
+                      <li><a class="dropdown-item" href="forceWish?source=books"><i class="fa fa-search"></i> Search WishLists</a></li>
+                    </ul>
+                  </li>
                 % endif
                 %if perm&lazylibrarian.perm_config:
                   <li class="nav-item"><a id="config" href="config" class="nav-link"><i class="fa fa-cog"></i> Config</a></li>
@@ -194,6 +220,7 @@
         ${next.body()}
       </div>
       <button onclick="topFunction()" id="myBtn" title="Go to top"><i class="fa fa-arrow-up"></i></button>
+      <div id="syncAlert" style="display:none; position:fixed; bottom:48px; right:15px; z-index:99; font-size:14px; border:2px solid lightgrey; background-color:#888; color:white; padding:6px; border-radius:8px;"><i class="fa fa-circle-notch fa-spin"></i> Syncing, please wait...</div>
     </div>
     <script type="text/javascript">
       msg = '';
@@ -238,7 +265,71 @@
         $('#doUpdate').click(function () {
             createCookie("ignoreUpdate", true, 0.01);  // suppress popup while updating
         });
+
+        // Tools dropdown handlers
+        $('#nav-exportcsv').on('click', function(e) {
+            e.preventDefault();
+            $.get('exportCSV', {'library': 'eBook'}, function(data) {
+                bootbox.dialog({
+                    title: 'CSV Export Result',
+                    message: '<pre>'+data+'</pre>',
+                    buttons: {
+                        primary: {
+                            label: "Close",
+                            className: 'btn-primary'
+                        },
+                    }
+                });
+            });
+        });
+
+        $('#nav-importcsv').on('click', function(e) {
+            e.preventDefault();
+            $.get('importCSV', {'library': 'eBook'}, function(data) {
+                var myModal = bootbox.dialog({
+                    title: 'CSV Import Info',
+                    message: '<pre>'+data+'</pre>',
+                    buttons: {
+                        primary: {
+                            label: "Close",
+                            className: 'btn-primary'
+                        },
+                    }
+                });
+                setTimeout(function(){
+                    myModal.modal('hide');
+                }, 5000);
+            });
+        });
+
+        $('#nav-synctocalibre').on('click', function(e) {
+            e.preventDefault();
+            showSyncAlert();
+            $.get('syncToCalibre', function(data) {
+                hideSyncAlert();
+                bootbox.dialog({
+                    title: 'Calibre Sync Result',
+                    message: '<pre>'+data+'</pre>',
+                    buttons: {
+                        primary: {
+                            label: "Close",
+                            className: 'btn-primary'
+                        },
+                    }
+                });
+            });
+        });
       });
+
+      function showSyncAlert() {
+          var alertDiv = document.getElementById('syncAlert');
+          if (alertDiv) alertDiv.style.display = 'block';
+      }
+
+      function hideSyncAlert() {
+          var alertDiv = document.getElementById('syncAlert');
+          if (alertDiv) alertDiv.style.display = 'none';
+      }
 
       // Initialise tooltips (Bootstrap 5)
       document.addEventListener('DOMContentLoaded', function () {

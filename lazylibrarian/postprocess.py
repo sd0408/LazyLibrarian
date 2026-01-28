@@ -36,7 +36,6 @@ from lazylibrarian.common import scheduleJob, book_file, opf_file, setperm, bts_
     safe_copy, safe_move, mymakedirs, runScript
 from lazylibrarian.formatter import unaccented_str, unaccented, plural, now, today, is_valid_booktype, \
     replace_all, getList, surnameFirst, makeUnicode, makeBytestr, check_int, is_valid_type, multibook
-from lazylibrarian.gr import GoodReads
 from lazylibrarian.importer import addAuthorToDB, addAuthorNameToDB, update_totals
 from lazylibrarian.librarysync import get_book_info, find_book_in_db, LibraryScan
 from lazylibrarian.magazinescan import create_id
@@ -152,30 +151,11 @@ def processAlternate(source_dir=None, library='eBook'):
             authorid = ''
             authmatch = myDB.match('SELECT * FROM authors where AuthorName=?', (authorname,))
 
-            if not authmatch:
-                # try goodreads preferred authorname
-                logger.debug("Checking GoodReads for [%s]" % authorname)
-                GR = GoodReads(authorname)
-                try:
-                    author_gr = GR.find_author_id()
-                except Exception as e:
-                    author_gr = {}
-                    logger.warn("No author id for [%s] %s" % (authorname, type(e).__name__))
-                if author_gr:
-                    grauthorname = author_gr['authorname']
-                    authorid = author_gr['authorid']
-                    logger.debug("GoodReads reports [%s] for [%s]" % (grauthorname, authorname))
-                    authorname = grauthorname
-                    authmatch = myDB.match('SELECT * FROM authors where AuthorID=?', (authorid,))
-
             if authmatch:
                 logger.debug("Author %s found in database" % authorname)
             else:
                 logger.debug("Author %s not found, adding to database" % authorname)
-                if authorid:
-                    addAuthorToDB(authorid=authorid)
-                else:
-                    addAuthorNameToDB(author=authorname)
+                addAuthorNameToDB(author=authorname)
 
             bookid, _ = find_book_in_db(authorname, bookname, ignored=False, library=library)
             if bookid:

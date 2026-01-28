@@ -46,17 +46,30 @@
       <div class="form-group">
         <label for="action" class="">Mark selected as</label>
         <select class="markMagazines form-control input-sm" id="action" name="action">
-          <option value="Active">Active</option>
-          <option value="Paused">Paused</option>
-          <option value="Reset">Reset</option>
-          <option value="Remove">Remove</option>
-          <option value="Delete">Delete</option>
+          <optgroup label="Status">
+            <option value="Active">Active</option>
+            <option value="Paused">Paused</option>
+            <option value="Reset">Reset</option>
+          </optgroup>
+          <optgroup label="Destructive">
+            <option value="Remove">⚠ Remove from list</option>
+            <option value="Delete">🗑 Delete files</option>
+          </optgroup>
         </select>
       </div>
       <button type="submit" class="btn btn-sm btn-primary" onclick="validateForm()">Go</button>
       %endif
       %if lazylibrarian.CONFIG['TOGGLES'] == True:
-      &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Cover</a> - <a class="toggle-vis" data-column="2">Title</a> - <a class="toggle-vis" data-column="3">Num</a> - <a class="toggle-vis" data-column="4">Added</a> - <a class="toggle-vis" data-column="5">Latest</a> - <a class="toggle-vis" data-column="6">Status</a> - <a class="toggle-vis" data-column="7">Select</a>
+      <span class="ms-3 text-muted small">Toggle:</span>
+      <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Cover</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Title</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">Num</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Added</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="5">Latest</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="6">Status</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="7">Select</button>
+      </div>
       %endif
     </div>
     <p>&nbsp;</p>
@@ -172,10 +185,11 @@
                 },
             });
             $('.dataTables_filter input').attr("placeholder", "Results filter");
-            $('a.toggle-vis').click(function (e) {
+            $('button.toggle-vis').click(function (e) {
                 e.preventDefault();
                 var column = oTable.column( $(this).attr('data-column') );
                 column.visible( ! column.visible() );
+                $(this).toggleClass('active');
             } );
         $('#w_width').val(window.innerWidth);
     });

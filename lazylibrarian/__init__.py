@@ -27,7 +27,7 @@ import sqlite3
 
 import cherrypy
 from lazylibrarian import logger, database, versioncheck, postprocess, searchbook, searchmag, searchrss, \
-    importer, grsync, webServe
+    importer, webServe
 from lazylibrarian.cache import fetchURL
 from lazylibrarian.common import restartJobs, logHeader, scheduleJob
 from lazylibrarian.formatter import getList, bookSeries, plural, unaccented, check_int, unaccented_str, makeUnicode
@@ -78,9 +78,7 @@ IGNORED_AUTHORS = 0
 CURRENT_TAB = '1'
 CACHE_HIT = 0
 CACHE_MISS = 0
-LAST_GOODREADS = 0
 LAST_LIBRARYTHING = 0
-GR_SLEEP = 0.0
 LT_SLEEP = 0.0
 GB_CALLS = 0
 MONTHNAMES = []
@@ -113,7 +111,7 @@ log_postprocess = 1 << 6  # 64 detailed postprocessing
 log_fuzz = 1 << 7  # 128 fuzzy logic
 log_serverside = 1 << 8  # 256 serverside processing
 log_fileperms = 1 << 9  # 512 changes to file permissions
-log_grsync = 1 << 10  # 1024 detailed goodreads sync
+# log_grsync = 1 << 10  # 1024 (removed - goodreads sync deprecated)
 log_cache = 1 << 11  # 2048 cache results
 log_libsync = 1 << 12  # 4096 librarysync details
 log_admin = 1 << 13  # 8192 admin logging
@@ -176,15 +174,13 @@ CONFIG_NONWEB = ['NAME_POSTFIX', 'DIR_PERM', 'FILE_PERM', 'BLOCKLIST_TIMER', 'DI
 # default interface does not know about these items, so leaves them unchanged
 CONFIG_NONDEFAULT = ['BOOKSTRAP_THEME', 'AUDIOBOOK_TYPE', 'AUDIO_DIR', 'AUDIO_TAB', 'REJECT_AUDIO',
                      'REJECT_MAXAUDIO', 'REJECT_MINAUDIO', 'NEWAUDIO_STATUS', 'TOGGLES', 'FOUND_STATUS',
-                     'USER_ACCOUNTS', 'GR_SYNC', 'GR_SECRET', 'GR_OAUTH_TOKEN', 'GR_OAUTH_SECRET',
-                     'GR_OWNED', 'GR_WANTED', 'GR_UNIQUE', 'GR_FOLLOW', 'GR_FOLLOWNEW', 'GOODREADS_INTERVAL',
-                     'AUDIOBOOK_DEST_FILE', 'SINGLE_USER', 'FMT_SERNAME', 'FMT_SERNUM', 'FMT_SERIES',
+                     'USER_ACCOUNTS', 'AUDIOBOOK_DEST_FILE', 'SINGLE_USER', 'FMT_SERNAME', 'FMT_SERNUM', 'FMT_SERIES',
                      'AUTOADDMAG', 'AUTOADD_MAGONLY', 'TRANSMISSION_DIR', 'DELUGE_DIR', 'QBITTORRENT_DIR',
                      'BANNED_EXT', 'MAG_RENAME', 'LOGFILES', 'LOGSIZE', 'ISS_FORMAT', 'DATE_FORMAT',
                      'NO_ISBN', 'NO_SETS', 'NO_LANG', 'NO_PUBDATE', 'IMP_IGNORE', 'IMP_GOOGLEIMAGE', 'DELETE_CSV',
                      'BLACKLIST_FAILED', 'BLACKLIST_PROCESSED', 'WISHLIST_INTERVAL', 'IMP_PREPROCESS',
                      'OPDS_ENABLED', 'OPDS_AUTHENTICATION', 'OPDS_USERNAME', 'OPDS_PASSWORD', 'OPDS_METAINFO',
-                     'OPDS_PAGE', 'DELAYSEARCH', 'SEED_WAIT', 'GR_AOWNED', 'GR_AWANTED', 'MAG_DELFOLDER']
+                     'OPDS_PAGE', 'DELAYSEARCH', 'SEED_WAIT', 'MAG_DELFOLDER']
 
 CONFIG_DEFINITIONS = {
     # Name      Type   Section   Default
@@ -420,7 +416,6 @@ CONFIG_DEFINITIONS = {
     'SEARCHRSS_INTERVAL': ('int', 'SearchScan', '20'),
     'WISHLIST_INTERVAL': ('int', 'SearchScan', '24'),
     'VERSIONCHECK_INTERVAL': ('int', 'SearchScan', '24'),
-    'GOODREADS_INTERVAL': ('int', 'SearchScan', '48'),
     'DELAYSEARCH': ('bool', 'SearchScan', 0),
     'FULL_SCAN': ('bool', 'LibraryScan', 0),
     'ADD_AUTHOR': ('bool', 'LibraryScan', 1),
@@ -448,12 +443,6 @@ CONFIG_DEFINITIONS = {
     'MAG_DEST_FILE': ('str', 'PostProcess', '$IssueDate - $Title'),
     'MAG_RELATIVE': ('bool', 'PostProcess', 1),
     'MAG_DELFOLDER': ('bool', 'PostProcess', 1),
-    'USE_TWITTER': ('bool', 'Twitter', 0),
-    'TWITTER_NOTIFY_ONSNATCH': ('bool', 'Twitter', 0),
-    'TWITTER_NOTIFY_ONDOWNLOAD': ('bool', 'Twitter', 0),
-    'TWITTER_USERNAME': ('str', 'Twitter', ''),
-    'TWITTER_PASSWORD': ('str', 'Twitter', ''),
-    'TWITTER_PREFIX': ('str', 'Twitter', 'LazyLibrarian'),
     'USE_BOXCAR': ('bool', 'Boxcar', 0),
     'BOXCAR_NOTIFY_ONSNATCH': ('bool', 'Boxcar', 0),
     'BOXCAR_NOTIFY_ONDOWNLOAD': ('bool', 'Boxcar', 0),
@@ -517,20 +506,8 @@ CONFIG_DEFINITIONS = {
     'EMAIL_TLS': ('bool', 'Email', 0),
     'EMAIL_SMTP_USER': ('str', 'Email', ''),
     'EMAIL_SMTP_PASSWORD': ('str', 'Email', ''),
-    'BOOK_API': ('str', 'API', 'GoodReads'),
+    'BOOK_API': ('str', 'API', 'GoogleBooks'),
     'LT_DEVKEY': ('str', 'API', ''),
-    'GR_API': ('str', 'API', 'ckvsiSDsuqh7omh74ZZ6Q'),
-    'GR_SYNC': ('bool', 'API', 0),
-    'GR_SECRET': ('str', 'API', ''),  # tied to users own api key
-    'GR_OAUTH_TOKEN': ('str', 'API', ''),  # gives access to users bookshelves
-    'GR_OAUTH_SECRET': ('str', 'API', ''),  # gives access to users bookshelves
-    'GR_WANTED': ('str', 'API', ''),  # sync wanted to this shelf
-    'GR_OWNED': ('str', 'API', ''),  # sync open/have to this shelf
-    'GR_AWANTED': ('str', 'API', ''),  # sync wanted to this shelf
-    'GR_AOWNED': ('str', 'API', ''),  # sync open/have to this shelf
-    'GR_UNIQUE': ('bool', 'API', 0),  # delete from wanted if already owned
-    'GR_FOLLOW': ('bool', 'API', 0),  # follow authors on goodreads
-    'GR_FOLLOWNEW': ('bool', 'API', 0),  # follow new authors on goodreads
     'GB_API': ('str', 'API', ''),  # API key has daily limits, each user needs their own
     'GB_COUNTRY': ('str', 'API', ''),  # optional two letter country code for geographically restricted results
     'FMT_SERNAME': ('str', 'FMT', '$SerName'),
@@ -615,10 +592,10 @@ def check_setting(cfg_type, cfg_name, item_name, def_val, log=True):
 def initialize():
     global FULL_PATH, PROG_DIR, ARGS, DAEMON, SIGNAL, PIDFILE, DATADIR, CONFIGFILE, SYS_ENCODING, LOGLEVEL, \
         CONFIG, CFG, DBFILE, COMMIT_LIST, SCHED, INIT_LOCK, __INITIALIZED__, started, LOGLIST, LOGTOGGLE, \
-        UPDATE_MSG, CURRENT_TAB, CACHE_HIT, CACHE_MISS, LAST_LIBRARYTHING, LAST_GOODREADS, SHOW_SERIES, SHOW_MAGS, \
+        UPDATE_MSG, CURRENT_TAB, CACHE_HIT, CACHE_MISS, LAST_LIBRARYTHING, SHOW_SERIES, SHOW_MAGS, \
         SHOW_AUDIO, CACHEDIR, BOOKSTRAP_THEMELIST, MONTHNAMES, CONFIG_DEFINITIONS, isbn_979_dict, isbn_978_dict, \
         CONFIG_NONWEB, CONFIG_NONDEFAULT, CONFIG_GIT, MAG_UPDATE, AUDIO_UPDATE, EBOOK_UPDATE, \
-        GROUP_CONCAT, GR_SLEEP, LT_SLEEP, GB_CALLS
+        GROUP_CONCAT, LT_SLEEP, GB_CALLS
 
     with INIT_LOCK:
 
@@ -691,8 +668,6 @@ def initialize():
         # keep track of how long we slept
         time_now = int(time.time())
         LAST_LIBRARYTHING = time_now
-        LAST_GOODREADS = time_now
-        GR_SLEEP = 0.0
         LT_SLEEP = 0.0
         GB_CALLS = 0
 
@@ -1009,7 +984,7 @@ def config_write(part=None):
                 CONFIG[key] = value
 
         if key in ['SEARCH_BOOKINTERVAL', 'SEARCH_MAGINTERVAL', 'SCAN_INTERVAL', 'VERSIONCHECK_INTERVAL',
-                   'SEARCHRSS_INTERVAL', 'GOODREADS_INTERVAL', 'WISHLIST_INTERVAL']:
+                   'SEARCHRSS_INTERVAL', 'WISHLIST_INTERVAL']:
             oldvalue = CFG.get(section, key.lower())
             if value != oldvalue:
                 if key == 'SEARCH_BOOKINTERVAL':
@@ -1024,8 +999,6 @@ def config_write(part=None):
                     scheduleJob('Restart', 'PostProcessor')
                 elif key == 'VERSIONCHECK_INTERVAL':
                     scheduleJob('Restart', 'checkForUpdates')
-                elif key == 'GOODREADS_INTERVAL' and CONFIG['GR_SYNC']:
-                    scheduleJob('Restart', 'sync_to_gr')
 
         CFG.set(section, key.lower(), value)
 
@@ -1305,12 +1278,6 @@ def add_rss_slot():
 
 def WishListType(host):
     """ Return type of wishlist or empty string if not a wishlist """
-    # GoodReads rss feeds
-    if 'goodreads' in host and 'list_rss' in host:
-        return 'GOODREADS'
-    # GoodReads Listopia html pages
-    if 'goodreads' in host and '/list/show/' in host:
-        return 'LISTOPIA'
     # NYTimes best-sellers html pages
     if 'nytimes' in host and 'best-sellers' in host:
         return 'NYTIMES'

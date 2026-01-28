@@ -22,15 +22,17 @@
     DIV#main.main.container { width: 90%; }
   </style>
   %if lazylibrarian.CONFIG['TOGGLES'] == True:
-  Toggle: <a class="toggle-vis" data-column="0">Timestamp - </a>
-        <a class="toggle-vis" data-column="1">Level</a>
-        %if lazylibrarian.LOGLEVEL >= 2:
-          <a class="toggle-vis" data-column="2"> - Thread - </a>
-          <a class="toggle-vis" data-column="3">File - </a>
-          <a class="toggle-vis" data-column="4">Method - </a>
-          <a class="toggle-vis" data-column="5">Line No</a>
-        %endif:
-
+  <span class="text-muted small">Toggle:</span>
+  <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+    <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="0">Timestamp</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Level</button>
+    %if lazylibrarian.LOGLEVEL >= 2:
+    <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Thread</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">File</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Method</button>
+    <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="5">Line No</button>
+    %endif
+  </div>
   %endif
   <div align="center">Refresh rate:
     <select id="refreshrate" class="button btn btn-sm btn-primary" onchange="setRefresh()">
@@ -118,10 +120,11 @@
             });
             $('.dataTables_filter input').attr("placeholder", "Results filter");
             //$(window).resize(function() {oTable.draw(false)});
-            $('a.toggle-vis').click(function (e) {
+            $('button.toggle-vis').click(function (e) {
                 e.preventDefault();
                 var column = oTable.column( $(this).attr('data-column') );
                 column.visible( ! column.visible() );
+                $(this).toggleClass('active');
             } );
         });
 

@@ -26,8 +26,7 @@ from lazylibrarian.bookwork import getWorkSeries, getWorkPage, deleteEmptySeries
 from lazylibrarian.images import getBookCover
 from lazylibrarian.cache import gb_json_request, cache_img
 from lazylibrarian.formatter import plural, today, replace_all, unaccented, unaccented_str, is_valid_isbn, \
-    getList, cleanName, makeUnicode
-from lazylibrarian.gr import GoodReads
+    getList, cleanName, makeUnicode, md5_utf8
 from fuzzywuzzy import fuzz
 from urllib.parse import quote, quote_plus, urlencode
 
@@ -652,39 +651,29 @@ class GoogleBooks:
                 logger.warn('Book %s Future publication date does not match preference, %s' % (bookname, book['date']))
 
         authorname = book['author']
-        GR = GoodReads(authorname)
-        author = GR.find_author_id()
-        if author:
-            AuthorID = author['authorid']
+        # Check if author exists in database by name
+        match = myDB.match('SELECT AuthorID from authors WHERE AuthorName=?', (authorname,))
+        if match:
+            AuthorID = match['AuthorID']
+        else:
+            # No author found, create one
+            AuthorID = "GB:" + md5_utf8(authorname)
             match = myDB.match('SELECT AuthorID from authors WHERE AuthorID=?', (AuthorID,))
             if not match:
-                match = myDB.match('SELECT AuthorID from authors WHERE AuthorName=?', (author['authorname'],))
-                if match:
-                    logger.debug('%s: Changing authorid from %s to %s' %
-                                 (author['authorname'], AuthorID, match['AuthorID']))
-                    AuthorID = match['AuthorID']  # we have a different authorid for that authorname
-                else:  # no author but request to add book, add author with newauthor status
-                    # User hit "add book" button from a search or a wishlist import
-                    newauthor_status = 'Active'
-                    if lazylibrarian.CONFIG['NEWAUTHOR_STATUS'] in ['Skipped', 'Ignored']:
-                        newauthor_status = 'Paused'
-                    controlValueDict = {"AuthorID": AuthorID}
-                    newValueDict = {
-                        "AuthorName": author['authorname'],
-                        "AuthorImg": author['authorimg'],
-                        "AuthorLink": author['authorlink'],
-                        "AuthorBorn": author['authorborn'],
-                        "AuthorDeath": author['authordeath'],
-                        "DateAdded": today(),
-                        "Status": newauthor_status
-                    }
-                    authorname = author['authorname']
-                    myDB.upsert("authors", newValueDict, controlValueDict)
-                    if lazylibrarian.CONFIG['NEWAUTHOR_BOOKS']:
-                        self.get_author_books(AuthorID, entrystatus=lazylibrarian.CONFIG['NEWAUTHOR_STATUS'])
-        else:
-            logger.warn("No AuthorID for %s, unable to add book %s" % (book['author'], bookname))
-            return
+                # User hit "add book" button from a search or a wishlist import
+                newauthor_status = 'Active'
+                if lazylibrarian.CONFIG['NEWAUTHOR_STATUS'] in ['Skipped', 'Ignored']:
+                    newauthor_status = 'Paused'
+                controlValueDict = {"AuthorID": AuthorID}
+                newValueDict = {
+                    "AuthorName": authorname,
+                    "AuthorImg": "images/nophoto.png",
+                    "DateAdded": today(),
+                    "Status": newauthor_status
+                }
+                myDB.upsert("authors", newValueDict, controlValueDict)
+                if lazylibrarian.CONFIG['NEWAUTHOR_BOOKS']:
+                    self.get_author_books(AuthorID, authorname, entrystatus=lazylibrarian.CONFIG['NEWAUTHOR_STATUS'])
 
         controlValueDict = {"BookID": bookid}
         newValueDict = {

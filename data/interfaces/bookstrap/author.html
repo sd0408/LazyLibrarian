@@ -38,17 +38,6 @@
               <a href="series?AuthorID=${author['AuthorID']}" class="btn btn-sm btn-primary"><i class="fa fa-book"></i> Series</a>
               %endif
             %endif
-            %if lazylibrarian.CONFIG['GR_FOLLOW'] == True:
-              %if author['GRfollow']:
-                %if author['GRfollow'] != '0':
-                <a href="unfollowAuthor?AuthorID=${author['AuthorID']}" class="btn btn-sm btn-primary"><i class="fa fa-check"></i> Following</a>
-                %else:
-                <a href="followAuthor?AuthorID=${author['AuthorID']}" class="btn btn-sm btn-primary"><i class="fa fa-times"></i> Not Following</a>
-                %endif
-              %else:
-                <a href="followAuthor?AuthorID=${author['AuthorID']}" class="btn btn-sm btn-primary"><i class="fa fa-times"></i> Not Following</a>
-              %endif
-            %endif
             <div class="form-group float-end">
             %if len(types) > 1:
               %if  perm&lazylibrarian.perm_audio:
@@ -174,13 +163,16 @@
     <input type="submit" class="markBooks btn btn-sm btn-primary" value="Go">
     %endif
     %if lazylibrarian.CONFIG['TOGGLES'] == True:
-    &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Cover - </a>
-    <a class="toggle-vis" data-column="3">Title - </a>
-    <a class="toggle-vis" data-column="4">Series - </a>
-    <a class="toggle-vis hidden-sm hidden-xs" data-column="5">Rating - </a>
-    <a class="toggle-vis" data-column="6">Released - </a>
-    <a class="toggle-vis" data-column="7">Added - </a>
-    <a class="toggle-vis" data-column="8">Status</a>
+    <span class="ms-3 text-muted small">Toggle:</span>
+    <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Cover</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">Title</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Series</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active hidden-sm hidden-xs" data-column="5">Rating</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="6">Released</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="7">Added</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="8">Status</button>
+    </div>
     <p>&nbsp;</p>
     %endif
   </div>
@@ -369,10 +361,11 @@
 
         $('.dataTables_filter input').attr("placeholder", "Results Filter");
         //$(window).resize(function() {oTable.draw(false)});
-        $('a.toggle-vis').click(function (e) {
+        $('button.toggle-vis').click(function (e) {
             e.preventDefault();
             var column = oTable.column( $(this).attr('data-column') );
             column.visible( ! column.visible() );
+            $(this).toggleClass('active');
         } );
     });
 

@@ -26,7 +26,13 @@
     </div>
 
     %if lazylibrarian.CONFIG['TOGGLES'] == True:
-    &nbsp;&nbsp;Toggle: <a class="toggle-vis" data-column="1">Title</a> - <a class="toggle-vis" data-column="2">Date</a> - <a class="toggle-vis" data-column="3">Issue</a> - <a class="toggle-vis" data-column="4">Provider</a>
+    <span class="ms-3 text-muted small">Toggle:</span>
+    <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Column toggles">
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="1">Title</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="2">Date</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="3">Issue</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm toggle-vis active" data-column="4">Provider</button>
+    </div>
     %endif
   </form>
   <br>
@@ -46,16 +52,21 @@
       %if perm%lazylibrarian.perm_status:
       <p>
       <div class="form-group">
-        <label class="control-label">Change selected magazines to:</label>
+        <label class="control-label">Mark selected as</label>
         <select class="form-control input-sm" name="action">
-          %for item in ['Skipped', 'Wanted', 'Ignored', 'Remove']:
-          %if whichStatus != item:
-          <option value="${item}">${item}</option>
-          %endif
-          %endfor
+          <optgroup label="Status">
+            %for item in ['Skipped', 'Wanted', 'Ignored']:
+            %if whichStatus != item:
+            <option value="${item}">${item}</option>
+            %endif
+            %endfor
+          </optgroup>
+          <optgroup label="Destructive">
+            <option value="Remove">⚠ Remove from list</option>
+          </optgroup>
         </select>
       </div>
-      <button type="submit" class="btn btn-sm btn-secondary" id="markPastIssues" value="Go">Go</button>
+      <button type="submit" class="btn btn-sm btn-primary" id="markPastIssues" value="Go">Go</button>
     </p>
     %endif
   </form>
@@ -100,10 +111,11 @@
                 "bFilter": true,
             });
             $('.dataTables_filter input').attr("placeholder", "Results filter");
-            $('a.toggle-vis').click(function (e) {
+            $('button.toggle-vis').click(function (e) {
                 e.preventDefault();
                 var column = table.column( $(this).attr('data-column') );
                 column.visible( ! column.visible() );
+                $(this).toggleClass('active');
             } );
     });
   </script>
