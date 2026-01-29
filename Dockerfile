@@ -83,6 +83,7 @@ RUN \
     ghostscript \
     libjpeg-turbo8 \
     libmagic1 \
+    libunrar5 \
     python3-venv \
     zlib1g \
     # Calibre runtime dependencies
@@ -129,8 +130,7 @@ RUN \
     python-Levenshtein \
     'bencode.py' \
     urllib3 \
-    pyopenssl \
-    unrardll
+    pyopenssl
 
 # -----------------------------------------------------------------------------
 # Layer 4: S6-overlay service configuration (cached unless config changes)
