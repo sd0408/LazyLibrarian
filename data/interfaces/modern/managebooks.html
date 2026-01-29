@@ -1,0 +1,336 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'manage'
+%>
+<%def name="headIncludes()">
+    <link href="css/datatables.bootstrap5.min.css" rel="stylesheet">
+</%def>
+<%def name="styleIncludes()">
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <h1 class="ll-page-title">${title}</h1>
+            <p class="ll-page-subtitle">Manage your book queue by status</p>
+        </div>
+        <div class="ll-page-header-actions">
+            %if perm&lazylibrarian.perm_search:
+            <div class="ll-search-form">
+                <form action="search" method="get" style="display: flex; gap: 0.5rem;">
+                    <input type="text" name="name" class="ll-input" placeholder="Title / Author / ISBN" style="width: 200px;">
+                    <button type="submit" class="ll-btn ll-btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.3-4.3"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+            %endif
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="ll-toolbar">
+        <div class="ll-toolbar-left">
+            <form action="manage" method="get" class="ll-toolbar-form">
+                <label class="ll-toolbar-label">Status:</label>
+                <select name="whichStatus" id="whichStatus" class="ll-select" onchange="this.form.submit()">
+                    %for item in ['Skipped', 'Wanted', 'Open', 'Have', 'Ignored']:
+                    <option value="${item}" ${'selected="selected"' if whichStatus == item else ''}>${item}</option>
+                    %endfor
+                    %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
+                    <option value="Read" ${'selected="selected"' if whichStatus == "Read" else ''}>Read</option>
+                    <option value="ToRead" ${'selected="selected"' if whichStatus == "ToRead" else ''}>To Read</option>
+                    %endif
+                </select>
+                %if len(types) > 1 and perm&lazylibrarian.perm_audio:
+                <label class="ll-toolbar-label">Library:</label>
+                <select name="library" id="chooselib" class="ll-select" onchange="updatePage()">
+                    %for item in types:
+                    <option value="${item}" ${'selected="selected"' if library == item else ''}>${item}</option>
+                    %endfor
+                </select>
+                %endif
+            </form>
+        </div>
+        <div class="ll-toolbar-right">
+            %if lazylibrarian.CONFIG['TOGGLES']:
+            <div class="ll-btn-group">
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="1">Cover</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="2">Author</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="3">Title</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="4">Series</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="5">Rating</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="6">Released</button>
+                %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="7">Delay</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="8">Search</button>
+                %endif
+            </div>
+            %endif
+        </div>
+    </div>
+
+    <!-- Book List -->
+    <div class="ll-card">
+        <div class="ll-card-body ll-card-body-flush">
+            <div class="table-responsive">
+                <form id="markBooksForm" action="markBooks" method="get">
+                    <input type="hidden" name="redirect" value="manage">
+                    <input type="hidden" name="library" value="${library}">
+                    <table class="ll-table" id="book_table">
+                        <thead>
+                            <tr>
+                                %if perm&lazylibrarian.perm_status:
+                                <th class="text-center no-sort" style="width: 40px;"><input type="checkbox" onClick="toggleAll(this)" /></th>
+                                %else:
+                                <th class="hidden"></th>
+                                %endif
+                                <th class="text-center no-sort" style="width: 80px;">Cover</th>
+                                <th>Author</th>
+                                <th>Title</th>
+                                <th>Series</th>
+                                <th class="text-center" style="width: 80px;">Rating</th>
+                                <th class="text-center" style="width: 100px;">Released</th>
+                                %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
+                                <th class="text-center no-sort" style="width: 80px;">Delay</th>
+                                <th class="text-center no-sort" style="width: 120px;">Last Search</th>
+                                %endif
+                            </tr>
+                        </thead>
+                    </table>
+                </form>
+            </div>
+        </div>
+        %if perm&lazylibrarian.perm_status:
+        <div class="ll-card-footer">
+            <form action="markBooks" method="get" class="ll-toolbar-form">
+                <input type="hidden" name="redirect" value="manage">
+                <input type="hidden" name="library" value="${library}">
+                <label class="ll-toolbar-label">Change selected to:</label>
+                <select id="markAction" name="action" class="ll-select">
+                    <optgroup label="Status">
+                        %for item in ['Skipped', 'Wanted', 'Have', 'Ignored']:
+                        <option value="${item}">${item}</option>
+                        %endfor
+                    </optgroup>
+                    %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
+                    <optgroup label="Reading List">
+                        <option value="Unread">Unread</option>
+                        <option value="Read">Read</option>
+                        <option value="ToRead">To Read</option>
+                    </optgroup>
+                    %endif
+                    %if lazylibrarian.CONFIG['DELAYSEARCH']:
+                    <optgroup label="Search">
+                        <option value="NoDelay">No Delay</option>
+                    </optgroup>
+                    %endif
+                </select>
+                <button type="button" class="ll-btn ll-btn-primary ll-btn-sm" onclick="submitMarked()">Go</button>
+            </form>
+        </div>
+        %endif
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/datatables.bootstrap5.min.js"></script>
+    <script src="js/natural.js"></script>
+    <script src="js/bootbox.min.js"></script>
+    <script>
+    function toggleAll(source) {
+        var checkboxes = document.querySelectorAll('input[class="checkbox"]');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = source.checked;
+        }
+    }
+
+    function updatePage() {
+        window.location = 'manage?whichStatus=' + $('#whichStatus').val() + '&library=' + $('#chooselib').val();
+    }
+
+    function submitMarked() {
+        var checkboxes = document.querySelectorAll('input[class="checkbox"]:checked');
+        if (checkboxes.length === 0) {
+            bootbox.alert('Please select at least one book');
+            return;
+        }
+        var form = document.createElement('form');
+        form.method = 'get';
+        form.action = 'markBooks';
+
+        var redirectInput = document.createElement('input');
+        redirectInput.type = 'hidden';
+        redirectInput.name = 'redirect';
+        redirectInput.value = 'manage';
+        form.appendChild(redirectInput);
+
+        var libraryInput = document.createElement('input');
+        libraryInput.type = 'hidden';
+        libraryInput.name = 'library';
+        libraryInput.value = '${library}';
+        form.appendChild(libraryInput);
+
+        var actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = document.getElementById('markAction').value;
+        form.appendChild(actionInput);
+
+        checkboxes.forEach(function(cb) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = cb.name;
+            input.value = 'on';
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function bookinfo(bookid) {
+        $.get('bookdesc', {'bookid': bookid}, function(data) {
+            var $content = $('<div></div>');
+            $content.append('<img src="./cache/book/' + bookid + '.jpg" class="ll-book-detail-cover" style="max-width: 200px; float: left; margin-right: 1rem; margin-bottom: 1rem; border-radius: 8px;" />');
+            var res = data.split('^');
+            var title = res[0];
+            var desc = res[1];
+            $content.append('<p>' + desc + '</p>');
+            bootbox.dialog({
+                size: "large",
+                title: title,
+                message: $content,
+                buttons: {
+                    primary: {
+                        label: "Close",
+                        className: 'll-btn ll-btn-primary'
+                    }
+                }
+            });
+        });
+    }
+
+    $(document).ready(function() {
+        var show = "" + ${lazylibrarian.CONFIG['BOOK_IMG']};
+        var showimg = (show === '1');
+
+        var table = $('#book_table').DataTable({
+            "bAutoWidth": false,
+            "stateSave": true,
+            "order": [[ 2, 'asc' ]],
+            "columnDefs": [
+                { targets: 'no-sort', orderable: false },
+                { targets: [0],
+                    'class': 'text-center',
+                    'render': function(data, type, row) {
+                        return '<input type="checkbox" name="' + data + '" class="checkbox" />';
+                    }
+                },
+                { targets: [1],
+                    'class': 'text-center',
+                    'visible': showimg,
+                    'render': function(data, type, row) {
+                        return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" style="max-height: 60px; border-radius: 4px;"></a>';
+                    }
+                },
+                { targets: [2],
+                    'render': function(data, type, row) {
+                        return '<a href="authorPage?AuthorID=' + row[8] + '" class="ll-link">' + data + '</a>';
+                    }
+                },
+                { targets: [3],
+                    'render': function(data, type, row) {
+                        var pre = data.split('<');
+                        var limit = window.innerWidth / 30;
+                        var title = truncateOnWord(pre[0], limit);
+                        var tail = data.slice(pre[0].length);
+                        var btn = '<button onclick="bookinfo(\'' + row[9] + '\')" class="ll-link-btn" type="button"';
+                        if (title == pre[0]) {
+                            return btn + '>' + title + '</button>' + tail;
+                        }
+                        return btn + ' title="' + pre[0] + '">' + title + '</button>' + tail;
+                    }
+                },
+                { targets: [4],
+                    'render': function(data, type, row) {
+                        if (row[12] === null || row[12] === '') {
+                            return data;
+                        }
+                        var series = row[12].split('^');
+                        var output = [];
+                        for (var index = 0; index < series.length; ++index) {
+                            var link_data = series[index].split("~");
+                            output.push('<a href="seriesMembers?seriesid=' + link_data[0] + '" class="ll-link">' + link_data[1] + '</a>');
+                        }
+                        return output.join('<br>');
+                    }
+                },
+                { targets: [5],
+                    'class': 'text-center',
+                    'render': function(data, type, row) {
+                        return '<img src="images/' + data + '-stars.png" alt="Rating">';
+                    }
+                },
+                { targets: [6], 'class': 'text-center' },
+                %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
+                { targets: [7],
+                    'class': 'text-center',
+                    'render': function(data, type, row) { return row[14]; }
+                },
+                { targets: [8],
+                    'class': 'text-center',
+                    'render': function(data, type, row) { return row[15]; }
+                }
+                %endif
+            ],
+            "oLanguage": {
+                "sSearch": "",
+                "sSearchPlaceholder": "Search books...",
+                "sLengthMenu": "_MENU_ per page",
+                "sEmptyTable": "No books found",
+                "sInfo": "Showing _START_ to _END_ of _TOTAL_ books",
+                "sInfoEmpty": "Showing 0 to 0 of 0 books",
+                "sInfoFiltered": "(filtered from _MAX_ total)"
+            },
+            "sPaginationType": "full_numbers",
+            "aaSorting": [[2, 'asc']],
+            "bServerSide": true,
+            "sAjaxSource": 'getBooks?whichStatus=${whichStatus}&library=${library}&source=Manage',
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "bFilter": true,
+            "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                %if perm&lazylibrarian.perm_status == 0:
+                $('td', nRow).eq(0).addClass("hidden");
+                %endif
+                return nRow;
+            }
+        });
+
+        // Style DataTables elements
+        $('.dataTables_filter input').addClass('ll-input').attr('placeholder', 'Search books...');
+        $('.dataTables_length select').addClass('ll-select');
+
+        // Toggle column visibility
+        $('button.toggle-vis').click(function(e) {
+            e.preventDefault();
+            var column = table.column($(this).attr('data-column'));
+            column.visible(!column.visible());
+            $(this).toggleClass('active');
+        });
+    });
+
+    function truncateOnWord(str, limit) {
+        if (!str) return '';
+        if (str.length <= limit) return str;
+        var trunc = str.substr(0, limit);
+        return trunc.substr(0, Math.min(trunc.length, trunc.lastIndexOf(' '))) + '...';
+    }
+    </script>
+</%def>

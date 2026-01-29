@@ -1,0 +1,82 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'authors'
+%>
+<%def name="headIncludes()">
+</%def>
+<%def name="styleIncludes()">
+.ll-search-form {
+    max-width: 600px;
+}
+.ll-search-box {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+}
+.ll-search-box .ll-input {
+    flex: 1;
+    font-size: 1.125rem;
+    padding: 0.875rem 1rem;
+}
+.ll-search-box .ll-btn {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+.ll-search-help {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+.ll-search-help h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+}
+.ll-search-help p {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin: 0;
+}
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <a href="authors" class="ll-btn ll-btn-ghost ll-btn-sm" style="margin-bottom: 0.5rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Back to Authors
+            </a>
+            <h1 class="ll-page-title">Search for Author</h1>
+        </div>
+    </div>
+
+    <div class="ll-card">
+        <div class="ll-card-body">
+            <form action="search" method="get" class="ll-search-form">
+                <div class="ll-search-box">
+                    <input type="text" name="name" class="ll-input" placeholder="Enter author name..." autofocus required>
+                    <button type="submit" class="ll-btn ll-btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Search
+                    </button>
+                </div>
+            </form>
+
+            <div class="ll-search-help">
+                <h3>Search Tips</h3>
+                <p>Enter an author name to search for them in the configured metadata sources. You can then add the author to your library from the search results.</p>
+            </div>
+        </div>
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+</%def>

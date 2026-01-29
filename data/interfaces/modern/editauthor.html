@@ -1,0 +1,148 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'authors'
+%>
+<%def name="headIncludes()">
+</%def>
+<%def name="styleIncludes()">
+.ll-edit-form {
+    max-width: 600px;
+}
+.ll-form-group {
+    margin-bottom: 1.5rem;
+}
+.ll-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text);
+}
+.ll-form-group .ll-input {
+    width: 100%;
+}
+.ll-form-help {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-top: 0.25rem;
+}
+.ll-author-preview {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+}
+.ll-author-preview img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+.ll-checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.ll-checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <a href="authorPage?AuthorID=${config['AuthorID']}" class="ll-btn ll-btn-ghost ll-btn-sm" style="margin-bottom: 0.5rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Back to Author
+            </a>
+            <h1 class="ll-page-title">Edit Author</h1>
+        </div>
+    </div>
+
+    <div class="ll-card">
+        <div class="ll-card-body">
+            <div class="ll-author-preview">
+                %if config['AuthorImg']:
+                <img src="${config['AuthorImg']}" alt="${config['AuthorName']}" onerror="this.src='images/nophoto.png'" id="author-preview-img">
+                %else:
+                <img src="images/nophoto.png" alt="No photo" id="author-preview-img">
+                %endif
+                <div>
+                    <strong>${config['AuthorName']}</strong>
+                    <div class="ll-form-help">ID: ${config['AuthorID']}</div>
+                </div>
+            </div>
+
+            <form action="authorUpdate" method="post" class="ll-edit-form">
+                <input type="hidden" name="authorid" value="${config['AuthorID']}">
+                <input type="hidden" name="utf8" value="1">
+
+                <div class="ll-form-group">
+                    <label for="authorname">Author Name</label>
+                    <input type="text" id="authorname" name="authorname" value="${config['AuthorName']}" class="ll-input" required>
+                    <div class="ll-form-help">The display name for this author</div>
+                </div>
+
+                <div class="ll-form-group">
+                    <label for="authorborn">Birth Date</label>
+                    <input type="text" id="authorborn" name="authorborn" value="${config['AuthorBorn'] or ''}" class="ll-input" placeholder="YYYY/MM/DD">
+                    <div class="ll-form-help">Format: YYYY/MM/DD (e.g., 1965/07/31)</div>
+                </div>
+
+                <div class="ll-form-group">
+                    <label for="authordeath">Death Date</label>
+                    <input type="text" id="authordeath" name="authordeath" value="${config['AuthorDeath'] or ''}" class="ll-input" placeholder="YYYY/MM/DD">
+                    <div class="ll-form-help">Format: YYYY/MM/DD (leave empty if still living)</div>
+                </div>
+
+                <div class="ll-form-group">
+                    <label for="authorimg">Author Image URL</label>
+                    <input type="text" id="authorimg" name="authorimg" value="${config['AuthorImg'] or ''}" class="ll-input" placeholder="https://example.com/image.jpg">
+                    <div class="ll-form-help">URL to the author's photo (will be cached locally)</div>
+                </div>
+
+                <div class="ll-form-group">
+                    <div class="ll-checkbox-group">
+                        <input type="checkbox" id="manual" name="manual" value="1" ${'checked' if config['Manual'] else ''}>
+                        <label for="manual" style="margin-bottom: 0;">Lock manual edits</label>
+                    </div>
+                    <div class="ll-form-help">When checked, automatic metadata updates won't overwrite your changes</div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="ll-btn ll-btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Save Changes
+                    </button>
+                    <a href="authorPage?AuthorID=${config['AuthorID']}" class="ll-btn ll-btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+    <script>
+    $(document).ready(function() {
+        // Update preview when image URL changes
+        $('#authorimg').on('change blur', function() {
+            var url = $(this).val();
+            if (url) {
+                $('#author-preview-img').attr('src', url);
+            } else {
+                $('#author-preview-img').attr('src', 'images/nophoto.png');
+            }
+        });
+    });
+    </script>
+</%def>

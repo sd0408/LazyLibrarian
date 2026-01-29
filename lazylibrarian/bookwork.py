@@ -84,102 +84,8 @@ def setBookAuthors(book):
     return newauthors, newrefs
 
 
-def setAllBookSeries():
-    """ Try to set series details for all books """
-    myDB = database.DBConnection()
-    books = myDB.select('select BookID,WorkID,BookName from books where Manual is not "1"')
-    counter = 0
-    if books:
-        logger.info('Checking series for %s book%s' % (len(books), plural(len(books))))
-        for book in books:
-            workid = book['BookID']
-            if not workid:
-                logger.debug("No bookid for book: %s" % book['BookName'])
-            if workid:
-                serieslist = getWorkSeries(workid)
-                if serieslist:
-                    counter += 1
-                    setSeries(serieslist, book['BookID'])
-    deleteEmptySeries()
-    msg = 'Updated %s book%s' % (counter, plural(counter))
-    logger.info('Series check complete: ' + msg)
-    return msg
-
-
-def setSeries(serieslist=None, bookid=None, authorid=None, workid=None):
-    """ set series details in series/member tables from the supplied dict
-        and a displayable summary in book table
-        serieslist is a tuple (SeriesID, SeriesNum, SeriesName)
-        Return how many api hits and the original publication date if known """
-    myDB = database.DBConnection()
-    api_hits = 0
-    originalpubdate = ''
-    if bookid:
-        # delete any old series-member entries
-        myDB.action('DELETE from member WHERE BookID=?', (bookid,))
-        for item in serieslist:
-            match = myDB.match('SELECT SeriesID from series where SeriesName=? COLLATE NOCASE', (item[2],))
-            if match:
-                seriesid = match['SeriesID']
-                members, _api_hits = getSeriesMembers(seriesid, item[2])
-                api_hits += _api_hits
-            else:
-                # new series, need to set status and get SeriesID
-                if item[0]:
-                    seriesid = item[0]
-                    members, _api_hits = getSeriesMembers(seriesid, item[2])
-                    api_hits += _api_hits
-                else:
-                    # no seriesid so generate it (row count + 1)
-                    cnt = myDB.match("select count(*) as counter from series")
-                    res = check_int(cnt['counter'], 0)
-                    seriesid = str(res + 1)
-                    members = []
-                myDB.action('INSERT into series VALUES (?, ?, ?, ?, ?)',
-                            (seriesid, item[2], "Active", 0, 0), suppress='UNIQUE')
-
-            if not workid or not authorid:
-                book = myDB.match('SELECT AuthorID,WorkID from books where BookID=?', (bookid,))
-                if book:
-                    authorid = book['AuthorID']
-                    workid = book['WorkID']
-            if seriesid and authorid and workid:
-                for member in members:
-                    if member[3] == workid:
-                        if check_year(member[5], past=1800, future=0):
-                            controlValueDict = {"BookID": bookid}
-                            newValueDict = {"BookDate": member[5], "OriginalPubDate": member[5]}
-                            myDB.upsert("books", newValueDict, controlValueDict)
-                            originalpubdate = member[5]
-                        break
-
-                controlValueDict = {"BookID": bookid, "SeriesID": seriesid}
-                newValueDict = {"SeriesNum": item[1], "WorkID": workid}
-                myDB.upsert("member", newValueDict, controlValueDict)
-                myDB.action('INSERT INTO seriesauthors ("SeriesID", "AuthorID") VALUES (?, ?)',
-                            (seriesid, authorid), suppress='UNIQUE')
-            else:
-                if not authorid:
-                    logger.debug('Unable to set series for book %s, no authorid' % bookid)
-                elif not workid:
-                    logger.debug('Unable to set series for book %s, no workid' % bookid)
-                elif not seriesid:
-                    logger.debug('Unable to set series for book %s, no seriesid' % bookid)
-                return api_hits, originalpubdate
-
-        series = ''
-        for item in serieslist:
-            newseries = "%s %s" % (item[2], item[1])
-            newseries.strip()
-            if series and newseries:
-                series += '<br>'
-            series += newseries
-        myDB.action('UPDATE books SET SeriesDisplay=? WHERE BookID=?', (series, bookid))
-        return api_hits, originalpubdate
-
-
-def setStatus(bookid=None, serieslist=None, default=None):
-    """ Set the status of a book according to series/author/newbook/newauthor preferences
+def setStatus(bookid=None, default=None):
+    """ Set the status of a book according to author/newbook/newauthor preferences
         return default if unchanged, default is passed in as newbook or newauthor status """
     myDB = database.DBConnection()
     if not bookid:
@@ -189,8 +95,7 @@ def setStatus(bookid=None, serieslist=None, default=None):
     if not match:
         return default
 
-    # Don't update status if we already have the book but allow status change if ignored
-    # might be we had ignore author set, but want to allow this series
+    # Don't update status if we already have the book
     current_status = match['Status']
     if current_status in ['Have', 'Open']:
         return current_status
@@ -198,29 +103,16 @@ def setStatus(bookid=None, serieslist=None, default=None):
     new_status = ''
     authorid = match['AuthorID']
     bookname = match['BookName']
-    # Is the book part of any series we want or don't want?
-    for item in serieslist:
-        match = myDB.match('SELECT Status from series where SeriesName=? COLLATE NOCASE', (item[2],))
-        if match:
-            if match['Status'] == 'Wanted':
-                new_status = 'Wanted'
-                logger.debug('Marking %s as %s, series %s' % (bookname, new_status, item[2]))
-                break
-            if match['Status'] == 'Skipped':
-                new_status = 'Skipped'
-                logger.debug('Marking %s as %s, series %s' % (bookname, new_status, item[2]))
-                break
 
-    if not new_status:
-        # Author we want or don't want?
-        match = myDB.match('SELECT Status from authors where AuthorID=?', (authorid,))
-        if match:
-            if match['Status'] in ['Paused', 'Ignored']:
-                new_status = 'Skipped'
-                logger.debug('Marking %s as %s, author %s' % (bookname, new_status, match['Status']))
-            if match['Status'] == 'Wanted':
-                new_status = 'Wanted'
-                logger.debug('Marking %s as %s, author %s' % (bookname, new_status, match['Status']))
+    # Author we want or don't want?
+    match = myDB.match('SELECT Status from authors where AuthorID=?', (authorid,))
+    if match:
+        if match['Status'] in ['Paused', 'Ignored']:
+            new_status = 'Skipped'
+            logger.debug('Marking %s as %s, author %s' % (bookname, new_status, match['Status']))
+        if match['Status'] == 'Wanted':
+            new_status = 'Wanted'
+            logger.debug('Marking %s as %s, author %s' % (bookname, new_status, match['Status']))
 
     # If none of these, leave default "newbook" or "newauthor" status
     if new_status:
@@ -228,20 +120,6 @@ def setStatus(bookid=None, serieslist=None, default=None):
         return new_status
 
     return default
-
-
-def deleteEmptySeries():
-    """ remove any series from series table that have no entries in member table, return how many deleted """
-    myDB = database.DBConnection()
-    series = myDB.select('SELECT SeriesID,SeriesName from series')
-    count = 0
-    for item in series:
-        match = myDB.match('SELECT BookID from member where SeriesID=?', (item['SeriesID'],))
-        if not match:
-            logger.debug('Deleting empty series %s' % item['SeriesName'])
-            count += 1
-            myDB.action('DELETE from series where SeriesID=?', (item['SeriesID'],))
-    return count
 
 
 def setWorkPages():
@@ -299,39 +177,30 @@ ALLOW_NEW = False
 LAST_NEW = 0
 
 
-def getBookWork(bookID=None, reason=None, seriesID=None):
-    """ return the contents of the LibraryThing workpage for the given bookid, or seriespage if seriesID given
+def getBookWork(bookID=None, reason=None):
+    """ return the contents of the LibraryThing workpage for the given bookid
         preferably from the cache. If not already cached cache the results
-        Return None if no workpage/seriespage available """
+        Return None if no workpage available """
     global ALLOW_NEW, LAST_NEW
-    if not bookID and not seriesID:
-        logger.error("getBookWork - No bookID or seriesID")
+    if not bookID:
+        logger.error("getBookWork - No bookID")
         return None
 
     if not reason:
         reason = ""
 
     myDB = database.DBConnection()
-    if bookID:
-        cmd = 'select BookName,AuthorName,BookISBN from books,authors where bookID=?'
-        cmd += ' and books.AuthorID = authors.AuthorID'
-        cacheLocation = "WorkCache"
-        item = myDB.match(cmd, (bookID,))
-    else:
-        cmd = 'select SeriesName from series where SeriesID=?'
-        cacheLocation = "SeriesCache"
-        item = myDB.match(cmd, (seriesID,))
+    cmd = 'select BookName,AuthorName,BookISBN from books,authors where bookID=?'
+    cmd += ' and books.AuthorID = authors.AuthorID'
+    cacheLocation = "WorkCache"
+    item = myDB.match(cmd, (bookID,))
     if item:
         cacheLocation = os.path.join(lazylibrarian.CACHEDIR, cacheLocation)
-        if bookID:
-            workfile = os.path.join(cacheLocation, str(bookID) + '.html')
-        else:
-            workfile = os.path.join(cacheLocation, str(seriesID) + '.html')
+        workfile = os.path.join(cacheLocation, str(bookID) + '.html')
 
-        # does the workpage need to expire? For now only expire if it was an error page
-        # (small file) or a series page as librarything might get better info over time, more series members etc
+        # does the workpage need to expire? For now only expire if it was an error page (small file)
         if os.path.isfile(workfile):
-            if seriesID or os.path.getsize(workfile) < 500:
+            if os.path.getsize(workfile) < 500:
                 cache_modified_time = os.stat(workfile).st_mtime
                 time_now = time.time()
                 expiry = lazylibrarian.CONFIG['CACHE_AGE'] * 24 * 60 * 60  # expire cache after this many seconds
@@ -343,13 +212,10 @@ def getBookWork(bookID=None, reason=None, seriesID=None):
         if os.path.isfile(workfile):
             # use cached file if possible to speed up refreshactiveauthors and librarysync re-runs
             lazylibrarian.CACHE_HIT = int(lazylibrarian.CACHE_HIT) + 1
-            if bookID:
-                if reason:
-                    logger.debug("getBookWork: Returning Cached entry for %s %s" % (bookID, reason))
-                else:
-                    logger.debug("getBookWork: Returning Cached workpage for %s" % bookID)
+            if reason:
+                logger.debug("getBookWork: Returning Cached entry for %s %s" % (bookID, reason))
             else:
-                logger.debug("getBookWork: Returning Cached seriespage for %s" % item['seriesName'])
+                logger.debug("getBookWork: Returning Cached workpage for %s" % bookID)
 
             if PY2:
                 with open(workfile, "r") as cachefile:
@@ -368,23 +234,17 @@ def getBookWork(bookID=None, reason=None, seriesID=None):
                     logger.warn("New WhatWork is disabled")
                     LAST_NEW = timenow
                 return None
-            if bookID:
-                title = safe_unicode(item['BookName'])
-                author = safe_unicode(item['AuthorName'])
-                if PY2:
-                    title = title.encode(lazylibrarian.SYS_ENCODING)
-                    author = author.encode(lazylibrarian.SYS_ENCODING)
-                URL = 'http://www.librarything.com/api/whatwork.php?author=%s&title=%s' % \
-                      (quote_plus(author), quote_plus(title))
-            else:
-                seriesname = safe_unicode(item['seriesName'])
-                if PY2:
-                    seriesname = seriesname.encode(lazylibrarian.SYS_ENCODING)
-                URL = 'http://www.librarything.com/series/%s' % quote_plus(seriesname)
+            title = safe_unicode(item['BookName'])
+            author = safe_unicode(item['AuthorName'])
+            if PY2:
+                title = title.encode(lazylibrarian.SYS_ENCODING)
+                author = author.encode(lazylibrarian.SYS_ENCODING)
+            URL = 'http://www.librarything.com/api/whatwork.php?author=%s&title=%s' % \
+                  (quote_plus(author), quote_plus(title))
 
             librarything_wait()
             result, success = fetchURL(URL)
-            if bookID and success:
+            if success:
                 # noinspection PyBroadException
                 try:
                     workpage = result.split('<link>')[1].split('</link>')[0]
@@ -423,25 +283,16 @@ def getBookWork(bookID=None, reason=None, seriesID=None):
             if success:
                 with open(workfile, "w") as cachefile:
                     cachefile.write(result)
-                    if bookID:
-                        logger.debug("getBookWork: Caching workpage for %s" % workfile)
-                    else:
-                        logger.debug("getBookWork: Caching series page for %s" % workfile)
+                    logger.debug("getBookWork: Caching workpage for %s" % workfile)
                     # return None if we got an error page back
                     if '</request><error>' in result:
                         return None
                 return result
             else:
-                if bookID:
-                    logger.debug("getBookWork: Unable to cache workpage, got %s" % result)
-                else:
-                    logger.debug("getBookWork: Unable to cache series page, got %s" % result)
+                logger.debug("getBookWork: Unable to cache workpage, got %s" % result)
             return None
     else:
-        if bookID:
-            logger.debug('Get Book Work - Invalid bookID [%s]' % bookID)
-        else:
-            logger.debug('Get Book Work - Invalid seriesID [%s]' % seriesID)
+        logger.debug('Get Book Work - Invalid bookID [%s]' % bookID)
         return None
 
 
@@ -459,31 +310,6 @@ def getWorkPage(bookID=None):
             return ''
         return page
     return ''
-
-
-def getAllSeriesAuthors():
-    """ For each entry in the series table, get a list of authors contributing to the series
-        and import those authors (and their books) into the database """
-    myDB = database.DBConnection()
-    series = myDB.select('select SeriesID from series')
-    if series:
-        logger.debug('Getting series authors for %s series' % len(series))
-        counter = 0
-        total = 0
-        for entry in series:
-            seriesid = entry['SeriesID']
-            result = getSeriesAuthors(seriesid)
-            if result:
-                counter += 1
-                total += result
-            else:
-                logger.debug('No series info found for series %s' % seriesid)
-        msg = 'Updated authors for %s series, added %s new author%s' % (counter, total, plural(total))
-        logger.debug("Series pages complete: " + msg)
-    else:
-        msg = 'No entries in the series table'
-        logger.debug(msg)
-    return msg
 
 
 def getBookAuthors(bookid):
@@ -511,64 +337,6 @@ def getBookAuthors(bookid):
         except IndexError:
             logger.debug('Error parsing authorlist for %s' % bookid)
     return authorlist
-
-
-def getSeriesAuthors(seriesid):
-    """ Get a list of authors contributing to a series
-        and import those authors (and their books) into the database
-        Return how many authors you added """
-    myDB = database.DBConnection()
-    result = myDB.match("select count(*) as counter from authors")
-    start = int(result['counter'])
-    result = myDB.match('select SeriesName from series where SeriesID=?', (seriesid,))
-    seriesname = result['SeriesName']
-    members, api_hits = getSeriesMembers(seriesid, seriesname)
-
-    if members:
-        myDB = database.DBConnection()
-        for member in members:
-            authorname = member[2]
-            authorid = member[4]
-
-            if authorid:
-                lazylibrarian.importer.addAuthorToDB(refresh=False, authorid=authorid)
-            elif authorname:
-                # Try to add author by name since we don't have an authorid
-                lazylibrarian.importer.addAuthorNameToDB(authorname, False, False)
-
-    result = myDB.match("select count(*) as counter from authors")
-    finish = int(result['counter'])
-    newauth = finish - start
-    logger.info("Added %s new author%s for %s" % (newauth, plural(newauth), seriesname))
-    return newauth
-
-
-def getSeriesMembers(seriesID=None, seriesname=None):
-    """ Ask librarything for details on all books in a series
-        order, bookname, authorname, workid, authorid
-        Return as a list of lists """
-    results = []
-    api_hits = 0
-    data = getBookWork(None, "SeriesPage", seriesID)
-    if data:
-        try:
-            table = data.split('class="worksinseries"')[1].split('</table>')[0]
-            rows = table.split('<tr')
-            for row in rows:
-                if 'href=' in row:
-                    booklink = row.split('href="')[1]
-                    bookname = booklink.split('">')[1].split('<')[0]
-                    try:
-                        authorlink = row.split('href="')[2]
-                        authorname = authorlink.split('">')[1].split('<')[0]
-                        order = row.split('class="order">')[1].split('<')[0]
-                        results.append([order, bookname, authorname, '', ''])
-                    except IndexError:
-                        logger.debug('Incomplete data in series table for series %s' % seriesID)
-        except IndexError:
-            if 'class="worksinseries"' in data:  # error parsing, or just no series data available?
-                logger.debug('Error in series table for series %s' % seriesID)
-    return results, api_hits
 
 
 def get_book_desc(isbn=None, author=None, title=None):
@@ -609,39 +377,6 @@ def get_book_desc(isbn=None, author=None, title=None):
                 except Exception:
                     pass
     return ''
-
-
-def getWorkSeries(bookID=None):
-    """ Return the series names and numbers in series for the given BookID as a list of tuples
-        Uses LibraryThing for series data """
-    serieslist = []
-    if not bookID:
-        logger.error("getWorkSeries - No bookID")
-        return serieslist
-
-    work = getBookWork(bookID, "Series")
-    if work:
-        try:
-            slist = work.split('<h3><b>Series:')[1].split('</h3>')[0].split('<a href="/series/')
-            for item in slist[1:]:
-                try:
-                    series = item.split('">')[1].split('</a>')[0]
-                    if series and '(' in series:
-                        seriesnum = series.split('(')[1].split(')')[0].strip()
-                        series = series.split(' (')[0].strip()
-                    else:
-                        seriesnum = ''
-                        series = series.strip()
-                    seriesname = cleanName(unaccented(series), '&/')
-                    seriesnum = cleanName(unaccented(seriesnum))
-                    if seriesname:
-                        serieslist.append(('', seriesnum, seriesname))
-                except IndexError:
-                    pass
-        except IndexError:
-            pass
-
-    return serieslist
 
 
 def get_book_pubdate(bookid, refresh=False):

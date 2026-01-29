@@ -76,7 +76,6 @@ class TestGeneralSettings(unittest.TestCase):
         self.assertEqual(settings.log_size, 204800)
         self.assertEqual(settings.file_perm, '0o644')
         self.assertEqual(settings.dir_perm, '0o755')
-        self.assertTrue(settings.series_tab)
         self.assertTrue(settings.author_img)
 
 
@@ -180,7 +179,6 @@ class TestConfigLoader(unittest.TestCase):
         legacy = {
             'HTTP_PORT': 8080,
             'HTTP_HOST': 'localhost',
-            'HTTP_LOOK': 'bookstrap',
             'LOGLEVEL': 2,
             'EBOOK_DIR': '/path/to/ebooks',
             'MATCH_RATIO': 85,

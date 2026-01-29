@@ -17,7 +17,7 @@ import string
 import lazylibrarian
 from lazylibrarian import logger, database
 from lazylibrarian.common import safe_move
-from lazylibrarian.formatter import plural, is_valid_booktype, check_int, replace_all, getList, \
+from lazylibrarian.formatter import plural, is_valid_booktype, check_int, replace_all, \
     makeUnicode, makeBytestr, multibook
 
 try:
@@ -405,52 +405,18 @@ def bookRename(bookid):
 
 def nameVars(bookid, abridged=''):
     """ Return name variables for a bookid as a dict of formatted strings
-        The strings are configurable, but by default...
-        Series returns ( Lord of the Rings 2 )
-        FmtName returns Lord of the Rings (with added Num part if that's not numeric, eg Lord of the Rings Book One)
-        FmtNum  returns Book #1 -    (or empty string if no numeric part)
-        so you can combine to make Book #1 - Lord of the Rings
-        PadNum is zero padded numeric part or empty string
-        SerName and SerNum are the unformatted base strings
         PubYear is the publication year of the book or empty string
-        SerYear is the publication year of the first book in the series or empty string
+        Series-related variables are no longer supported and return empty strings
         """
     mydict = {}
-    seriesnum = ''
-    seriesname = ''
 
     myDB = database.DBConnection()
 
     if bookid == 'test':
-        seriesid = '66175'
-        serieslist = ['3']
         pubyear = '1955'
-        seryear = '1954'
-        seriesname = 'The Lord of the Rings'
         mydict['Author'] = 'J.R.R. Tolkien'
         mydict['Title'] = 'The Fellowship of the Ring'
-        res = {}
     else:
-        cmd = 'SELECT SeriesID,SeriesNum from member,books WHERE books.bookid = member.bookid and books.bookid=?'
-        res = myDB.match(cmd, (bookid,))
-        if res:
-            seriesid = res['SeriesID']
-            serieslist = getList(res['SeriesNum'])
-
-            cmd = 'SELECT BookDate from member,books WHERE books.bookid = member.bookid and SeriesNum=1 and SeriesID=?'
-            resDate = myDB.match(cmd, (seriesid,))
-            if resDate:
-                seryear = resDate['BookDate']
-                if not seryear or seryear == '0000':
-                    seryear = ''
-                seryear = seryear[:4]
-            else:
-                seryear = ''
-        else:
-            seriesid = ''
-            serieslist = []
-            seryear = ''
-
         cmd = 'SELECT BookDate from books WHERE bookid=?'
         resDate = myDB.match(cmd, (bookid,))
         if resDate:
@@ -461,95 +427,6 @@ def nameVars(bookid, abridged=''):
         else:
             pubyear = ''
 
-    # might be "Book 3.5" or similar, just get the numeric part
-    while serieslist:
-        seriesnum = serieslist.pop()
-        seriesnum = seriesnum.lstrip('#')
-        try:
-            _ = float(seriesnum)
-            break
-        except ValueError:
-            seriesnum = ''
-            pass
-
-    padnum = ''
-    if res and seriesnum == '':
-        # couldn't figure out number, keep everything we got, could be something like "Book Two"
-        serieslist = res['SeriesNum']
-    elif seriesnum.isdigit():
-        padnum = str(int(seriesnum)).zfill(2)
-    else:
-        try:
-            padnum = str(float(seriesnum))
-            if padnum[1] == '.':
-                padnum = '0' + padnum
-        except (ValueError, IndexError):
-            padnum = ''
-
-    if seriesid and bookid != 'test':
-        cmd = 'SELECT SeriesName from series WHERE seriesid=?'
-        res = myDB.match(cmd, (seriesid,))
-        if res:
-            seriesname = res['SeriesName']
-            if seriesnum == '':
-                # add what we got back to end of series name
-                if seriesname and serieslist:
-                    seriesname = "%s %s" % (seriesname, serieslist)
-
-    seriesname = ' '.join(seriesname.split())  # strip extra spaces
-    if only_punctuation(seriesname):  # but don't return just whitespace or punctuation
-        seriesname = ''
-
-    if seriesname:
-        fmtname = lazylibrarian.CONFIG['FMT_SERNAME'].replace('$SerName', seriesname).replace(
-                                                              '$PubYear', pubyear).replace(
-                                                              '$SerYear', seryear).replace(
-                                                              '$$', ' ')
-    else:
-        fmtname = ''
-
-    fmtname = ' '.join(fmtname.split())
-    if only_punctuation(fmtname):
-        fmtname = ''
-
-    if seriesnum != '':  # allow 0
-        fmtnum = lazylibrarian.CONFIG['FMT_SERNUM'].replace('$SerNum', seriesnum).replace(
-                                                            '$PubYear', pubyear).replace(
-                                                            '$SerYear', seryear).replace(
-                                                            '$PadNum', padnum).replace('$$', ' ')
-    else:
-        fmtnum = ''
-
-    fmtnum = ' '.join(fmtnum.split())
-    if only_punctuation(fmtnum):
-        fmtnum = ''
-
-    if fmtnum != '' or fmtname:
-        fmtseries = lazylibrarian.CONFIG['FMT_SERIES'].replace('$SerNum', seriesnum).replace(
-                                                             '$SerName', seriesname).replace(
-                                                             '$PadNum', padnum).replace(
-                                                             '$PubYear', pubyear).replace(
-                                                             '$SerYear', seryear).replace(
-                                                             '$FmtName', fmtname).replace(
-                                                             '$FmtNum', fmtnum).replace('$$', ' ')
-    else:
-        fmtseries = ''
-
-    fmtseries = ' '.join(fmtseries.split())
-    if only_punctuation(fmtseries):
-        fmtseries = ''
-
-    mydict['FmtName'] = fmtname
-    mydict['FmtNum'] = fmtnum
-    mydict['Series'] = fmtseries
-    mydict['PadNum'] = padnum
-    mydict['SerName'] = seriesname
-    mydict['SerNum'] = seriesnum
-    mydict['PubYear'] = pubyear
-    mydict['SerYear'] = seryear
-    mydict['Abridged'] = abridged
-
-    if bookid != 'test':
         cmd = 'select AuthorName,BookName from books,authors where books.AuthorID = authors.AuthorID and bookid=?'
         exists = myDB.match(cmd, (bookid,))
         if exists:
@@ -558,6 +435,17 @@ def nameVars(bookid, abridged=''):
         else:
             mydict['Author'] = ''
             mydict['Title'] = ''
+
+    # Series functionality has been removed - return empty strings for backwards compatibility
+    mydict['FmtName'] = ''
+    mydict['FmtNum'] = ''
+    mydict['Series'] = ''
+    mydict['PadNum'] = ''
+    mydict['SerName'] = ''
+    mydict['SerNum'] = ''
+    mydict['PubYear'] = pubyear
+    mydict['SerYear'] = ''
+    mydict['Abridged'] = abridged
 
     dest_path = replacevars(lazylibrarian.CONFIG['EBOOK_DEST_FOLDER'], mydict)
     dest_path = replace_all(dest_path, __dic__)

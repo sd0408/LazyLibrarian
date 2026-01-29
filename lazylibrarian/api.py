@@ -25,27 +25,23 @@ import cherrypy
 import lazylibrarian
 from lazylibrarian import logger, database
 from lazylibrarian.bookrename import audioProcess, nameVars
-from lazylibrarian.bookwork import setWorkPages, getWorkSeries, getWorkPage, setAllBookSeries, \
-    getSeriesMembers, getSeriesAuthors, deleteEmptySeries, getBookAuthors, setAllBookAuthors, \
+from lazylibrarian.bookwork import setWorkPages, getWorkPage, getBookAuthors, setAllBookAuthors, \
     setWorkID, get_book_desc
 from lazylibrarian.cache import cache_img
 from lazylibrarian.calibre import syncCalibreList, calibreList
 from lazylibrarian.common import clearLog, cleanCache, restartJobs, showJobs, checkRunningJobs, aaUpdate, setperm, \
     logHeader, authorUpdate, showStats
 from lazylibrarian.csvfile import import_CSV, export_CSV, dump_table
-from lazylibrarian.formatter import today, formatAuthorName, check_int, plural, makeUnicode, makeBytestr, replace_all
+from lazylibrarian.formatter import formatAuthorName, check_int, plural, makeUnicode, makeBytestr
 from lazylibrarian.gb import GoogleBooks
-from lazylibrarian.images import getAuthorImage, getAuthorImages, getBookCover, getBookCovers, createMagCovers, \
-    createMagCover
+from lazylibrarian.images import getAuthorImage, getAuthorImages, getBookCover, getBookCovers
 from lazylibrarian.importer import addAuthorToDB, addAuthorNameToDB, update_totals
 from lazylibrarian.librarysync import LibraryScan
-from lazylibrarian.magazinescan import magazineScan
 from lazylibrarian.manualbook import searchItem
-from lazylibrarian.postprocess import processDir, processAlternate, processOPF, processIMG
+from lazylibrarian.postprocess import processDir, processAlternate, processOPF, processIMG, getDownloadProgress, delete_task
 from lazylibrarian.providers import get_capabilities
 from lazylibrarian.rssfeed import genFeed
 from lazylibrarian.searchbook import search_book
-from lazylibrarian.searchmag import search_magazines, get_issue_date
 from lazylibrarian.searchrss import search_rss_book, search_wishlist
 
 # Python 3 compatibility
@@ -73,22 +69,19 @@ cmd_dict = {'help': 'list available commands. ' +
             'getToRead': 'list to-read books for current user',
             'getSnatched': 'list snatched books',
             'getHistory': 'list history',
+            'getActiveDownloads': 'list active downloads with real-time progress',
+            'cancelDownload': '&rowid= [&blacklist=0/1] cancel a download and optionally blacklist it',
+            'cancelAllDownloads': '[&blacklist=0/1] cancel all active downloads',
             'getLogs': 'show current log',
             'getDebug': 'show debug log header',
             'getModules': 'show installed modules',
             'checkModules': 'Check using lazylibrarian library modules',
             'clearLogs': 'clear current log',
-            'getMagazines': 'list magazines',
-            'getIssues': '&name= list issues of named magazine',
-            'getIssueName': '&name= get name of issue from path/filename',
-            'createMagCovers': '[&wait] [&refresh] create covers for magazines, optionally refresh existing ones',
-            'createMagCover': '&file= [&refresh] [&page=] create cover for magazine issue, optional page number',
-            'forceMagSearch': '[&wait] search for all wanted magazines',
             'forceBookSearch': '[&wait] [&type=eBook/AudioBook] search for all wanted books',
             'forceRSSSearch': '[&wait] search all entries in rss feeds',
             'getRSSFeed': '&feed= [&limit=] show rss feed entries',
             'forceWishlistSearch': '[&wait] search all entries in wishlists',
-            'forceProcess': '[&dir] [ignorekeepseeding] process books/mags in download or named dir',
+            'forceProcess': '[&dir] [ignorekeepseeding] process books in download or named dir',
             'pauseAuthor': '&id= pause author by AuthorID',
             'resumeAuthor': '&id= resume author by AuthorID',
             'ignoreAuthor': '&id= ignore author by AuthorID',
@@ -97,7 +90,6 @@ cmd_dict = {'help': 'list available commands. ' +
             'forceActiveAuthorsUpdate': '[&wait] [&refresh] reload all active authors and book data, refresh cache',
             'forceLibraryScan': '[&wait] [&remove] [&dir=] [&id=] rescan whole or part book library',
             'forceAudioBookScan': '[&wait] [&remove] [&dir=] [&id=] rescan whole or part audiobook library',
-            'forceMagazineScan': '[&wait] rescan whole magazine library',
             'getVersion': 'show lazylibrarian version',
             'listNabProviders': 'list newznab and torznab providers (Prowlarr compatible)',
             'addProvider': '&type=newznab/torznab &host= &apikey= [&name=] [&categories=] add a provider',
@@ -116,8 +108,6 @@ cmd_dict = {'help': 'list available commands. ' +
             'addAuthor': '&name= add author to database by name',
             'addAuthorID': '&id= add author to database by AuthorID',
             'removeAuthor': '&id= remove author from database by AuthorID',
-            'addMagazine': '&name= add magazine to database by name',
-            'removeMagazine': '&name= remove magazine and all of its issues from database by name',
             'queueBook': '&id= [&type=eBook/AudioBook] mark book as Wanted, default eBook',
             'unqueueBook': '&id= [&type=eBook/AudioBook] mark book as Skipped, default eBook',
             'readCFG': '&name=&group= read value of config variable "name" in section "group"',
@@ -131,27 +121,23 @@ cmd_dict = {'help': 'list available commands. ' +
             'listNoBooks': 'list all authors in the database with no books',
             'listIgnoredAuthors': 'list all authors in the database marked ignored',
             'listIgnoredBooks': 'list all books in the database marked ignored',
-            'listIgnoredSeries': 'list all series in the database marked ignored',
             'listMissingWorkpages': 'list all books with errorpage or no workpage',
             'searchBook': '&id= [&wait] [&type=eBook/AudioBook] search for one book by BookID',
             'searchItem': '&item= get search results for an item (author, title, isbn)',
+            'interactiveSearch': '&id= [&library=eBook/AudioBook] get all search results for a book by BookID',
+            'blacklistResult': '&url= &title= &provider= &bookid= [&library=] add a search result to blacklist for this book',
             'showStats': 'show database statistics',
             'showJobs': 'show status of running jobs',
             'restartJobs': 'restart background jobs',
             'showThreads': 'show threaded processes',
             'checkRunningJobs': 'ensure all needed jobs are running',
             'vacuum': 'vacuum the database',
-            'getWorkSeries': '&id= Get series from Librarything BookWork using BookID',
-            'getSeriesMembers': '&id= Get list of series members using SeriesID',
-            'getSeriesAuthors': '&id= Get all authors for a series and import them',
             'getWorkPage': '&id= Get url of Librarything BookWork using BookID',
             'getBookCovers': '[&wait] Check all books for cached cover and download one if missing',
             'getBookAuthors': '&id= Get list of authors associated with this book',
             'cleanCache': '[&wait] Clean unused and expired files from the LazyLibrarian caches',
-            'deleteEmptySeries': 'Delete any book series that have no members',
             'setNoDesc': 'Set book descriptions for all books without one',
             'setWorkPages': '[&wait] Set the WorkPages links in the database',
-            'setAllBookSeries': '[&wait] Set the series details from librarything workpages',
             'setAllBookAuthors': '[&wait] Set all authors for all books from book workpages',
             'setWorkID': '[&wait] [&bookids] Set WorkID for all books that dont have one, or bookids',
             'importAlternate': '[&wait] [&dir=] Import books from named or alternate folder and any subfolders',
@@ -337,6 +323,112 @@ class Api(object):
         self.data = self._dic_from_query(
             "SELECT * from wanted WHERE Status != 'Skipped' and Status != 'Ignored'")
 
+    def _getActiveDownloads(self):
+        """Return active downloads with real-time progress from clients."""
+        myDB = database.DBConnection()
+        downloads = myDB.select("SELECT rowid, * from wanted WHERE Status='Snatched'")
+        result = []
+        for dl in downloads:
+            progress = -1
+            if dl['Source'] and dl['DownloadID']:
+                try:
+                    progress = getDownloadProgress(dl['Source'], dl['DownloadID'])
+                except Exception:
+                    progress = -1
+            result.append({
+                'rowid': dl['rowid'],
+                'title': dl['NZBtitle'],
+                'type': dl['AuxInfo'],
+                'bookId': dl['BookID'],
+                'provider': dl['NZBprov'],
+                'date': dl['NZBdate'],
+                'size': dl['NZBsize'],
+                'source': dl['Source'],
+                'downloadId': dl['DownloadID'],
+                'progress': progress
+            })
+        self.data = result
+
+    def _cancelDownload(self, **kwargs):
+        """Cancel a download and optionally blacklist it."""
+        if 'rowid' not in kwargs:
+            self.data = 'Missing parameter: rowid'
+            return
+
+        rowid = kwargs['rowid']
+        blacklist = kwargs.get('blacklist', '0') == '1'
+
+        myDB = database.DBConnection()
+        item = myDB.match('SELECT * FROM wanted WHERE rowid=?', (rowid,))
+        if not item:
+            self.data = 'Download not found'
+            return
+
+        # Cancel in client
+        if item['Source'] and item['DownloadID']:
+            try:
+                delete_task(item['Source'], item['DownloadID'], True)
+            except Exception as e:
+                logger.warn('Failed to cancel download from client: %s' % str(e))
+
+        # Blacklist if requested
+        if blacklist:
+            add_to_blacklist(
+                item['NZBurl'], item['NZBtitle'], item['NZBprov'],
+                item['BookID'], item['AuxInfo'], 'Cancelled'
+            )
+
+        # Reset book status
+        if item['BookID'] and item['BookID'] != 'unknown':
+            if item['AuxInfo'] == 'AudioBook':
+                myDB.action('UPDATE books SET AudioStatus="Wanted" WHERE BookID=? AND AudioStatus="Snatched"',
+                            (item['BookID'],))
+            else:
+                myDB.action('UPDATE books SET Status="Wanted" WHERE BookID=? AND Status="Snatched"',
+                            (item['BookID'],))
+
+        # Remove from wanted
+        myDB.action('DELETE FROM wanted WHERE rowid=?', (rowid,))
+        self.data = 'Download cancelled'
+
+    def _cancelAllDownloads(self, **kwargs):
+        """Cancel all active downloads and optionally blacklist them."""
+        blacklist = kwargs.get('blacklist', '0') == '1'
+
+        myDB = database.DBConnection()
+        rowlist = myDB.select('SELECT * FROM wanted WHERE Status="Snatched"')
+
+        cancelled = 0
+        for item in rowlist:
+            # Cancel in client
+            if item['Source'] and item['DownloadID']:
+                try:
+                    delete_task(item['Source'], item['DownloadID'], True)
+                except Exception as e:
+                    logger.warn('Failed to cancel download from client: %s' % str(e))
+
+            # Blacklist if requested
+            if blacklist:
+                add_to_blacklist(
+                    item['NZBurl'], item['NZBtitle'], item['NZBprov'],
+                    item['BookID'], item['AuxInfo'], 'Cancelled'
+                )
+
+            # Reset book status
+            if item['BookID'] and item['BookID'] != 'unknown':
+                if item['AuxInfo'] == 'AudioBook':
+                    myDB.action('UPDATE books SET AudioStatus="Wanted" WHERE BookID=? AND AudioStatus="Snatched"',
+                                (item['BookID'],))
+                else:
+                    myDB.action('UPDATE books SET Status="Wanted" WHERE BookID=? AND Status="Snatched"',
+                                (item['BookID'],))
+
+            cancelled += 1
+
+        # Remove all snatched from wanted
+        myDB.action('DELETE FROM wanted WHERE Status="Snatched"')
+        self.data = 'Cancelled %d downloads' % cancelled
+
     def _showThreads(self):
         self.data = [n.name for n in [t for t in threading.enumerate()]]
 
@@ -365,7 +457,7 @@ class Api(object):
         if 'table' not in kwargs:
             self.data = 'Missing parameter: table'
             return
-        valid = ['users', 'magazines']
+        valid = ['users']
         if kwargs['table'] not in valid:
             self.data = 'Invalid table. Only %s' % str(valid)
             return
@@ -548,10 +640,6 @@ class Api(object):
         q = 'SELECT AuthorName from authors where TotalBooks=0'
         self.data = self._dic_from_query(q)
 
-    def _listIgnoredSeries(self):
-        q = 'SELECT SeriesID,SeriesName from series where Status="Ignored"'
-        self.data = self._dic_from_query(q)
-
     def _listIgnoredBooks(self):
         q = 'SELECT BookID,BookName from books where Status="Ignored"'
         self.data = self._dic_from_query(q)
@@ -590,79 +678,11 @@ class Api(object):
 
         self.data = {'author': author, 'books': books}
 
-    def _getMagazines(self):
-        self.data = self._dic_from_query('SELECT * from magazines order by Title COLLATE NOCASE')
-
     def _getAllBooks(self):
         q = 'SELECT authors.AuthorID,AuthorName,AuthorLink,BookName,BookSub,BookGenre,BookIsbn,BookPub,'
         q += 'BookRate,BookImg,BookPages,BookLink,BookID,BookDate,BookLang,BookAdded,books.Status '
         q += 'from books,authors where books.AuthorID = authors.AuthorID'
         self.data = self._dic_from_query(q)
-
-    def _getIssues(self, **kwargs):
-        if 'name' not in kwargs:
-            self.data = 'Missing parameter: name'
-            return
-        self.id = kwargs['name']
-        magazine = self._dic_from_query(
-            'SELECT * from magazines WHERE Title="' + self.id + '"')
-        issues = self._dic_from_query(
-            'SELECT * from issues WHERE Title="' + self.id + '" order by IssueDate DESC')
-
-        self.data = {'magazine': magazine, 'issues': issues}
-
-    def _getIssueName(self, **kwargs):
-        if 'name' not in kwargs:
-            self.data = 'Missing parameter: name'
-            return
-        self.data = ''
-
-        dirname = os.path.dirname(kwargs['name'])
-
-        dic = {'.': ' ', '-': ' ', '/': ' ', '+': ' ', '_': ' ', '(': '', ')': '', '[': ' ', ']': ' ', '#': '# '}
-        name_exploded = replace_all(kwargs['name'], dic).split()
-
-        regex_pass, issuedate, year = get_issue_date(name_exploded)
-
-        if regex_pass:
-            if int(regex_pass) > 9:  # we think it's an issue number
-                if issuedate.isdigit():
-                    issuedate = issuedate.zfill(4)  # pad with leading zeros
-            if dirname:
-                title = os.path.basename(dirname)
-                if '$Title' in lazylibrarian.CONFIG['MAG_DEST_FILE']:
-                    fname = lazylibrarian.CONFIG['MAG_DEST_FILE'].replace('$IssueDate', issuedate).replace(
-                        '$Title', title)
-                else:
-                    fname = lazylibrarian.CONFIG['MAG_DEST_FILE'].replace('$IssueDate', issuedate)
-                self.data = os.path.join(dirname, fname + '.' + name_exploded[-1])
-            else:
-                self.data = "Regex %s [%s] %s" % (regex_pass, issuedate, year)
-        else:
-            self.data = {regex_pass, issuedate, year}
-
-    def _createMagCovers(self, **kwargs):
-        if 'refresh' in kwargs:
-            refresh = True
-        else:
-            refresh = False
-        if 'wait' in kwargs:
-            self.data = createMagCovers(refresh=refresh)
-        else:
-            threading.Thread(target=createMagCovers, name='API-MAGCOVERS', args=[refresh]).start()
-
-    def _createMagCover(self, **kwargs):
-        if 'file' not in kwargs:
-            self.data = 'Missing parameter: file'
-            return
-        if 'refresh' in kwargs:
-            refresh = True
-        else:
-            refresh = False
-        if 'page' in kwargs:
-            self.data = createMagCover(issuefile=kwargs['file'], refresh=refresh, pagenum=kwargs['page'])
-        else:
-            self.data = createMagCover(issuefile=kwargs['file'], refresh=refresh)
 
     def _getBook(self, **kwargs):
         if 'id' not in kwargs:
@@ -703,35 +723,6 @@ class Api(object):
                 else:
                     myDB.action('UPDATE books SET Status="Skipped" WHERE BookID=?', (kwargs['id'],))
                 self.data = 'OK'
-
-    def _addMagazine(self, **kwargs):
-        if 'name' not in kwargs:
-            self.data = 'Missing parameter: name'
-            return
-        else:
-            self.id = kwargs['name']
-
-        myDB = database.DBConnection()
-        controlValueDict = {"Title": self.id}
-        newValueDict = {
-            "Regex": None,
-            "Status": "Active",
-            "MagazineAdded": today(),
-            "IssueStatus": "Wanted",
-            "Reject": None
-        }
-        myDB.upsert("magazines", newValueDict, controlValueDict)
-
-    def _removeMagazine(self, **kwargs):
-        if 'name' not in kwargs:
-            self.data = 'Missing parameter: name'
-            return
-        else:
-            self.id = kwargs['name']
-
-        myDB = database.DBConnection()
-        myDB.action('DELETE from magazines WHERE Title=?', (self.id,))
-        myDB.action('DELETE from wanted WHERE BookID=?', (self.id,))
 
     def _pauseAuthor(self, **kwargs):
         if 'id' not in kwargs:
@@ -798,15 +789,6 @@ class Api(object):
             self.data = aaUpdate(refresh=refresh)
         else:
             threading.Thread(target=aaUpdate, name='API-AAUPDATE', args=[refresh]).start()
-
-    def _forceMagSearch(self, **kwargs):
-        if lazylibrarian.USE_NZB() or lazylibrarian.USE_TOR() or lazylibrarian.USE_RSS() or lazylibrarian.USE_DIRECT():
-            if 'wait' in kwargs:
-                search_magazines(None, True)
-            else:
-                threading.Thread(target=search_magazines, name='API-SEARCHMAGS', args=[None, True]).start()
-        else:
-            self.data = 'No search methods set, check config'
 
     def _forceRSSSearch(self, **kwargs):
         if lazylibrarian.USE_RSS():
@@ -883,16 +865,6 @@ class Api(object):
             threading.Thread(target=LibraryScan, name='API-LIBRARYSCAN',
                              args=[startdir, 'AudioBook', authid, remove]).start()
 
-    @staticmethod
-    def _forceMagazineScan(**kwargs):
-        if 'wait' in kwargs:
-            magazineScan()
-        else:
-            threading.Thread(target=magazineScan, name='API-MAGSCAN', args=[]).start()
-
-    def _deleteEmptySeries(self):
-        self.data = deleteEmptySeries()
-
     def _cleanCache(self, **kwargs):
         if 'wait' in kwargs:
             self.data = cleanCache()
@@ -913,12 +885,6 @@ class Api(object):
             self.data = setWorkID(ids)
         else:
             threading.Thread(target=setWorkID, name='API-SETWORKID', args=[ids]).start()
-
-    def _setAllBookSeries(self, **kwargs):
-        if 'wait' in kwargs:
-            self.data = setAllBookSeries()
-        else:
-            threading.Thread(target=setAllBookSeries, name='API-SETALLBOOKSERIES', args=[]).start()
 
     def _setAllBookAuthors(self, **kwargs):
         if 'wait' in kwargs:
@@ -955,8 +921,6 @@ class Api(object):
             categories = []
             if provider.get('BOOKSCAT'):
                 categories.append(provider['BOOKSCAT'])
-            if provider.get('MAGSCAT'):
-                categories.append(provider['MAGSCAT'])
             if provider.get('AUDIOCAT'):
                 categories.append(provider['AUDIOCAT'])
             if provider.get('COMICSCAT'):
@@ -975,8 +939,6 @@ class Api(object):
             categories = []
             if provider.get('BOOKSCAT'):
                 categories.append(provider['BOOKSCAT'])
-            if provider.get('MAGSCAT'):
-                categories.append(provider['MAGSCAT'])
             if provider.get('AUDIOCAT'):
                 categories.append(provider['AUDIOCAT'])
             if provider.get('COMICSCAT'):
@@ -1029,13 +991,11 @@ class Api(object):
             prov_list = lazylibrarian.NEWZNAB_PROV
             prov_prefix = 'Newznab'
             default_bookcat = '7000,7020'
-            default_magcat = '7010'
             default_audiocat = '3030'
         else:
             prov_list = lazylibrarian.TORZNAB_PROV
             prov_prefix = 'Torznab'
             default_bookcat = '8000,8010'
-            default_magcat = '8030'
             default_audiocat = '3030'
 
         # Find an empty slot or the last slot
@@ -1069,7 +1029,6 @@ class Api(object):
             'DISPNAME': dispname,
             'ENABLED': 1 if str(enabled).lower() in ('1', 'true', 'yes') else 0,
             'BOOKCAT': categories if categories else default_bookcat,
-            'MAGCAT': default_magcat,
             'AUDIOCAT': default_audiocat,
             'DLPRIORITY': dl_priority,
         })
@@ -1306,6 +1265,104 @@ class Api(object):
         else:
             self.data = searchItem(kwargs['item'])
 
+    def _interactiveSearch(self, **kwargs):
+        """Get all search results for a book by BookID, allowing user to pick which to download.
+        Parameters:
+            id: BookID to search for
+            library: 'eBook' or 'AudioBook' (default: eBook)
+            showall: '1' to search all categories (default: '0')
+        """
+        if 'id' not in kwargs:
+            self.data = 'Missing parameter: id'
+            return
+
+        bookid = kwargs['id']
+        library = kwargs.get('library', 'eBook')
+        showall = kwargs.get('showall', '0')
+
+        myDB = database.DBConnection()
+        bookdata = myDB.match(
+            'SELECT books.*, authors.AuthorName FROM books, authors '
+            'WHERE books.AuthorID = authors.AuthorID AND BookID=?', (bookid,))
+
+        if not bookdata:
+            self.data = 'Book not found'
+            return
+
+        # Determine search category - use 'general' if showall is enabled
+        if showall == '1':
+            cat = 'general'
+        else:
+            cat = 'audio' if library == 'AudioBook' else 'book'
+
+        # Build search term
+        searchterm = '%s %s' % (bookdata['AuthorName'], bookdata['BookName'])
+        searchterm = searchterm.strip()
+
+        # Perform search using existing searchItem function
+        results = searchItem(searchterm, bookid, cat)
+
+        # Check blacklist status for each result
+        for result in results:
+            from urllib.parse import unquote_plus
+            url = unquote_plus(result.get('url', ''))
+            result_title = result.get('title', '')
+            provider = result.get('provider', '')
+
+            # Check if blacklisted for this book
+            blacklisted = myDB.match(
+                'SELECT * FROM blacklist WHERE (NZBurl=? OR (NZBprov=? AND NZBtitle=?)) '
+                'AND BookID=? AND Reason="UserBlacklisted"',
+                (url, provider, result_title, bookid))
+            result['blacklisted'] = bool(blacklisted)
+
+            # Format size for display
+            try:
+                size_bytes = int(result.get('size', 0))
+                if size_bytes > 1073741824:  # > 1GB
+                    result['size_display'] = '%.2f GB' % (size_bytes / 1073741824)
+                elif size_bytes > 1048576:  # > 1MB
+                    result['size_display'] = '%.2f MB' % (size_bytes / 1048576)
+                elif size_bytes > 1024:  # > 1KB
+                    result['size_display'] = '%.2f KB' % (size_bytes / 1024)
+                else:
+                    result['size_display'] = '%d B' % size_bytes
+            except (ValueError, TypeError):
+                result['size_display'] = result.get('size', 'Unknown')
+
+        # Sort by score descending
+        results = sorted(results, key=lambda x: x.get('score', 0), reverse=True)
+
+        self.data = {
+            'results': results,
+            'count': len(results),
+            'bookid': bookid,
+            'library': library,
+            'searchterm': searchterm
+        }
+
+    def _blacklistResult(self, **kwargs):
+        """Add a search result to the blacklist for a specific book."""
+        required = ['url', 'title', 'provider', 'bookid']
+        for param in required:
+            if param not in kwargs:
+                self.data = 'Missing parameter: %s' % param
+                return
+
+        from lazylibrarian.database import add_to_blacklist
+        from urllib.parse import unquote_plus
+
+        url = unquote_plus(kwargs['url'])
+        title = kwargs['title']
+        provider = kwargs['provider']
+        bookid = kwargs['bookid']
+        library = kwargs.get('library')
+
+        add_to_blacklist(url, title, provider, bookid, library, 'UserBlacklisted')
+        logger.info('API: User blacklisted "%s" from %s for book %s' % (title, provider, bookid))
+
+        self.data = 'Result blacklisted successfully'
+
     def _searchBook(self, **kwargs):
         if 'id' not in kwargs:
             self.data = 'Missing parameter: id'
@@ -1378,22 +1435,6 @@ class Api(object):
     def _loadCFG():
         lazylibrarian.config_read(reloaded=True)
 
-    def _getSeriesAuthors(self, **kwargs):
-        if 'id' not in kwargs:
-            self.data = 'Missing parameter: id'
-        else:
-            self.id = kwargs['id']
-            count = getSeriesAuthors(self.id)
-            self.data = "Added %s" % count
-
-    def _getSeriesMembers(self, **kwargs):
-        if 'id' not in kwargs:
-            self.data = 'Missing parameter: id'
-            return
-        else:
-            self.id = kwargs['id']
-        self.data = getSeriesMembers(self.id)
-
     def _getBookAuthors(self, **kwargs):
         if 'id' not in kwargs:
             self.data = 'Missing parameter: id'
@@ -1401,14 +1442,6 @@ class Api(object):
         else:
             self.id = kwargs['id']
         self.data = getBookAuthors(self.id)
-
-    def _getWorkSeries(self, **kwargs):
-        if 'id' not in kwargs:
-            self.data = 'Missing parameter: id'
-            return
-        else:
-            self.id = kwargs['id']
-        self.data = getWorkSeries(self.id)
 
     def _getWorkPage(self, **kwargs):
         if 'id' not in kwargs:
@@ -1485,6 +1518,7 @@ class Api(object):
 
     def _setimage(self, table, itemid, img):
         msg = "%s Image [%s] rejected" % (table, img)
+        cachedimg = None
         # Cache file image
         if os.path.isfile(img):
             extn = os.path.splitext(img)[1].lower()
@@ -1493,6 +1527,8 @@ class Api(object):
                 try:
                     shutil.copy(img, destfile)
                     setperm(destfile)
+                    # Use forward slashes for web-safe path
+                    cachedimg = 'cache/%s/%s.jpg' % (table, itemid)
                     msg = ''
                 except Exception as why:
                     msg += " Failed to copy file: %s %s" % (type(why).__name__, str(why))
@@ -1521,7 +1557,7 @@ class Api(object):
         dbentry = myDB.match('SELECT %sID from %ss WHERE %sID=%s' % (table, table, table, itemid))
         if dbentry:
             myDB.action('UPDATE %ss SET %sImg="%s" WHERE %sID=%s' %
-                        (table, table, 'cache' + os.path.sep + itemid + '.jpg', table, itemid))
+                        (table, table, cachedimg, table, itemid))
         else:
             self.data = "%sID %s not found" % (table, itemid)
 

@@ -1,0 +1,203 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'authors'
+%>
+<%def name="headIncludes()">
+</%def>
+<%def name="styleIncludes()">
+.ll-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+.ll-result-card {
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.ll-result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+.ll-result-content {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+}
+.ll-result-cover {
+    width: 80px;
+    min-width: 80px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+}
+.ll-result-info {
+    flex: 1;
+    min-width: 0;
+}
+.ll-result-title {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: var(--text);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.ll-result-author {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+}
+.ll-result-meta {
+    font-size: 0.75rem;
+    color: var(--text-lighter);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.ll-result-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.ll-result-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+}
+.ll-result-actions .ll-btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.8125rem;
+    padding: 0.5rem;
+}
+.ll-match-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background: var(--accent-bg);
+    color: var(--accent);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.ll-in-library {
+    background: var(--success-bg);
+    color: var(--success);
+}
+.ll-loading {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+.ll-no-results {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-light);
+}
+.ll-no-results svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <a href="searchForAuthor" class="ll-btn ll-btn-ghost ll-btn-sm" style="margin-bottom: 0.5rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                New Search
+            </a>
+            <h1 class="ll-page-title">${title}</h1>
+        </div>
+    </div>
+
+    %if searchresults:
+    <div class="ll-results-grid">
+        %for result in searchresults:
+        <div class="ll-result-card">
+            <div class="ll-result-content">
+                %if result.get('bookimg'):
+                <img src="${result['bookimg']}" alt="${result['bookname']}" class="ll-result-cover" onerror="this.src='images/nocover.png'">
+                %else:
+                <img src="images/nocover.png" alt="No cover" class="ll-result-cover">
+                %endif
+                <div class="ll-result-info">
+                    <div class="ll-result-title" title="${result['bookname']}">${result['bookname']}</div>
+                    <div class="ll-result-author">${result['authorname']}</div>
+                    <div class="ll-result-meta">
+                        %if result.get('bookdate'):
+                        <span>${result['bookdate'][:4] if len(result['bookdate']) >= 4 else result['bookdate']}</span>
+                        %endif
+                        %if result.get('booklang'):
+                        <span>${result['booklang'].upper()}</span>
+                        %endif
+                        %if result.get('bookpages'):
+                        <span>${result['bookpages']} pages</span>
+                        %endif
+                    </div>
+                    <div style="margin-top: 0.5rem;">
+                        %if result.get('authorid') and result['authorid'] in authorlist:
+                        <span class="ll-match-score ll-in-library">Author in Library</span>
+                        %elif result.get('authorid') and result['authorid'] in loadlist:
+                        <span class="ll-match-score ll-loading">Loading...</span>
+                        %endif
+                        %if result.get('bookid') and result['bookid'] in booklist:
+                        <span class="ll-match-score ll-in-library">Book in Library</span>
+                        %endif
+                    </div>
+                </div>
+            </div>
+            <div class="ll-result-actions">
+                %if result.get('authorid') and result['authorid'] in authorlist:
+                <a href="authorPage?AuthorID=${result['authorid']}" class="ll-btn ll-btn-secondary ll-btn-sm">
+                    View Author
+                </a>
+                %elif result.get('authorid') and result['authorid'] in loadlist:
+                <span class="ll-btn ll-btn-secondary ll-btn-sm" style="opacity: 0.5; cursor: wait;">
+                    Loading...
+                </span>
+                %else:
+                <a href="addAuthor?AuthorName=${result['authorname'] | u}" class="ll-btn ll-btn-primary ll-btn-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Author
+                </a>
+                %endif
+            </div>
+        </div>
+        %endfor
+    </div>
+    %else:
+    <div class="ll-card">
+        <div class="ll-no-results">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <h3>No Results Found</h3>
+            <p>Try searching with different keywords or check your spelling.</p>
+            <a href="searchForAuthor" class="ll-btn ll-btn-primary" style="margin-top: 1rem;">
+                Try Another Search
+            </a>
+        </div>
+    </div>
+    %endif
+</%def>
+<%def name="javascriptIncludes()">
+</%def>

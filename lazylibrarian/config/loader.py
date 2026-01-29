@@ -200,14 +200,12 @@ class ConfigLoader:
         config.http.password = legacy_config.get('HTTP_PASS', '')
         config.http.proxy = self._get_bool(legacy_config, 'HTTP_PROXY')
         config.http.root = legacy_config.get('HTTP_ROOT', '')
-        config.http.look = legacy_config.get('HTTP_LOOK', 'bookstrap')
         config.http.timeout = self._get_int(legacy_config, 'HTTP_TIMEOUT', 30)
         config.http.ext_timeout = self._get_int(legacy_config, 'HTTP_EXT_TIMEOUT', 90)
         config.http.https_enabled = self._get_bool(legacy_config, 'HTTPS_ENABLED')
         config.http.https_cert = legacy_config.get('HTTPS_CERT', '')
         config.http.https_key = legacy_config.get('HTTPS_KEY', '')
         config.http.ssl_verify = self._get_bool(legacy_config, 'SSL_VERIFY')
-        config.http.bookstrap_theme = legacy_config.get('BOOKSTRAP_THEME', 'slate')
         config.http.launch_browser = self._get_bool(legacy_config, 'LAUNCH_BROWSER', True)
 
         # General settings
@@ -278,14 +276,12 @@ class ConfigLoader:
         legacy['HTTP_PASS'] = config.http.password
         legacy['HTTP_PROXY'] = 1 if config.http.proxy else 0
         legacy['HTTP_ROOT'] = config.http.root
-        legacy['HTTP_LOOK'] = config.http.look
         legacy['HTTP_TIMEOUT'] = config.http.timeout
         legacy['HTTP_EXT_TIMEOUT'] = config.http.ext_timeout
         legacy['HTTPS_ENABLED'] = 1 if config.http.https_enabled else 0
         legacy['HTTPS_CERT'] = config.http.https_cert
         legacy['HTTPS_KEY'] = config.http.https_key
         legacy['SSL_VERIFY'] = 1 if config.http.ssl_verify else 0
-        legacy['BOOKSTRAP_THEME'] = config.http.bookstrap_theme
         legacy['LAUNCH_BROWSER'] = 1 if config.http.launch_browser else 0
 
         # General settings

@@ -481,121 +481,6 @@ class TestApiBooks:
 # ============================================================================
 # Test Magazine Commands
 # ============================================================================
-
-@pytest.mark.api
-class TestApiMagazines:
-    """Tests for magazine-related API commands."""
-
-    @patch('cherrypy.request')
-    def test_getMagazines_returns_magazines(self, mock_request, api_config, temp_db, sample_magazine_data):
-        """getMagazines should return list of magazines."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        db = DBConnection()
-        db.action("INSERT INTO magazines (Title, Status) VALUES (?, ?)",
-                  [sample_magazine_data['Title'], 'Active'])
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='getMagazines')
-        result = api.fetchData
-
-        parsed = json.loads(result)
-        assert len(parsed) >= 1
-        assert parsed[0]['Title'] == sample_magazine_data['Title']
-
-    @patch('cherrypy.request')
-    def test_getMagazines_empty_database(self, mock_request, api_config, temp_db):
-        """getMagazines should return empty list when no magazines."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='getMagazines')
-        result = api.fetchData
-
-        parsed = json.loads(result)
-        assert parsed == []
-
-    @patch('cherrypy.request')
-    def test_addMagazine_creates_magazine(self, mock_request, api_config, temp_db):
-        """addMagazine should create new magazine entry."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='addMagazine', name='Test API Magazine')
-        api.fetchData
-
-        db = DBConnection()
-        result = db.match("SELECT * FROM magazines WHERE Title=?", ('Test API Magazine',))
-        assert result is not None
-        assert result['Status'] == 'Active'
-        assert result['IssueStatus'] == 'Wanted'
-
-    @patch('cherrypy.request')
-    def test_addMagazine_missing_name(self, mock_request, api_config, temp_db):
-        """addMagazine should return error when name is missing."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='addMagazine')
-        result = api.fetchData
-
-        assert 'Missing parameter: name' in result
-
-    @patch('cherrypy.request')
-    def test_removeMagazine_deletes_magazine(self, mock_request, api_config, temp_db):
-        """removeMagazine should delete magazine entry."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        db = DBConnection()
-        db.action("INSERT INTO magazines (Title, Status) VALUES (?, ?)", ('Delete Me', 'Active'))
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='removeMagazine', name='Delete Me')
-        api.fetchData
-
-        result = db.match("SELECT * FROM magazines WHERE Title=?", ('Delete Me',))
-        assert result is None or result == []
-
-    @patch('cherrypy.request')
-    def test_removeMagazine_missing_name(self, mock_request, api_config, temp_db):
-        """removeMagazine should return error when name is missing."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='removeMagazine')
-        result = api.fetchData
-
-        assert 'Missing parameter: name' in result
-
-    @patch('cherrypy.request')
-    def test_getIssues_returns_magazine_and_issues(self, mock_request, api_config, temp_db, sample_magazine_data):
-        """getIssues should return magazine details and issues."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        db = DBConnection()
-        db.action("INSERT INTO magazines (Title, Status) VALUES (?, ?)",
-                  [sample_magazine_data['Title'], 'Active'])
-        db.action("INSERT INTO issues (IssueID, Title, IssueDate) VALUES (?, ?, ?)",
-                  ['issue-001', sample_magazine_data['Title'], '2023-01'])
-
-        api = Api()
-        api.checkParams(apikey='a' * 32, cmd='getIssues', name=sample_magazine_data['Title'])
-        result = api.fetchData
-
-        parsed = json.loads(result)
-        assert 'magazine' in parsed
-        assert 'issues' in parsed
-        assert len(parsed['issues']) == 1
-
-
-# ============================================================================
 # Test System Commands
 # ============================================================================
 
@@ -692,9 +577,6 @@ class TestApiMissingParams:
         ('ignoreAuthor', 'id'),
         ('queueBook', 'id'),
         ('unqueueBook', 'id'),
-        ('addMagazine', 'name'),
-        ('removeMagazine', 'name'),
-        ('getIssues', 'name'),
         ('refreshAuthor', 'name'),
         ('findAuthor', 'name'),
         ('findBook', 'name'),
@@ -705,11 +587,9 @@ class TestApiMissingParams:
         ('removeAuthor', 'id'),
         ('readCFG', 'name'),
         ('writeCFG', 'name'),
-        ('getWorkSeries', 'id'),
         ('getWorkPage', 'id'),
         ('getBookCover', 'id'),
         ('getAuthorImage', 'id'),
-        ('getSeriesMembers', 'id'),
         ('getBookAuthors', 'id'),
     ])
     @patch('cherrypy.request')

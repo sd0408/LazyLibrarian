@@ -686,7 +686,10 @@ def _delete_ebook(bookfile: str, bookname: str) -> None:
 
 
 def _start_wanted_search(book_ids: Dict[str, Any], library: str) -> None:
-    """Start search for wanted books."""
+    """Start search for wanted books (only if IMP_AUTOSEARCH is enabled)."""
+    if not lazylibrarian.CONFIG['IMP_AUTOSEARCH']:
+        return
+
     books = []
     for key in ['booklang', 'library', 'ignored', 'book_table_length']:
         book_ids.pop(key, None)

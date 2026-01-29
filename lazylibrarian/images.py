@@ -454,10 +454,21 @@ def getAuthorImage(authorid=None):
         URL = "https://www.google.com/search?tbm=isch&tbs=ift:jpg,itp:face&as_q=" + safeparams + 'author'
         result, success = fetchURL(URL)
         if success:
-            try:
-                img = result.split('url?q=')[1].split('">')[1].split('src="')[1].split('"')[0]
-            except IndexError:
-                img = None
+            img = None
+            # Try to find Google's encrypted thumbnail URLs first (current format)
+            import re
+            # Look for encrypted-tbn0.gstatic.com image URLs
+            match = re.search(r'src="(https://encrypted-tbn0\.gstatic\.com/images\?[^"]+)"', result)
+            if match:
+                img = match.group(1)
+                # Unescape HTML entities
+                img = img.replace('&amp;', '&')
+            else:
+                # Fallback to old parsing method
+                try:
+                    img = result.split('url?q=')[1].split('">')[1].split('src="')[1].split('"')[0]
+                except IndexError:
+                    img = None
             if img and img.startswith('http'):
                 coverlink, success, was_in_cache = cache_img("author", authorid, img)
                 if success:

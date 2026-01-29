@@ -1,0 +1,399 @@
+<%
+    import lazylibrarian
+    # Default current_page if not set by child template
+    if 'current_page' not in dir():
+        current_page = ''
+    # Default user if not set
+    if 'user' not in dir():
+        user = ''
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>LazyLibrarian - ${title}</title>
+    <meta name="description" content="LazyLibrarian - Book Automation">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/png" href="images/ll.ico">
+    <link rel="apple-touch-icon" href="images/ll.png">
+    <link rel="manifest" href="images/manifest.json">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap utilities and modal styles for bootbox compatibility -->
+    <style>
+    /* Utility classes */
+    .hidden { display: none !important; }
+    .text-center { text-align: center !important; }
+    .text-left { text-align: left !important; }
+    .text-right { text-align: right !important; }
+    .text-start { text-align: left !important; }
+    .text-end { text-align: right !important; }
+    .table-responsive { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+    .no-sort { cursor: default !important; }
+
+    /* Minimal Bootstrap modal styles for bootbox compatibility */
+    .modal-backdrop { position: fixed; top: 0; left: 0; z-index: 1040; width: 100vw; height: 100vh; background-color: #000; }
+    .modal-backdrop.fade { opacity: 0; }
+    .modal-backdrop.in, .modal-backdrop.show { opacity: 0.5; }
+    .modal { position: fixed; top: 0; left: 0; z-index: 1050; display: none; width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto; outline: 0; }
+    .modal.fade .modal-dialog { transition: transform .3s ease-out; transform: translate(0, -50px); }
+    .modal.in .modal-dialog, .modal.show .modal-dialog { transform: none; }
+    .modal-dialog { position: relative; width: auto; margin: 30px auto; max-width: 500px; }
+    .modal-dialog.modal-lg { max-width: 800px; }
+    .modal-dialog.modal-sm { max-width: 300px; }
+    .modal-content { position: relative; display: flex; flex-direction: column; background-color: #fff; background-clip: padding-box; border: 1px solid rgba(0,0,0,.2); border-radius: 8px; outline: 0; box-shadow: 0 5px 15px rgba(0,0,0,.5); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #e9ecef; }
+    .modal-header .close, .modal-header .btn-close { padding: 0; background: transparent; border: 0; font-size: 1.5rem; font-weight: 700; line-height: 1; color: #000; opacity: .5; cursor: pointer; }
+    .modal-header .close:hover { opacity: .75; }
+    .modal-title { margin: 0; font-size: 1.25rem; font-weight: 600; color: #1e293b; }
+    .modal-body { position: relative; flex: 1 1 auto; padding: 20px; color: #1e293b; }
+    .modal-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; padding: 15px 20px; border-top: 1px solid #e9ecef; gap: 8px; }
+    .modal-footer .btn { margin: 0; }
+    body.modal-open { overflow: hidden; }
+    </style>
+
+    <!-- Modern Theme CSS -->
+    <link href="css/modern.css" rel="stylesheet">
+
+    <!-- FontAwesome for backwards compatibility -->
+    <link href="css/fontawesome/fontawesome-all.css" rel="stylesheet">
+
+    ${next.headIncludes()}
+
+    <style>
+        /* Page-specific overrides can go here */
+        ${next.styleIncludes()}
+    </style>
+</head>
+<body>
+    <div class="ll-app">
+        <!-- Sidebar Navigation -->
+        <aside class="ll-sidebar" id="sidebar">
+            <div class="ll-sidebar-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span>LazyLibrarian</span>
+            </div>
+
+            <nav class="ll-sidebar-nav">
+                <!-- MAIN Section -->
+                <div class="ll-nav-section">Main</div>
+                <a href="home" class="ll-nav-item ${' active' if current_page == 'dashboard' else ''}" data-page="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Dashboard
+                </a>
+
+                <!-- LIBRARY Section -->
+                <div class="ll-nav-section">Library</div>
+                %if perm&lazylibrarian.perm_ebook:
+                <a href="authors" class="ll-nav-item ${' active' if current_page == 'authors' else ''}" data-page="authors">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Authors
+                </a>
+                <a href="books" class="ll-nav-item ${' active' if current_page == 'books' else ''}" data-page="books">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    Books
+                </a>
+                %endif
+                %if lazylibrarian.SHOW_AUDIO != 0 and perm&lazylibrarian.perm_audio:
+                <a href="audio" class="ll-nav-item ${' active' if current_page == 'audio' else ''}" data-page="audiobooks">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                    </svg>
+                    AudioBooks
+                </a>
+                %endif
+
+                <!-- ACTIVITY Section -->
+                <div class="ll-nav-section">Activity</div>
+                %if perm&lazylibrarian.perm_managebooks:
+                <a href="manage" class="ll-nav-item ${' active' if current_page == 'wanted' else ''}" data-page="wanted">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Wanted
+                </a>
+                %endif
+                %if perm&lazylibrarian.perm_history:
+                <a href="history" class="ll-nav-item ${' active' if current_page == 'history' else ''}" data-page="history">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 3v5h5"></path>
+                        <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+                        <path d="M12 7v5l4 2"></path>
+                    </svg>
+                    History
+                </a>
+                <a href="activeDownloads" class="ll-nav-item ${' active' if current_page == 'activedownloads' else ''}" data-page="activedownloads">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Active Downloads
+                </a>
+                <a href="blocklist" class="ll-nav-item ${' active' if current_page == 'blocklist' else ''}" data-page="blocklist">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    </svg>
+                    Blocklist
+                </a>
+                %endif
+
+                <!-- SYSTEM Section -->
+                <div class="ll-nav-section">System</div>
+                %if perm&lazylibrarian.perm_logs:
+                <a href="logs" class="ll-nav-item ${' active' if current_page == 'logs' else ''}" data-page="logs">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    Logs
+                </a>
+                %endif
+                %if perm&lazylibrarian.perm_config:
+                <a href="config" class="ll-nav-item ${' active' if current_page == 'config' else ''}" data-page="settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    Settings
+                </a>
+                %endif
+
+                <!-- Help Link -->
+                <a href="https://lazylibrarian.gitlab.io/" target="_blank" class="ll-nav-item" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    Help
+                </a>
+            </nav>
+
+            <!-- Sidebar Footer with User Info -->
+            %if perm > 0:
+            <div class="ll-sidebar-footer">
+                %if lazylibrarian.CONFIG['USER_ACCOUNTS'] == True:
+                <div class="ll-sidebar-user">
+                    <div class="ll-sidebar-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="ll-sidebar-user-info">
+                        <div class="ll-sidebar-user-name">${user if user else 'Guest'}</div>
+                        <div class="ll-sidebar-user-role">
+                            %if lazylibrarian.SHOWLOGOUT == 1:
+                            <a href="logout" style="color: inherit; opacity: 0.7;">Logout</a>
+                            %endif
+                        </div>
+                    </div>
+                </div>
+                %endif
+            </div>
+            %endif
+        </aside>
+
+        <!-- Mobile Header (hidden on desktop) -->
+        <div class="ll-mobile-header" id="mobileHeader" style="display: none;">
+            <button class="ll-btn ll-btn-ghost ll-btn-icon" id="menuToggle" aria-label="Toggle menu">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <span style="font-weight: 600;">LazyLibrarian</span>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="ll-main" id="mainContent">
+            ${next.body()}
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="ll-toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="js/jquery-1.12.0.min.js"></script>
+    <script src="js/jquery-migrate-1.3.0.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script>
+    // Modern Theme JavaScript
+    (function() {
+        'use strict';
+
+        // Mobile menu toggle
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileHeader = document.getElementById('mobileHeader');
+
+        function checkMobile() {
+            if (window.innerWidth <= 1024) {
+                mobileHeader.style.display = 'flex';
+            } else {
+                mobileHeader.style.display = 'none';
+                sidebar.classList.remove('open');
+            }
+        }
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+            });
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth <= 1024 && sidebar.classList.contains('open')) {
+                if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+
+        // Toast notification system
+        window.llToast = {
+            show: function(message, type, duration) {
+                type = type || 'info';
+                duration = duration || 5000;
+
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = 'll-toast';
+
+                const icons = {
+                    success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+                    warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+                    error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+                    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+                };
+
+                toast.innerHTML = '<div class="ll-toast-icon ' + type + '">' + icons[type] + '</div>' +
+                    '<div class="ll-toast-content"><div class="ll-toast-message">' + message + '</div></div>' +
+                    '<button class="ll-toast-close" aria-label="Close">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>' +
+                    '</button>';
+
+                container.appendChild(toast);
+
+                // Close button
+                toast.querySelector('.ll-toast-close').addEventListener('click', function() {
+                    toast.remove();
+                });
+
+                // Auto dismiss
+                setTimeout(function() {
+                    if (toast.parentNode) {
+                        toast.style.animation = 'slideIn 0.3s ease reverse';
+                        setTimeout(function() { toast.remove(); }, 300);
+                    }
+                }, duration);
+            }
+        };
+
+        // Cookie helpers for view preferences
+        window.llCookie = {
+            set: function(name, value, days) {
+                var expires = '';
+                if (days) {
+                    var date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    expires = '; expires=' + date.toUTCString();
+                }
+                document.cookie = name + '=' + encodeURIComponent(value) + expires + '; path=/';
+            },
+            get: function(name) {
+                var nameEQ = name + '=';
+                var ca = document.cookie.split(';');
+                for (var i = 0; i < ca.length; i++) {
+                    var c = ca[i];
+                    while (c.charAt(0) === ' ') c = c.substring(1);
+                    if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length));
+                }
+                return null;
+            }
+        };
+
+        // View toggle functionality
+        document.querySelectorAll('.ll-view-toggle').forEach(function(toggle) {
+            var buttons = toggle.querySelectorAll('.ll-view-toggle-btn');
+            var target = toggle.dataset.target;
+
+            // Restore saved preference
+            var savedView = window.llCookie.get('ll_view_' + target);
+            if (savedView) {
+                buttons.forEach(function(btn) {
+                    btn.classList.toggle('active', btn.dataset.view === savedView);
+                });
+                updateView(target, savedView);
+            }
+
+            buttons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var view = this.dataset.view;
+                    buttons.forEach(function(b) { b.classList.remove('active'); });
+                    this.classList.add('active');
+                    window.llCookie.set('ll_view_' + target, view, 365);
+                    updateView(target, view);
+                });
+            });
+        });
+
+        function updateView(target, view) {
+            var gridEl = document.getElementById(target + '-grid');
+            var listEl = document.getElementById(target + '-list');
+            if (gridEl && listEl) {
+                if (view === 'grid') {
+                    gridEl.style.display = 'grid';
+                    listEl.style.display = 'none';
+                } else {
+                    gridEl.style.display = 'none';
+                    listEl.style.display = 'block';
+                }
+            }
+        }
+
+    })();
+    </script>
+
+    ${next.javascriptIncludes()}
+</body>
+</html>
+<%def name="headIncludes()"></%def>
+<%def name="styleIncludes()"></%def>
+<%def name="javascriptIncludes()"></%def>

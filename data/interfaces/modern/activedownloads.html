@@ -1,0 +1,404 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'activedownloads'
+%>
+
+<%def name="headIncludes()">
+</%def>
+
+<%def name="styleIncludes()">
+.ll-progress {
+    height: 20px;
+    background: var(--ll-surface-hover);
+    border-radius: var(--ll-radius);
+    overflow: hidden;
+    position: relative;
+    min-width: 100px;
+}
+
+.ll-progress-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.ll-progress-danger { background: var(--ll-danger); }
+.ll-progress-warning { background: var(--ll-warning); }
+.ll-progress-info { background: var(--ll-info); }
+.ll-progress-success { background: var(--ll-success); }
+
+.ll-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--ll-text);
+}
+
+.ll-status-error {
+    color: var(--ll-danger);
+    font-weight: 500;
+}
+
+.ll-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--ll-text-muted);
+}
+
+.ll-empty-state svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.ll-empty-state h3 {
+    margin-bottom: 0.5rem;
+    color: var(--ll-text-secondary);
+}
+</%def>
+
+<%def name="body()">
+<div class="ll-page-header">
+    <div class="ll-page-header-content">
+        <h1 class="ll-page-title">${title}</h1>
+        <p class="ll-page-subtitle">Manage downloads in progress across all clients</p>
+    </div>
+    <div class="ll-page-header-actions">
+        %if perm&lazylibrarian.perm_status:
+        <button id="cancelAllBtn" class="ll-btn ll-btn-danger" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>
+            Cancel All
+        </button>
+        %endif
+        <button id="refreshBtn" class="ll-btn ll-btn-secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Stats Summary -->
+<div class="ll-stats-grid" style="margin-bottom: 1.5rem;">
+    <div class="ll-stat-card">
+        <div class="ll-stat-value" id="totalActive">0</div>
+        <div class="ll-stat-label">Active Downloads</div>
+    </div>
+</div>
+
+<!-- Downloads Table -->
+<div class="ll-card">
+    <div class="ll-card-body ll-card-body-flush">
+        <div class="table-responsive">
+            <table class="ll-table" id="downloads_table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th style="width: 90px;">Type</th>
+                        <th style="width: 120px;">Client</th>
+                        <th style="width: 100px;">Provider</th>
+                        <th class="text-center" style="width: 140px;">Progress</th>
+                        <th style="width: 100px;">Started</th>
+                        <th class="text-center" style="width: 150px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="downloads_body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Empty State -->
+<div id="emptyState" class="ll-empty-state" style="display: none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+    </svg>
+    <h3>No Active Downloads</h3>
+    <p>All downloads have completed or there are no items being downloaded.</p>
+</div>
+
+<!-- Cancel Dialog -->
+<div id="cancelDialog" class="ll-modal-backdrop" style="display: none;">
+    <div class="ll-modal">
+        <div class="ll-modal-header">
+            <h3 class="ll-modal-title">Cancel Download</h3>
+            <button class="ll-modal-close" onclick="closeCancelDialog()">&times;</button>
+        </div>
+        <div class="ll-modal-body">
+            <p>Cancel "<strong id="cancelTitle"></strong>"?</p>
+            <p style="color: var(--ll-text-muted); font-size: 0.875rem;">Choose whether to also blacklist this result to prevent it from appearing in future searches.</p>
+        </div>
+        <div class="ll-modal-footer">
+            <button class="ll-btn ll-btn-ghost" onclick="closeCancelDialog()">Keep Downloading</button>
+            <button class="ll-btn ll-btn-warning" onclick="doCancel(false)">Cancel Only</button>
+            <button class="ll-btn ll-btn-danger" onclick="doCancel(true)">Cancel & Blacklist</button>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel All Dialog -->
+<div id="cancelAllDialog" class="ll-modal-backdrop" style="display: none;">
+    <div class="ll-modal">
+        <div class="ll-modal-header">
+            <h3 class="ll-modal-title">Cancel All Downloads</h3>
+            <button class="ll-modal-close" onclick="closeCancelAllDialog()">&times;</button>
+        </div>
+        <div class="ll-modal-body">
+            <p>Cancel all <strong id="cancelAllCount">0</strong> active downloads?</p>
+            <p style="color: var(--ll-text-muted); font-size: 0.875rem;">This cannot be undone. Choose whether to also blacklist all results.</p>
+        </div>
+        <div class="ll-modal-footer">
+            <button class="ll-btn ll-btn-ghost" onclick="closeCancelAllDialog()">Keep Downloads</button>
+            <button class="ll-btn ll-btn-warning" onclick="doCancelAll(false)">Cancel All Only</button>
+            <button class="ll-btn ll-btn-danger" onclick="doCancelAll(true)">Cancel All & Blacklist</button>
+        </div>
+    </div>
+</div>
+</%def>
+
+<%def name="javascriptIncludes()">
+<script>
+(function() {
+    'use strict';
+
+    var allDownloads = [];
+    var pendingCancelRowId = null;
+    var refreshTimer = null;
+
+    // Load downloads
+    function loadDownloads() {
+        $.ajax({
+            url: 'getActiveDownloads',
+            data: { iDisplayLength: -1 },
+            dataType: 'json',
+            success: function(response) {
+                try {
+                    allDownloads = response.aaData || [];
+                    renderDownloads();
+                    updateStats();
+                } catch (e) {
+                    console.error('Error rendering downloads:', e);
+                    window.llToast && window.llToast.show('Error displaying downloads', 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Failed to load downloads:', status, error);
+                window.llToast && window.llToast.show('Failed to load downloads', 'error');
+                // Still try to render empty state
+                allDownloads = [];
+                try {
+                    renderDownloads();
+                    updateStats();
+                } catch (e) {
+                    console.error('Error rendering empty state:', e);
+                }
+            }
+        });
+    }
+
+    function renderDownloads() {
+        var tbody = document.getElementById('downloads_body');
+        var emptyState = document.getElementById('emptyState');
+        var table = document.getElementById('downloads_table');
+        var tableCard = table ? table.closest('.ll-card') : null;
+        var cancelAllBtn = document.getElementById('cancelAllBtn');
+
+        if (!tbody || !emptyState || !tableCard) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        if (allDownloads.length === 0) {
+            tbody.innerHTML = '';
+            tableCard.style.display = 'none';
+            emptyState.style.display = 'block';
+            if (cancelAllBtn) cancelAllBtn.style.display = 'none';
+            return;
+        }
+
+        tableCard.style.display = '';
+        emptyState.style.display = 'none';
+        if (cancelAllBtn) cancelAllBtn.style.display = '';
+
+        var html = '';
+        allDownloads.forEach(function(row) {
+            var title = escapeHtml(row[0]);
+            var type = row[1];
+            var client = row[2];
+            var provider = row[3];
+            var progress = row[4];
+            var date = row[5];
+            var rowid = row[6];
+
+            // Progress bar with color coding
+            var progressHtml;
+            if (progress < 0) {
+                progressHtml = '<span class="ll-status-error">Error</span>';
+            } else {
+                var css = 'danger';
+                if (progress > 75) css = 'success';
+                else if (progress > 50) css = 'info';
+                else if (progress > 25) css = 'warning';
+                progressHtml = '<div class="ll-progress">' +
+                    '<div class="ll-progress-bar ll-progress-' + css + '" style="width: ' + progress + '%;"></div>' +
+                    '<span class="ll-progress-text">' + progress + '%</span>' +
+                    '</div>';
+            }
+
+            // Type badge
+            var typeBadge = '<span class="ll-badge ll-badge-' + (type === 'AudioBook' ? 'info' : 'secondary') + '">' + escapeHtml(type) + '</span>';
+
+            html += '<tr>';
+            html += '<td title="' + title + '">' + title + '</td>';
+            html += '<td>' + typeBadge + '</td>';
+            html += '<td>' + escapeHtml(client) + '</td>';
+            html += '<td>' + escapeHtml(provider) + '</td>';
+            html += '<td class="text-center">' + progressHtml + '</td>';
+            html += '<td>' + escapeHtml(date) + '</td>';
+            html += '<td class="text-center">';
+            html += '<button class="ll-btn ll-btn-danger ll-btn-sm" onclick="showCancelDialog(\'' + rowid + '\', \'' + title.replace(/'/g, "\\'") + '\')">';
+            html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">';
+            html += '<circle cx="12" cy="12" r="10"></circle>';
+            html += '<line x1="15" y1="9" x2="9" y2="15"></line>';
+            html += '<line x1="9" y1="9" x2="15" y2="15"></line>';
+            html += '</svg> Cancel</button>';
+            html += '</td>';
+            html += '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function updateStats() {
+        document.getElementById('totalActive').textContent = allDownloads.length;
+        document.getElementById('cancelAllCount').textContent = allDownloads.length;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Cancel Dialog
+    window.showCancelDialog = function(rowid, title) {
+        pendingCancelRowId = rowid;
+        document.getElementById('cancelTitle').textContent = title;
+        document.getElementById('cancelDialog').style.display = 'flex';
+    };
+
+    window.closeCancelDialog = function() {
+        document.getElementById('cancelDialog').style.display = 'none';
+        pendingCancelRowId = null;
+    };
+
+    window.doCancel = function(blacklist) {
+        if (!pendingCancelRowId) return;
+        var rowid = pendingCancelRowId;  // Capture before closing dialog
+        closeCancelDialog();
+
+        $.ajax({
+            url: 'cancelDownload',
+            data: { rowid: rowid, blacklist: blacklist ? '1' : '0' },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    window.llToast && window.llToast.show('Download cancelled', 'success');
+                } else {
+                    window.llToast && window.llToast.show('Error: ' + (response.error || 'Unknown error'), 'error');
+                }
+                // Always reload downloads after cancel attempt
+                loadDownloads();
+            },
+            error: function(xhr, status, error) {
+                console.error('Cancel request failed:', status, error);
+                window.llToast && window.llToast.show('Failed to cancel download', 'error');
+                // Still reload to refresh the state
+                loadDownloads();
+            }
+        });
+    };
+
+    // Cancel All Dialog
+    window.showCancelAllDialog = function() {
+        if (allDownloads.length === 0) return;
+        document.getElementById('cancelAllDialog').style.display = 'flex';
+    };
+
+    window.closeCancelAllDialog = function() {
+        document.getElementById('cancelAllDialog').style.display = 'none';
+    };
+
+    window.doCancelAll = function(blacklist) {
+        closeCancelAllDialog();
+
+        $.ajax({
+            url: 'cancelAllDownloads',
+            data: { blacklist: blacklist ? '1' : '0' },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    window.llToast && window.llToast.show(response.message, 'success');
+                    loadDownloads();
+                } else {
+                    window.llToast && window.llToast.show('Error: ' + response.error, 'error');
+                }
+            },
+            error: function() {
+                window.llToast && window.llToast.show('Failed to cancel downloads', 'error');
+            }
+        });
+    };
+
+    // Initialize
+    var refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            loadDownloads();
+        });
+    }
+
+    var cancelAllBtn = document.getElementById('cancelAllBtn');
+    if (cancelAllBtn) {
+        cancelAllBtn.addEventListener('click', showCancelAllDialog);
+    }
+
+    // Close modals on backdrop click (only if clicking directly on backdrop, not modal content)
+    document.querySelectorAll('.ll-modal-backdrop').forEach(function(backdrop) {
+        backdrop.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+    });
+
+    // Initial load
+    loadDownloads();
+
+    // Auto-refresh every 10 seconds
+    refreshTimer = setInterval(loadDownloads, 10000);
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (refreshTimer) clearInterval(refreshTimer);
+    });
+})();
+</script>
+</%def>

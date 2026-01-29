@@ -1,0 +1,130 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'register'
+%>
+<%def name="headIncludes()">
+</%def>
+<%def name="styleIncludes()">
+.ll-register-container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+.ll-register-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <h1 class="ll-page-title">${title}</h1>
+            <p class="ll-page-subtitle">Request access to LazyLibrarian</p>
+        </div>
+    </div>
+
+    <div class="ll-register-container">
+        <div class="ll-card">
+            <div class="ll-card-body" style="padding: 2rem;">
+                <div class="ll-register-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="40" height="40">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                </div>
+
+                <p style="text-align: center; color: var(--text-light); margin-bottom: 1.5rem;">
+                    Please complete this form to request access. Your message will be reviewed and you will receive a reply by email.
+                </p>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="fullname">Full Name</label>
+                    <input type="text" id="fullname" name="fullname" class="ll-input" placeholder="Enter your full name">
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="username">Username (if already registered)</label>
+                    <input type="text" id="username" name="username" class="ll-input" placeholder="Enter existing username">
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="email">Email Address <span style="color: var(--error);">*</span></label>
+                    <input type="email" id="email" name="email" class="ll-input" placeholder="Required for reply" required>
+                    <small class="ll-form-help">Required so we can respond to your request</small>
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="message">Message to Admin (optional)</label>
+                    <textarea id="message" name="message" class="ll-input" rows="3" placeholder="Tell us why you'd like access..."></textarea>
+                </div>
+
+                <button type="button" id="register" class="ll-btn ll-btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                    Submit Request
+                </button>
+
+                %if lazylibrarian.LOGIN_MSG:
+                <div class="ll-alert ll-alert-info" style="margin-top: 1rem;">
+                    ${lazylibrarian.LOGIN_MSG}
+                </div>
+                %endif
+            </div>
+        </div>
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+    <script src="js/bootbox.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('#register').on('click', function(e) {
+            var fullname = $.trim($("#fullname").val());
+            var username = $.trim($("#username").val());
+            var email = $.trim($("#email").val());
+            var message = $.trim($("#message").val());
+
+            if (!email) {
+                bootbox.alert({
+                    title: 'Email Required',
+                    message: 'Please enter your email address so we can respond to your request.',
+                    buttons: {
+                        ok: { className: 'll-btn ll-btn-primary' }
+                    }
+                });
+                return;
+            }
+
+            $.get('user_contact', {
+                'fullname': fullname,
+                'username': username,
+                'email': email,
+                'message': message
+            }, function(data) {
+                bootbox.dialog({
+                    title: 'Registration Request',
+                    message: '<pre style="white-space: pre-wrap;">' + data + '</pre>',
+                    buttons: {
+                        primary: {
+                            label: "Close",
+                            className: 'll-btn ll-btn-primary'
+                        }
+                    }
+                });
+            });
+        });
+    });
+    </script>
+</%def>

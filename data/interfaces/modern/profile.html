@@ -1,0 +1,138 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'profile'
+%>
+<%def name="headIncludes()">
+</%def>
+<%def name="styleIncludes()">
+.ll-profile-container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+.ll-profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0 auto 1.5rem;
+}
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <h1 class="ll-page-title">User Profile</h1>
+            <p class="ll-page-subtitle">Manage your account settings</p>
+        </div>
+    </div>
+
+    <div class="ll-profile-container">
+        <div class="ll-card">
+            <div class="ll-card-body" style="padding: 2rem;">
+                <div class="ll-profile-avatar">
+                    ${user['UserName'][0].upper() if user['UserName'] else 'U'}
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="fullname">Full Name</label>
+                    <input type="text" id="fullname" name="fullname" class="ll-input" value="${user['Name']}">
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="email">Email</label>
+                    <input type="email" id="email" name="email" class="ll-input" value="${user['Email']}">
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="sendto">Send To (e.g. Kindle email)</label>
+                    <input type="text" id="sendto" name="sendto" class="ll-input" value="${user['SendTo']}">
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="username">Username</label>
+                    <input type="text" id="username" name="username" class="ll-input" value="${user['UserName']}">
+                    <small class="ll-form-help">User ID: ${user['UserID']}</small>
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="password">New Password</label>
+                    <input type="password" id="password" name="password" class="ll-input" placeholder="Leave empty to keep existing password">
+                </div>
+
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="password2">Confirm Password</label>
+                    <input type="password" id="password2" name="password2" class="ll-input" placeholder="Enter new password again">
+                </div>
+
+                <button type="button" id="update" class="ll-btn ll-btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Update Profile
+                </button>
+
+                %if lazylibrarian.LOGIN_MSG:
+                <div class="ll-alert ll-alert-info" style="margin-top: 1rem;">
+                    ${lazylibrarian.LOGIN_MSG}
+                </div>
+                %endif
+            </div>
+        </div>
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+    <script src="js/bootbox.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('#update').click(function() {
+            var username = $.trim($("#username").val());
+            var password = $.trim($("#password").val());
+            var password2 = $.trim($("#password2").val());
+            var email = $.trim($("#email").val());
+            var fullname = $.trim($("#fullname").val());
+            var sendto = $.trim($("#sendto").val());
+
+            if (password && password !== password2) {
+                bootbox.alert({
+                    title: 'Password Mismatch',
+                    message: 'The passwords you entered do not match.',
+                    buttons: {
+                        ok: { className: 'll-btn ll-btn-primary' }
+                    }
+                });
+                return;
+            }
+
+            $.get("user_update", {
+                'username': username,
+                'fullname': fullname,
+                'password': password,
+                'password2': password2,
+                'email': email,
+                'sendto': sendto
+            }, function(data) {
+                bootbox.dialog({
+                    title: 'Profile Update',
+                    message: '<pre style="white-space: pre-wrap;">' + data + '</pre>',
+                    buttons: {
+                        primary: {
+                            label: "Close",
+                            className: 'll-btn ll-btn-primary'
+                        }
+                    }
+                });
+            });
+        });
+    });
+    </script>
+</%def>

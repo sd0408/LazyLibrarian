@@ -1,0 +1,642 @@
+<%inherit file="base.html"/>
+<%!
+    import lazylibrarian
+    current_page = 'authors'
+%>
+
+<%def name="headIncludes()">
+    %if lazylibrarian.AUTHORS_UPDATE == True:
+    <meta http-equiv="refresh" content="20">
+    %endif
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/natural.js"></script>
+</%def>
+
+<%def name="body()">
+<div class="ll-page-header">
+    <h1 class="ll-page-title">${title}</h1>
+    <p class="ll-page-subtitle">Manage your tracked authors</p>
+</div>
+
+<!-- System Status Alert -->
+%if lazylibrarian.AUTHORS_UPDATE:
+<div class="ll-card ll-mb-4" style="border-left: 4px solid var(--ll-warning);">
+    <div class="ll-card-body">
+        <div class="ll-flex ll-items-center ll-gap-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ll-warning)" stroke-width="2" width="24" height="24" class="ll-spin">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Author refresh in progress...</span>
+        </div>
+    </div>
+</div>
+%endif
+
+<!-- Toolbar -->
+<div class="ll-toolbar">
+    <div class="ll-toolbar-left">
+        <div class="ll-view-toggle" data-target="authors">
+            <button class="ll-view-toggle-btn active" data-view="grid" title="Grid View">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+            </button>
+            <button class="ll-view-toggle-btn" data-view="list" title="List View">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="ll-filter-group">
+            <select class="ll-filter-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Paused">Paused</option>
+                <option value="Ignored">Ignored</option>
+            </select>
+        </div>
+        <input type="text" class="ll-input ll-input-sm ll-search-input" id="searchInput"
+               placeholder="Search authors..." style="width: 240px;">
+    </div>
+    <div class="ll-toolbar-right">
+        %if perm&lazylibrarian.perm_force:
+        <a href="forceUpdate" class="ll-btn ll-btn-secondary ll-btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            Refresh
+        </a>
+        %endif
+        %if perm&lazylibrarian.perm_search:
+        <a href="searchForAuthor" class="ll-btn ll-btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Author
+        </a>
+        %endif
+    </div>
+</div>
+
+<!-- Bulk Actions (shown when items selected) -->
+%if perm&lazylibrarian.perm_status:
+<form name="markAuthors" id="markAuthors" action="markAuthors" method="get" style="display: none;" class="ll-mb-3">
+    <div class="ll-card">
+        <div class="ll-card-body ll-flex ll-items-center ll-gap-3">
+            <span id="selectedCount">0 selected</span>
+            <select class="ll-select" name="action" id="bulkAction" style="width: auto;">
+                <option value="Active">Set Active</option>
+                <option value="Wanted">Set Wanted</option>
+                <option value="Ignored">Set Ignored</option>
+                <option value="Paused">Set Paused</option>
+                <option value="Remove">Remove from list</option>
+                <option value="Delete">Delete files</option>
+            </select>
+            <button type="submit" class="ll-btn ll-btn-primary ll-btn-sm">Apply</button>
+            <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm" id="clearSelection">Cancel</button>
+        </div>
+    </div>
+</form>
+%endif
+
+<!-- Grid View -->
+<div class="ll-media-grid authors" id="authors-grid">
+    <div class="ll-text-center ll-text-muted" style="grid-column: 1 / -1; padding: 48px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48" style="opacity: 0.5; margin-bottom: 16px;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <p>Loading authors...</p>
+    </div>
+</div>
+
+<!-- List View -->
+<div class="ll-table-container ll-hidden" id="authors-list">
+    <table class="ll-table" id="authorsTable">
+        <thead>
+            <tr>
+                %if perm&lazylibrarian.perm_status:
+                <th style="width: 40px;"><input type="checkbox" id="selectAll"></th>
+                %endif
+                <th>Author</th>
+                <th>eBooks</th>
+                %if lazylibrarian.SHOW_AUDIO:
+                <th>AudioBooks</th>
+                %endif
+                <th>Status</th>
+                <th style="width: 100px; min-width: 100px; text-align: center;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="authorsTableBody">
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+<div class="ll-pagination" id="pagination">
+</div>
+</%def>
+
+<%def name="javascriptIncludes()">
+<script>
+(function() {
+    'use strict';
+
+    var authorsData = [];
+    var filteredData = [];
+    var currentPage = 1;
+    var pageSize = 24;
+    var currentView = window.llCookie.get('ll_view_authors') || 'grid';
+    var selectedAuthors = new Set();
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAuthors();
+        setupEventListeners();
+        updateViewState();
+    });
+
+    function setupEventListeners() {
+        // Search
+        document.getElementById('searchInput').addEventListener('input', debounce(function(e) {
+            filterAndRender();
+        }, 300));
+
+        // Status filter
+        document.getElementById('statusFilter').addEventListener('change', function() {
+            filterAndRender();
+        });
+
+        // Select all
+        var selectAll = document.getElementById('selectAll');
+        if (selectAll) {
+            selectAll.addEventListener('change', function() {
+                var checkboxes = document.querySelectorAll('.author-checkbox');
+                checkboxes.forEach(function(cb) {
+                    cb.checked = selectAll.checked;
+                    if (selectAll.checked) {
+                        selectedAuthors.add(cb.value);
+                    } else {
+                        selectedAuthors.delete(cb.value);
+                    }
+                });
+                updateBulkActions();
+            });
+        }
+
+        // Clear selection
+        var clearBtn = document.getElementById('clearSelection');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                selectedAuthors.clear();
+                document.querySelectorAll('.author-checkbox').forEach(function(cb) {
+                    cb.checked = false;
+                });
+                document.querySelectorAll('.ll-media-card.selected').forEach(function(card) {
+                    card.classList.remove('selected');
+                });
+                if (document.getElementById('selectAll')) {
+                    document.getElementById('selectAll').checked = false;
+                }
+                updateBulkActions();
+            });
+        }
+
+        // Form submit validation
+        var form = document.getElementById('markAuthors');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                var action = document.getElementById('bulkAction').value;
+                if (action === 'Delete' || action === 'Remove') {
+                    if (!confirm('Are you sure you want to ' + action.toLowerCase() + ' the selected authors?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+                // Add selected IDs to form
+                selectedAuthors.forEach(function(id) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = id;
+                    input.value = 'on';
+                    form.appendChild(input);
+                });
+            });
+        }
+    }
+
+    function loadAuthors() {
+        // Use the existing getIndex endpoint
+        $.ajax({
+            url: 'getIndex',
+            data: {
+                iDisplayStart: 0,
+                iDisplayLength: -1,  // Get all
+                iSortCol_0: 2,
+                sSortDir_0: 'asc'
+            },
+            dataType: 'json',
+            success: function(response) {
+                authorsData = response.aaData || [];
+                filterAndRender();
+            },
+            error: function() {
+                document.getElementById('authors-grid').innerHTML =
+                    '<div class="ll-text-center ll-text-muted" style="grid-column: 1 / -1; padding: 48px;">' +
+                    '<p>Failed to load authors. Please try refreshing the page.</p></div>';
+            }
+        });
+    }
+
+    function filterAndRender() {
+        var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        var statusFilter = document.getElementById('statusFilter').value;
+
+        filteredData = authorsData.filter(function(author) {
+            var name = (author[1] || '').toLowerCase();
+            var status = author[5] || '';
+
+            var matchesSearch = !searchTerm || name.indexOf(searchTerm) !== -1;
+            var matchesStatus = !statusFilter || status === statusFilter;
+
+            return matchesSearch && matchesStatus;
+        });
+
+        currentPage = 1;
+        render();
+    }
+
+    function render() {
+        if (currentView === 'grid') {
+            renderGrid();
+        } else {
+            renderList();
+        }
+        renderPagination();
+    }
+
+    function renderGrid() {
+        var container = document.getElementById('authors-grid');
+        var start = (currentPage - 1) * pageSize;
+        var end = start + pageSize;
+        var pageData = filteredData.slice(start, end);
+        var showAudio = ${1 if lazylibrarian.SHOW_AUDIO else 0};
+
+        if (pageData.length === 0) {
+            container.innerHTML = '<div class="ll-text-center ll-text-muted" style="grid-column: 1 / -1; padding: 48px;">' +
+                '<p>No authors found</p></div>';
+            return;
+        }
+
+        var html = '';
+        pageData.forEach(function(author) {
+            var authorId = author[10];  // AuthorID
+            var authorImg = author[0] || 'images/nocover.jpg';
+            var authorName = author[1] || 'Unknown';
+            var status = author[5] || 'Unknown';
+            var ebookStats = author[13] || {total: 0, have: 0, skipped: 0, ignored: 0};
+            var audioStats = author[14] || {total: 0, have: 0, skipped: 0, ignored: 0};
+
+            var statusClass = 'active';
+            if (status === 'Paused') statusClass = 'paused';
+            else if (status === 'Ignored') statusClass = 'ignored';
+
+            // Calculate ebook progress
+            var ebookBase = ebookStats.total - ebookStats.ignored;
+            var ebookPercent = ebookBase > 0 ? Math.round((ebookStats.have * 100) / ebookBase) : 0;
+
+            var isSelected = selectedAuthors.has(authorId);
+            html += '<div class="ll-media-card' + (isSelected ? ' selected' : '') + '" data-author-id="' + authorId + '">' +
+                '<div class="ll-media-card-cover author" style="background-image: url(\'' + authorImg + '\'); background-size: cover; background-position: center;">' +
+                %if perm&lazylibrarian.perm_status:
+                '<label class="ll-card-checkbox" onclick="event.stopPropagation();">' +
+                '<input type="checkbox" class="author-checkbox" value="' + authorId + '"' + (isSelected ? ' checked' : '') + '>' +
+                '<span class="ll-checkbox-mark"></span>' +
+                '</label>' +
+                %endif
+                '<span class="ll-badge ll-badge-' + statusClass + ' ll-media-card-badge">' + status + '</span>' +
+                '</div>' +
+                '<div class="ll-media-card-info">' +
+                '<div class="ll-media-card-title">' + escapeHtml(authorName) + '</div>' +
+                '<div class="ll-media-card-meta">' +
+                '<span title="eBooks: ' + ebookStats.have + ' have, ' + ebookStats.skipped + ' skipped, ' + ebookStats.ignored + ' ignored">' +
+                ebookStats.have + '/' + ebookBase + ' books</span>';
+            if (showAudio && audioStats.total > 0) {
+                var audioBase = audioStats.total - audioStats.ignored;
+                html += ' · <span title="AudioBooks: ' + audioStats.have + ' have, ' + audioStats.skipped + ' skipped, ' + audioStats.ignored + ' ignored">' +
+                    audioStats.have + '/' + audioBase + ' audio</span>';
+            }
+            html += '</div>' +
+                '</div>' +
+                '</div>';
+        });
+
+        container.innerHTML = html;
+
+        // Add click handlers for cards
+        container.querySelectorAll('.ll-media-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                var authorId = this.dataset.authorId;
+                window.location.href = 'authorPage?AuthorID=' + authorId;
+            });
+        });
+
+        // Add checkbox handlers for grid view
+        container.querySelectorAll('.author-checkbox').forEach(function(cb) {
+            cb.addEventListener('change', function(e) {
+                var card = this.closest('.ll-media-card');
+                if (this.checked) {
+                    selectedAuthors.add(this.value);
+                    if (card) card.classList.add('selected');
+                } else {
+                    selectedAuthors.delete(this.value);
+                    if (card) card.classList.remove('selected');
+                }
+                updateBulkActions();
+            });
+        });
+    }
+
+    function renderList() {
+        var tbody = document.getElementById('authorsTableBody');
+        var start = (currentPage - 1) * pageSize;
+        var end = start + pageSize;
+        var pageData = filteredData.slice(start, end);
+
+        var showAudio = ${1 if lazylibrarian.SHOW_AUDIO else 0};
+        var colSpan = showAudio ? 6 : 5;
+        %if perm&lazylibrarian.perm_status:
+        colSpan++;
+        %endif
+
+        if (pageData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="' + colSpan + '" class="ll-text-center ll-text-muted" style="padding: 48px;">No authors found</td></tr>';
+            return;
+        }
+
+        var html = '';
+        pageData.forEach(function(author) {
+            var authorId = author[10];
+            var authorImg = author[0] || 'images/nocover.jpg';
+            var authorName = author[1] || 'Unknown';
+            var status = author[5] || 'Unknown';
+            var ebookStats = author[13] || {total: 0, have: 0, skipped: 0, ignored: 0};
+            var audioStats = author[14] || {total: 0, have: 0, skipped: 0, ignored: 0};
+
+            var statusClass = 'active';
+            if (status === 'Paused') statusClass = 'paused';
+            else if (status === 'Ignored') statusClass = 'ignored';
+
+            // Calculate ebook progress
+            var ebookBase = ebookStats.total - ebookStats.ignored;
+            var ebookPercent = ebookBase > 0 ? Math.round((ebookStats.have * 100) / ebookBase) : 0;
+
+            // Calculate audio progress
+            var audioBase = audioStats.total - audioStats.ignored;
+            var audioPercent = audioBase > 0 ? Math.round((audioStats.have * 100) / audioBase) : 0;
+
+            html += '<tr>';
+            %if perm&lazylibrarian.perm_status:
+            html += '<td><input type="checkbox" class="author-checkbox" value="' + authorId + '"' +
+                (selectedAuthors.has(authorId) ? ' checked' : '') + '></td>';
+            %endif
+            html += '<td>' +
+                '<div class="ll-list-item">' +
+                '<div class="ll-list-item-avatar" style="background-image: url(\'' + authorImg + '\'); background-size: cover;"></div>' +
+                '<div class="ll-list-item-info">' +
+                '<a href="authorPage?AuthorID=' + authorId + '" class="ll-list-item-title">' + escapeHtml(authorName) + '</a>' +
+                '</div></div></td>' +
+                '<td>' +
+                '<div class="ll-stats-compact">' +
+                '<span title="Have">' + ebookStats.have + '</span> / ' +
+                '<span title="Total (excl. ignored)">' + ebookBase + '</span>' +
+                '<span class="ll-stats-detail" title="Skipped: ' + ebookStats.skipped + ', Ignored: ' + ebookStats.ignored + '"> (' + ebookPercent + '%)</span>' +
+                '</div>' +
+                '<div class="ll-progress ll-progress-sm"><div class="ll-progress-bar" style="width: ' + ebookPercent + '%;"></div></div>' +
+                '</td>';
+            if (showAudio) {
+                html += '<td>';
+                if (audioStats.total > 0) {
+                    html += '<div class="ll-stats-compact">' +
+                        '<span title="Have">' + audioStats.have + '</span> / ' +
+                        '<span title="Total (excl. ignored)">' + audioBase + '</span>' +
+                        '<span class="ll-stats-detail" title="Skipped: ' + audioStats.skipped + ', Ignored: ' + audioStats.ignored + '"> (' + audioPercent + '%)</span>' +
+                        '</div>' +
+                        '<div class="ll-progress ll-progress-sm"><div class="ll-progress-bar" style="width: ' + audioPercent + '%;"></div></div>';
+                } else {
+                    html += '<span class="ll-text-muted">-</span>';
+                }
+                html += '</td>';
+            }
+            html += '<td><span class="ll-badge ll-badge-' + statusClass + '">' + status + '</span></td>' +
+                '<td style="width: 100px; min-width: 100px; text-align: center;">' +
+                '<button class="ll-btn ll-btn-ghost ll-btn-sm" onclick="viewAuthor(\'' + authorId + '\')" title="View">View</button>' +
+                '</td>' +
+                '</tr>';
+        });
+
+        tbody.innerHTML = html;
+
+        // Checkbox handlers
+        tbody.querySelectorAll('.author-checkbox').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                if (this.checked) {
+                    selectedAuthors.add(this.value);
+                } else {
+                    selectedAuthors.delete(this.value);
+                }
+                updateBulkActions();
+            });
+        });
+    }
+
+    function renderPagination() {
+        var container = document.getElementById('pagination');
+        var totalPages = Math.ceil(filteredData.length / pageSize);
+
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        var html = '<button class="ll-page-btn" ' + (currentPage === 1 ? 'disabled' : '') +
+            ' onclick="goToPage(' + (currentPage - 1) + ')">Previous</button>';
+
+        // Show up to 5 page buttons
+        var startPage = Math.max(1, currentPage - 2);
+        var endPage = Math.min(totalPages, startPage + 4);
+        if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+
+        for (var i = startPage; i <= endPage; i++) {
+            html += '<button class="ll-page-btn' + (i === currentPage ? ' active' : '') +
+                '" onclick="goToPage(' + i + ')">' + i + '</button>';
+        }
+
+        if (endPage < totalPages) {
+            html += '<span class="ll-page-info">...</span>';
+            html += '<button class="ll-page-btn" onclick="goToPage(' + totalPages + ')">' + totalPages + '</button>';
+        }
+
+        html += '<button class="ll-page-btn" ' + (currentPage === totalPages ? 'disabled' : '') +
+            ' onclick="goToPage(' + (currentPage + 1) + ')">Next</button>';
+
+        container.innerHTML = html;
+    }
+
+    function updateBulkActions() {
+        var form = document.getElementById('markAuthors');
+        var countEl = document.getElementById('selectedCount');
+        if (form && countEl) {
+            if (selectedAuthors.size > 0) {
+                form.style.display = 'block';
+                countEl.textContent = selectedAuthors.size + ' selected';
+            } else {
+                form.style.display = 'none';
+            }
+        }
+    }
+
+    function updateViewState() {
+        var gridEl = document.getElementById('authors-grid');
+        var listEl = document.getElementById('authors-list');
+
+        if (currentView === 'grid') {
+            gridEl.classList.remove('ll-hidden');
+            listEl.classList.add('ll-hidden');
+        } else {
+            gridEl.classList.add('ll-hidden');
+            listEl.classList.remove('ll-hidden');
+        }
+    }
+
+    // Global functions for onclick handlers
+    window.goToPage = function(page) {
+        currentPage = page;
+        render();
+        window.scrollTo(0, 0);
+    };
+
+    window.viewAuthor = function(authorId) {
+        window.location.href = 'authorPage?AuthorID=' + authorId;
+    };
+
+    // Utility functions
+    function debounce(func, wait) {
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                func.apply(context, args);
+            }, wait);
+        };
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // View toggle handler
+    document.querySelectorAll('.ll-view-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            currentView = this.dataset.view;
+            window.llCookie.set('ll-view-authors', currentView, 365);
+            document.querySelectorAll('.ll-view-toggle-btn').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            this.classList.add('active');
+            updateViewState();
+            render();
+        });
+    });
+
+})();
+</script>
+</%def>
+
+<%def name="styleIncludes()">
+.ll-spin {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+/* Stats display */
+.ll-stats-compact {
+    font-size: 0.875rem;
+    margin-bottom: 4px;
+}
+.ll-stats-detail {
+    color: var(--text-light);
+    font-size: 0.75rem;
+}
+.ll-progress-sm {
+    height: 4px;
+    width: 100px;
+}
+/* Card checkbox styling */
+.ll-card-checkbox {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ll-card-checkbox input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.ll-checkbox-mark {
+    width: 22px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid var(--ll-border);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+.ll-card-checkbox:hover .ll-checkbox-mark {
+    border-color: var(--ll-primary);
+    background: white;
+}
+.ll-card-checkbox input:checked + .ll-checkbox-mark {
+    background: var(--ll-primary);
+    border-color: var(--ll-primary);
+}
+.ll-card-checkbox input:checked + .ll-checkbox-mark::after {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+.ll-media-card.selected {
+    outline: 3px solid var(--ll-primary);
+    outline-offset: -3px;
+}
+.ll-media-card-cover {
+    position: relative;
+}
+</%def>

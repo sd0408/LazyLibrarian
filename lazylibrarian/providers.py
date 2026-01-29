@@ -212,7 +212,11 @@ def get_capabilities(provider, force=False):
             host = 'http://' + host
         if host[-1:] == '/':
             host = host[:-1]
-        URL = host + '/api?t=caps'
+        # Handle hosts that already end with /api (e.g., Prowlarr URLs)
+        if host.endswith('/api'):
+            URL = host + '?t=caps'
+        else:
+            URL = host + '/api?t=caps'
 
         # most providers will give you caps without an api key
         logger.debug('Requesting capabilities for %s' % URL)
@@ -301,12 +305,12 @@ def get_capabilities(provider, force=False):
                     # noinspection PyUnresolvedReferences
                     if search.attrib['available'] == 'yes':
                         provider['GENERALSEARCH'] = 'search'
-            categories = data.getiterator('category')
+            categories = data.iter('category')
             for cat in categories:
                 if 'name' in cat.attrib:
                     if cat.attrib['name'].lower() == 'audio':
                         provider['AUDIOCAT'] = cat.attrib['id']
-                        subcats = cat.getiterator('subcat')
+                        subcats = cat.iter('subcat')
                         for subcat in subcats:
                             if 'audiobook' in subcat.attrib['name'].lower():
                                 provider['AUDIOCAT'] = subcat.attrib['id']
@@ -335,7 +339,7 @@ def get_capabilities(provider, force=False):
 
                         # subcategories override main category (not in addition to)
                         # but allow multile subcategories (mags->english, mags->french)
-                        subcats = cat.getiterator('subcat')
+                        subcats = cat.iter('subcat')
                         ebooksubs = ''
                         magsubs = ''
                         for subcat in subcats:
@@ -936,7 +940,11 @@ def NewzNabPlus(book=None, provider=None, searchType=None, searchMode=None, test
             host = 'http://' + host
         if host[-1:] == '/':
             host = host[:-1]
-        URL = host + '/api?' + urlencode(params)
+        # Handle hosts that already end with /api (e.g., Prowlarr URLs)
+        if host.endswith('/api'):
+            URL = host + '?' + urlencode(params)
+        else:
+            URL = host + '/api?' + urlencode(params)
 
         sterm = makeUnicode(book['searchterm'])
 
@@ -993,7 +1001,7 @@ def NewzNabPlus(book=None, provider=None, searchType=None, searchMode=None, test
                 if not cancelled:  # it was some other problem
                     BlockProvider(provider['HOST'], errormsg)
             else:
-                resultxml = rootxml.getiterator('item')
+                resultxml = rootxml.iter('item')
                 nzbcount = 0
                 maxage = check_int(lazylibrarian.CONFIG['USENET_RETENTION'], 0)
                 minimumseeders = check_int(lazylibrarian.CONFIG['NUMBEROFSEEDERS'], 0)

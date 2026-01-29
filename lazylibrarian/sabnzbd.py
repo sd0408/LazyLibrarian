@@ -48,8 +48,8 @@ def SABnzbd(title=None, nzburl=None, remove_data=False):
 
     hostname = lazylibrarian.CONFIG['SAB_HOST']
     port = check_int(lazylibrarian.CONFIG['SAB_PORT'], 0)
-    if not hostname or not port:
-        res = 'Invalid sabnzbd host or port, check your config'
+    if not hostname:
+        res = 'Invalid sabnzbd host, check your config'
         logger.error(res)
         return False, res
 
@@ -58,7 +58,11 @@ def SABnzbd(title=None, nzburl=None, remove_data=False):
     if not hostname.startswith("http://") and not hostname.startswith("https://"):
         hostname = 'http://' + hostname
 
-    HOST = "%s:%s" % (hostname, port)
+    # Only append port if specified (non-zero), otherwise use URL as-is
+    if port:
+        HOST = "%s:%s" % (hostname, port)
+    else:
+        HOST = hostname
 
     if lazylibrarian.CONFIG['SAB_SUBDIR']:
         HOST = HOST + "/" + lazylibrarian.CONFIG['SAB_SUBDIR']

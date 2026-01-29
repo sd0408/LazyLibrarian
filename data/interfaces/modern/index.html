@@ -1,0 +1,242 @@
+<%inherit file="base.html"/>
+<%!
+    import lazylibrarian
+    current_page = 'dashboard'
+%>
+
+<%def name="headIncludes()">
+    %if lazylibrarian.AUTHORS_UPDATE == True:
+    <meta http-equiv="refresh" content="30">
+    %endif
+</%def>
+
+<%def name="body()">
+<div class="ll-page-header">
+    <h1 class="ll-page-title">Dashboard</h1>
+    <p class="ll-page-subtitle">Welcome to LazyLibrarian</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="ll-stats-grid">
+    <div class="ll-stat-card">
+        <div class="ll-stat-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            Authors
+        </div>
+        <div class="ll-stat-value">${stats.get('authors', 0)}</div>
+        %if stats.get('authors_active', 0) > 0:
+        <div class="ll-stat-change">${stats.get('authors_active', 0)} active</div>
+        %endif
+    </div>
+    <div class="ll-stat-card">
+        <div class="ll-stat-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            Books
+        </div>
+        <div class="ll-stat-value">${'{:,}'.format(stats.get('books', 0))}</div>
+        %if stats.get('books_have', 0) > 0:
+        <div class="ll-stat-change">${'{:,}'.format(stats.get('books_have', 0))} downloaded</div>
+        %endif
+    </div>
+    <div class="ll-stat-card">
+        <div class="ll-stat-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z"></path>
+                <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+            </svg>
+            AudioBooks
+        </div>
+        <div class="ll-stat-value">${'{:,}'.format(stats.get('audiobooks', 0))}</div>
+        %if stats.get('audiobooks_have', 0) > 0:
+        <div class="ll-stat-change">${'{:,}'.format(stats.get('audiobooks_have', 0))} downloaded</div>
+        %endif
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="ll-quick-actions">
+    %if perm&lazylibrarian.perm_search:
+    <a href="searchForAuthor" class="ll-btn ll-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Author
+    </a>
+    %endif
+    %if perm&lazylibrarian.perm_force:
+    <a href="forceSearch?source=books" class="ll-btn ll-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        Search Books
+    </a>
+    <a href="libraryScan?library=eBook" class="ll-btn ll-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Library Scan
+    </a>
+    %endif
+</div>
+
+<!-- Content Grid: Activity + Library Composition -->
+<div class="ll-content-grid">
+    <!-- Recent Activity -->
+    <div class="ll-card">
+        <div class="ll-card-header">
+            <h3 class="ll-card-title">Recent Activity</h3>
+            %if perm&lazylibrarian.perm_history:
+            <a href="history" style="color: var(--ll-primary); font-size: 14px;">View All</a>
+            %endif
+        </div>
+        <div class="ll-card-body">
+            %if activity and len(activity) > 0:
+                %for item in activity[:8]:
+                <div class="ll-activity-item">
+                    <div class="ll-activity-icon ${item.get('type', 'add')}">
+                        %if item.get('type') == 'download':
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        %elif item.get('type') == 'search':
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        %elif item.get('type') == 'error':
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                        %else:
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        %endif
+                    </div>
+                    <div class="ll-activity-content">
+                        <div class="ll-activity-title">${item.get('title', 'Activity')}</div>
+                        <div class="ll-activity-meta">${item.get('meta', '')}</div>
+                    </div>
+                </div>
+                %endfor
+            %else:
+            <p class="ll-text-muted" style="text-align: center; padding: 24px;">No recent activity</p>
+            %endif
+        </div>
+    </div>
+
+    <!-- Library Composition -->
+    <div class="ll-card">
+        <div class="ll-card-header">
+            <h3 class="ll-card-title">Library Composition</h3>
+        </div>
+        <div class="ll-card-body">
+            <%
+                total = stats.get('books_have', 0) + stats.get('audiobooks_have', 0)
+                if total > 0:
+                    books_pct = int((stats.get('books_have', 0) / total) * 100)
+                    audio_pct = 100 - books_pct
+                else:
+                    books_pct = 0
+                    audio_pct = 0
+                # Calculate degrees for donut chart
+                books_deg = int(books_pct * 3.6)
+                audio_deg = int(audio_pct * 3.6)
+            %>
+            <div class="ll-chart-container">
+                %if total > 0:
+                <div class="ll-donut" style="background: conic-gradient(
+                    var(--ll-primary) 0deg ${books_deg}deg,
+                    var(--ll-accent) ${books_deg}deg 360deg
+                );"></div>
+                %else:
+                <div class="ll-donut" style="background: var(--ll-border);"></div>
+                %endif
+            </div>
+            <div class="ll-chart-legend">
+                <div class="ll-legend-item">
+                    <span class="ll-legend-dot" style="background: var(--ll-primary);"></span>
+                    <span>eBooks (${books_pct}%)</span>
+                </div>
+                <div class="ll-legend-item">
+                    <span class="ll-legend-dot" style="background: var(--ll-accent);"></span>
+                    <span>AudioBooks (${audio_pct}%)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wanted Queue Summary -->
+%if perm&lazylibrarian.perm_managebooks and stats.get('wanted', 0) > 0:
+<div class="ll-card">
+    <div class="ll-card-header">
+        <h3 class="ll-card-title">Wanted Queue</h3>
+        <a href="manage" class="ll-btn ll-btn-sm ll-btn-secondary">View All</a>
+    </div>
+    <div class="ll-card-body">
+        <div class="ll-flex ll-gap-4" style="flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 150px;">
+                <div class="ll-stat-label">Total Wanted</div>
+                <div class="ll-stat-value" style="font-size: 24px;">${stats.get('wanted', 0)}</div>
+            </div>
+            %if stats.get('wanted_books', 0) > 0:
+            <div style="flex: 1; min-width: 150px;">
+                <div class="ll-stat-label">Books</div>
+                <div class="ll-stat-value" style="font-size: 24px;">${stats.get('wanted_books', 0)}</div>
+            </div>
+            %endif
+            %if stats.get('wanted_audio', 0) > 0:
+            <div style="flex: 1; min-width: 150px;">
+                <div class="ll-stat-label">AudioBooks</div>
+                <div class="ll-stat-value" style="font-size: 24px;">${stats.get('wanted_audio', 0)}</div>
+            </div>
+            %endif
+        </div>
+    </div>
+</div>
+%endif
+
+<!-- System Status -->
+%if lazylibrarian.AUTHORS_UPDATE or lazylibrarian.EBOOK_UPDATE or lazylibrarian.AUDIO_UPDATE:
+<div class="ll-card" style="border-left: 4px solid var(--ll-warning);">
+    <div class="ll-card-body">
+        <div class="ll-flex ll-items-center ll-gap-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--ll-warning)" stroke-width="2" width="24" height="24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <div>
+                <strong>Background Tasks Running</strong>
+                <div class="ll-text-muted" style="font-size: 13px;">
+                    %if lazylibrarian.AUTHORS_UPDATE:
+                    Author refresh in progress...
+                    %endif
+                    %if lazylibrarian.EBOOK_UPDATE:
+                    eBook library scan in progress...
+                    %endif
+                    %if lazylibrarian.AUDIO_UPDATE:
+                    AudioBook library scan in progress...
+                    %endif
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+%endif
+</%def>

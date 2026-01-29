@@ -1,0 +1,95 @@
+<%
+    import lazylibrarian
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LazyLibrarian - ${title}</title>
+    <link rel="shortcut icon" type="image/png" href="images/ll.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="css/modern.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .response-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 24px;
+        }
+        .response-card {
+            background: var(--ll-surface);
+            border-radius: var(--ll-radius-lg);
+            box-shadow: var(--ll-shadow-lg);
+            padding: 40px;
+            text-align: center;
+        }
+        .response-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+        }
+        .response-icon.success { color: var(--ll-success); }
+        .response-icon.error { color: var(--ll-error); }
+        .response-icon.info { color: var(--ll-info); }
+        .response-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .response-message {
+            color: var(--ll-text-light);
+            margin-bottom: 24px;
+            white-space: pre-wrap;
+        }
+    </style>
+    %if 'timer' in dir() and timer:
+    <meta http-equiv="refresh" content="${timer};url=home">
+    %endif
+</head>
+<body>
+    <div class="response-container">
+        <div class="response-card">
+            <%
+                icon_type = 'info'
+                if 'error' in title.lower() or 'fail' in title.lower():
+                    icon_type = 'error'
+                elif 'success' in title.lower() or 'complete' in title.lower():
+                    icon_type = 'success'
+            %>
+            <div class="response-icon ${icon_type}">
+                %if icon_type == 'success':
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                %elif icon_type == 'error':
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                %else:
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                %endif
+            </div>
+            <h1 class="response-title">${title}</h1>
+            %if 'message' in dir() and message:
+            <p class="response-message">${message}</p>
+            %endif
+            <a href="home" class="ll-btn ll-btn-primary">Return to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

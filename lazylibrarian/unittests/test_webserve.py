@@ -60,7 +60,7 @@ class TestWebInterfaceIndex:
     @patch('cherrypy.response')
     @patch('lazylibrarian.webServe.serve_template')
     def test_home_serves_index_template(self, mock_serve, mock_response, mock_request, api_config, temp_db):
-        """home() should serve index.html template."""
+        """home() should serve index.html template with Dashboard title."""
         from lazylibrarian.webServe import WebInterface
 
         mock_request.cookie = {}
@@ -73,13 +73,13 @@ class TestWebInterfaceIndex:
         mock_serve.assert_called_once()
         call_kwargs = mock_serve.call_args[1]
         assert call_kwargs['templatename'] == 'index.html'
-        assert call_kwargs['title'] == 'Authors'
+        assert call_kwargs['title'] == 'Dashboard'
 
     @patch('cherrypy.request')
     @patch('cherrypy.response')
     @patch('lazylibrarian.webServe.serve_template')
     def test_home_shows_ignored_title_when_flag_set(self, mock_serve, mock_response, mock_request, api_config, temp_db):
-        """home() should show 'Ignored Authors' title when IGNORED_AUTHORS flag is set."""
+        """home() should always show Dashboard regardless of IGNORED_AUTHORS flag."""
         from lazylibrarian.webServe import WebInterface
 
         mock_request.cookie = {}
@@ -90,7 +90,8 @@ class TestWebInterfaceIndex:
         wi.home()
 
         call_kwargs = mock_serve.call_args[1]
-        assert call_kwargs['title'] == 'Ignored Authors'
+        # Now always shows Dashboard
+        assert call_kwargs['title'] == 'Dashboard'
 
         lazylibrarian.IGNORED_AUTHORS = 0
 

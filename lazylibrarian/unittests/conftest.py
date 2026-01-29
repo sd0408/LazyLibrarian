@@ -48,7 +48,6 @@ def setup_lazylibrarian_globals():
     # Set up default config values used by various modules
     lazylibrarian.CONFIG.setdefault('EBOOK_TYPE', 'epub, mobi, pdf')
     lazylibrarian.CONFIG.setdefault('AUDIOBOOK_TYPE', 'mp3, m4b, m4a')
-    lazylibrarian.CONFIG.setdefault('MAG_TYPE', 'pdf')
     lazylibrarian.CONFIG.setdefault('NAME_POSTFIX', 'jr, sr, phd, md, ii, iii, iv')
     lazylibrarian.CONFIG.setdefault('HTTP_TIMEOUT', '30')
 
@@ -278,7 +277,6 @@ def mock_config():
         'HTTP_TIMEOUT': 30,
         'EBOOK_TYPE': 'epub, mobi, pdf',
         'AUDIOBOOK_TYPE': 'mp3, m4b, m4a',
-        'MAG_TYPE': 'pdf',
         'NAME_POSTFIX': 'jr, sr, phd, md, ii, iii, iv',
         'MATCH_RATIO': 80,
         'DLOAD_RATIO': 90,
@@ -321,19 +319,6 @@ def sample_book_data():
         'BookDate': '2023-01-15',
         'BookLang': 'en',
         'Status': 'Wanted',
-    }
-
-
-@pytest.fixture
-def sample_magazine_data():
-    """Provide sample magazine data for testing."""
-    return {
-        'Title': 'Test Magazine',
-        'Regex': '',
-        'Status': 'Active',
-        'IssueStatus': 'Wanted',
-        'MagazineAdded': '2023-01-01',
-        'DateType': 'month',
     }
 
 
@@ -422,7 +407,6 @@ def api_config():
     lazylibrarian.CONFIG.setdefault('HTTP_PORT', 5299)
     lazylibrarian.CONFIG.setdefault('HTTP_HOST', '0.0.0.0')
     lazylibrarian.CONFIG.setdefault('HTTP_ROOT', '/')
-    lazylibrarian.CONFIG.setdefault('HTTP_LOOK', 'bookstrap')
     lazylibrarian.CONFIG.setdefault('USER_ACCOUNTS', False)
     lazylibrarian.CONFIG.setdefault('SORT_SURNAME', False)
     lazylibrarian.CONFIG.setdefault('SORT_DEFINITE', False)
@@ -461,18 +445,6 @@ def authenticated_user(temp_db):
         'Password': 'testpass',
         'PasswordHash': password_hash,
         'Perms': 65535
-    }
-
-
-@pytest.fixture
-def sample_series_data():
-    """Provide sample series data for testing."""
-    return {
-        'SeriesID': 1,
-        'SeriesName': 'Test Series',
-        'Status': 'Active',
-        'Have': 3,
-        'Total': 10
     }
 
 

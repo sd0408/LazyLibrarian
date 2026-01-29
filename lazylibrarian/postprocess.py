@@ -29,17 +29,16 @@ PY2 = False
 
 from lazylibrarian import database, logger, utorrent, transmission, qbittorrent, \
     deluge, rtorrent, synology, sabnzbd, nzbget
+from lazylibrarian.database import add_to_blacklist
 from lazylibrarian.bookrename import nameVars, audioProcess, stripspaces, id3read
 from lazylibrarian.cache import cache_img
 from lazylibrarian.calibre import calibredb
 from lazylibrarian.common import scheduleJob, book_file, opf_file, setperm, bts_file, jpg_file, \
-    safe_copy, safe_move, mymakedirs, runScript
+    safe_copy, safe_move, mymakedirs, runScript, get_files_by_type
 from lazylibrarian.formatter import unaccented_str, unaccented, plural, now, today, is_valid_booktype, \
     replace_all, getList, surnameFirst, makeUnicode, makeBytestr, check_int, is_valid_type, multibook
 from lazylibrarian.importer import addAuthorToDB, addAuthorNameToDB, update_totals
 from lazylibrarian.librarysync import get_book_info, find_book_in_db, LibraryScan
-from lazylibrarian.magazinescan import create_id
-from lazylibrarian.images import createMagCover
 from vendor.deluge_client import DelugeRPCClient
 from fuzzywuzzy import fuzz
 
@@ -57,6 +56,62 @@ def update_downloads(provider):
         myDB.action('UPDATE downloads SET Count=? WHERE Provider=?', (counter + 1, provider))
     else:
         myDB.action('INSERT into downloads (Count, Provider) VALUES  (?, ?)', (1, provider))
+
+
+def fail_type_mismatch(book, book_type, pp_path, files_found):
+    """
+    Handle failure when download contains wrong file type.
+    Marks download as Failed, blacklists if enabled, resets book status to Wanted.
+
+    Args:
+        book: dict from wanted table
+        book_type: expected type ('eBook' or 'AudioBook')
+        pp_path: path to the downloaded files
+        files_found: dict from get_files_by_type() with 'ebook', 'audiobook', 'other' lists
+    """
+    myDB = database.DBConnection()
+
+    # Build descriptive error message
+    if book_type == 'eBook':
+        found_type = 'audiobook' if files_found['audiobook'] else 'other'
+        found_files = files_found['audiobook'] if files_found['audiobook'] else files_found['other']
+    else:
+        found_type = 'ebook' if files_found['ebook'] else 'other'
+        found_files = files_found['ebook'] if files_found['ebook'] else files_found['other']
+
+    file_sample = found_files[:3] if len(found_files) > 3 else found_files
+    file_desc = ', '.join(file_sample)
+    if len(found_files) > 3:
+        file_desc += ' (and %d more)' % (len(found_files) - 3)
+
+    error_msg = "Type mismatch: expected %s but found %s files (%s)" % (
+        book_type, found_type, file_desc)
+
+    logger.warn("%s for %s" % (error_msg, book['NZBtitle']))
+
+    # Update wanted table to Failed status
+    myDB.action('UPDATE wanted SET Status="Failed", DLResult=? WHERE NZBurl=? AND Status="Snatched"',
+                (error_msg, book['NZBurl']))
+
+    # Reset book status to Wanted so it can retry with another provider
+    if book['BookID'] != 'unknown':
+        if book_type == 'eBook':
+            myDB.action('UPDATE books SET status="Wanted" WHERE status="Snatched" AND BookID=?',
+                        (book['BookID'],))
+        elif book_type == 'AudioBook':
+            myDB.action('UPDATE books SET audiostatus="Wanted" WHERE audiostatus="Snatched" AND BookID=?',
+                        (book['BookID'],))
+
+    # Blacklist if enabled
+    if lazylibrarian.CONFIG['BLACKLIST_FAILED']:
+        add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
+                         book['BookID'], book.get('AuxInfo'), 'TypeMismatch')
+
+    # Delete from downloader (with files)
+    if book['Source'] and book['Source'] != 'DIRECT':
+        delete_task(book['Source'], book['DownloadID'], True)
+
+    return error_msg
 
 
 def processAlternate(source_dir=None, library='eBook'):
@@ -299,10 +354,7 @@ def cron_processDir():
 def bookType(book):
     book_type = book['AuxInfo']
     if book_type not in ['AudioBook', 'eBook']:
-        if not book_type:
-            book_type = 'eBook'
-        else:
-            book_type = 'Magazine'
+        book_type = 'eBook'
     return book_type
 
 
@@ -320,6 +372,7 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
         return
 
     threading.currentThread().name = "POSTPROCESS"
+    lazylibrarian.POSTPROCESS_UPDATE = True
     # noinspection PyBroadException,PyStatementEffect
     try:
         ppcount = 0
@@ -377,6 +430,10 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                             myDB.action(cmd, (book['BookID'],))
                         myDB.action('UPDATE wanted SET Status="Failed",DLResult=? WHERE BookID=?',
                                     (rejected, book['BookID']))
+                        # Add to blacklist if BLACKLIST_FAILED is enabled
+                        if lazylibrarian.CONFIG['BLACKLIST_FAILED']:
+                            add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
+                                             book['BookID'], book.get('AuxInfo'), 'Failed')
                         delete_task(book['Source'], book['DownloadID'], True)
 
         for download_dir in dirlist:
@@ -428,13 +485,13 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                                     logger.debug("processDir found %s %s" % (type(pp_path), repr(pp_path)))
 
                                 if os.path.isfile(pp_path):
-                                    # Check for single file downloads first. Book/mag file in download root.
+                                    # Check for single file downloads first. Book file in download root.
                                     # move the file into it's own subdirectory so we don't move/delete
                                     # things that aren't ours
                                     # note that epub are zipfiles so check booktype first
                                     if is_valid_type(fname, extras=''):
                                         if lazylibrarian.LOGLEVEL & lazylibrarian.log_postprocess:
-                                            logger.debug('file [%s] is a valid book/mag' % fname)
+                                            logger.debug('file [%s] is a valid book' % fname)
                                         if bts_file(download_dir):
                                             logger.debug("Skipping %s, found a .bts file" % download_dir)
                                         else:
@@ -477,7 +534,7 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                                     skipped = False
                                     # Might be multiple books in the download, could be a collection?
                                     # If so, should we process all the books recursively? we can maybe use
-                                    # processAlternate(pp_path) but that currently only does ebooks, not audio or mag
+                                    # processAlternate(pp_path) but that currently only does ebooks, not audio
                                     # or should we just try to find and extract the one item from the collection?
                                     # For now just import single book from top level directory...
                                     mult = multibook(pp_path, recurse=True)
@@ -485,13 +542,20 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                                         logger.debug("Skipping %s, found multiple %s" % (pp_path, mult))
                                         skipped = True
                                     elif book_type == 'eBook' and not book_file(pp_path, 'ebook'):
-                                        logger.debug("Skipping %s, no ebook found" % pp_path)
+                                        # Check if wrong file type present (type mismatch)
+                                        files_found = get_files_by_type(pp_path)
+                                        if files_found['audiobook']:
+                                            fail_type_mismatch(book, book_type, pp_path, files_found)
+                                        else:
+                                            logger.debug("Skipping %s, no ebook found" % pp_path)
                                         skipped = True
                                     elif book_type == 'AudioBook' and not book_file(pp_path, 'audiobook'):
-                                        logger.debug("Skipping %s, no audiobook found" % pp_path)
-                                        skipped = True
-                                    elif book_type == 'Magazine' and not book_file(pp_path, 'mag'):
-                                        logger.debug("Skipping %s, no magazine found" % pp_path)
+                                        # Check if wrong file type present (type mismatch)
+                                        files_found = get_files_by_type(pp_path)
+                                        if files_found['ebook']:
+                                            fail_type_mismatch(book, book_type, pp_path, files_found)
+                                        else:
+                                            logger.debug("Skipping %s, no audiobook found" % pp_path)
                                         skipped = True
                                     if not os.listdir(makeBytestr(pp_path)):
                                         logger.debug("Skipping %s, folder is empty" % pp_path)
@@ -548,39 +612,11 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                             dest_path = stripspaces(dest_path)
                             global_name = seriesinfo['BookFile']
                         else:
-                            data = myDB.match('SELECT IssueDate from magazines WHERE Title=?', (book['BookID'],))
-                            if data:  # it's a magazine
-                                logger.debug('Processing magazine %s' % book['BookID'])
-                                # AuxInfo was added for magazine release date, normally housed in 'magazines'
-                                # but if multiple files are downloading, there will be an error in post-processing
-                                # trying to go to the same directory.
-                                mostrecentissue = data['IssueDate']  # keep for processing issues arriving out of order
-                                mag_name = unaccented_str(replace_all(book['BookID'], __dic__))
-                                # book auxinfo is a cleaned date, eg 2015-01-01
-                                dest_path = lazylibrarian.CONFIG['MAG_DEST_FOLDER'].replace(
-                                    '$IssueDate', book['AuxInfo']).replace('$Title', mag_name)
-
-                                if lazylibrarian.CONFIG['MAG_RELATIVE']:
-                                    dest_dir = lazylibrarian.DIRECTORY('eBook')
-                                    dest_path = os.path.join(dest_dir, dest_path)
-                                    if PY2:
-                                        dest_path = dest_path.encode(lazylibrarian.SYS_ENCODING)
-                                    if not mymakedirs(dest_path):
-                                        logger.warn('Unable to create directory %s' % dest_path)
-                                    else:
-                                        ignorefile = os.path.join(dest_path, '.ll_ignore')
-                                        with open(ignorefile, 'a'):
-                                            os.utime(ignorefile, None)
-                                elif PY2:
-                                    dest_path = dest_path.encode(lazylibrarian.SYS_ENCODING)
-                                global_name = lazylibrarian.CONFIG['MAG_DEST_FILE'].replace(
-                                    '$IssueDate', book['AuxInfo']).replace('$Title', mag_name)
-                                global_name = unaccented(global_name)
-                            else:  # not recognised, maybe deleted
-                                logger.debug('Nothing in database matching "%s"' % book['BookID'])
-                                controlValueDict = {"BookID": book['BookID'], "Status": "Snatched"}
-                                newValueDict = {"Status": "Failed", "NZBDate": now()}
-                                myDB.upsert("wanted", newValueDict, controlValueDict)
+                            # not recognised, maybe deleted
+                            logger.debug('Nothing in database matching "%s"' % book['BookID'])
+                            controlValueDict = {"BookID": book['BookID'], "Status": "Snatched"}
+                            newValueDict = {"Status": "Failed", "NZBDate": now()}
+                            myDB.upsert("wanted", newValueDict, controlValueDict)
                     else:
                         logger.debug("Snatched %s %s is not in download directory" %
                                      (book['NZBmode'], book['NZBtitle']))
@@ -602,43 +638,13 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                         newValueDict = {"Status": "Processed", "NZBDate": now(), "DLResult": dest_file}
                         myDB.upsert("wanted", newValueDict, controlValueDict)
 
+                        # Add to blacklist if BLACKLIST_PROCESSED is enabled
+                        if lazylibrarian.CONFIG['BLACKLIST_PROCESSED']:
+                            add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
+                                             book['BookID'], book.get('AuxInfo'), 'Processed')
+
                         if bookname:  # it's ebook or audiobook
                             processExtras(dest_file, global_name, book['BookID'], book_type)
-                            iss_id = 0
-                        else:  # update mags
-                            if mostrecentissue:
-                                if mostrecentissue.isdigit() and str(book['AuxInfo']).isdigit():
-                                    older = (int(mostrecentissue) > int(book['AuxInfo']))  # issuenumber
-                                else:
-                                    older = (mostrecentissue > book['AuxInfo'])  # YYYY-MM-DD
-                            else:
-                                older = False
-
-                            controlValueDict = {"Title": book['BookID']}
-                            if older:  # check this in case processing issues arriving out of order
-                                newValueDict = {"LastAcquired": today(),
-                                                "IssueStatus": lazylibrarian.CONFIG['FOUND_STATUS']}
-                            else:
-                                newValueDict = {"IssueDate": book['AuxInfo'], "LastAcquired": today(),
-                                                "LatestCover": os.path.splitext(dest_file)[0] + '.jpg',
-                                                "IssueStatus": lazylibrarian.CONFIG['FOUND_STATUS']}
-                            myDB.upsert("magazines", newValueDict, controlValueDict)
-
-                            iss_id = create_id("%s %s" % (book['BookID'], book['AuxInfo']))
-                            controlValueDict = {"Title": book['BookID'], "IssueDate": book['AuxInfo']}
-                            newValueDict = {"IssueAcquired": today(),
-                                            "IssueFile": dest_file,
-                                            "IssueID": iss_id
-                                            }
-                            myDB.upsert("issues", newValueDict, controlValueDict)
-
-                            maginfo = myDB.match("SELECT CoverPage from magazines WHERE Title=?", (book['BookID'],))
-                            # create a thumbnail cover for the new issue
-                            createMagCover(dest_file, pagenum=check_int(maginfo['CoverPage'], 1))
-                            processMAGOPF(dest_file, book['BookID'], book['AuxInfo'], iss_id)
-                            if lazylibrarian.CONFIG['IMP_AUTOADDMAG']:
-                                dest_path = os.path.dirname(dest_file)
-                                processAutoAdd(dest_path, booktype='mag')
 
                         # calibre or ll copied/moved the files we want, now delete source files
 
@@ -696,7 +702,7 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                         newValueDict = {"Status": "Failed", "DLResult": dest_file, "NZBDate": now()}
                         myDB.upsert("wanted", newValueDict, controlValueDict)
                         # if it's a book, reset status so we try for a different version
-                        # if it's a magazine, user can select a different one from pastissues table
+                        # books can be re-downloaded from history if needed
                         if book_type == 'eBook':
                             myDB.action('UPDATE books SET status="Wanted" WHERE BookID=?', (book['BookID'],))
                         elif book_type == 'AudioBook':
@@ -735,7 +741,7 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
 
             ppcount += check_residual(download_dir)
 
-        logger.info('%s book%s/mag%s processed.' % (ppcount, plural(ppcount), plural(ppcount)))
+        logger.info('%s book%s processed.' % (ppcount, plural(ppcount)))
 
         # Now check for any that are still marked snatched, or any aborted...
         snatched = myDB.select('SELECT * from wanted WHERE Status="Snatched" or Status="Aborted"')
@@ -782,13 +788,18 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                     if cmd:
                         myDB.action(cmd, (book['BookID'],))
 
-                    # use url and status for identifier because magazine id isn't unique
+                    # use url and status for identifier
                     if book['Status'] == "Snatched":
                         q = 'UPDATE wanted SET Status="Failed",DLResult=? WHERE NZBurl=? and Status="Snatched"'
                         myDB.action(q, (dlresult, book['NZBurl']))
                     else:  # don't overwrite dlresult reason for the abort
                         q = 'UPDATE wanted SET Status="Failed" WHERE NZBurl=? and Status="Aborted"'
                         myDB.action(q, (book['NZBurl'],))
+
+                    # Add to blacklist if BLACKLIST_FAILED is enabled
+                    if lazylibrarian.CONFIG['BLACKLIST_FAILED']:
+                        add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
+                                         book['BookID'], book.get('AuxInfo'), 'Failed')
 
                     delete_task(book['Source'], book['DownloadID'], True)
             else:
@@ -807,6 +818,7 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
         logger.error('Unhandled exception in processDir: %s' % traceback.format_exc())
 
     finally:
+        lazylibrarian.POSTPROCESS_UPDATE = False
         threading.currentThread().name = threadname
 
 
@@ -825,15 +837,13 @@ def check_contents(source, downloadid, book_type, title):
         banwords = lazylibrarian.CONFIG['REJECT_WORDS']
     elif book_type.lower() == 'audiobook':
         maxsize = lazylibrarian.CONFIG['REJECT_MAXAUDIO']
-        # minsize = lazylibrarian.CONFIG['REJECT_MINAUDIO']
-        minsize = 0  # individual audiobook chapters can be quite small
+        # REJECT_MINAUDIO is intentionally disabled here because individual
+        # audiobook chapters can be quite small (often <1MB for short chapters).
+        # The config setting is still used during search result filtering in
+        # resultlist.py where full audiobook size is known.
+        minsize = 0
         filetypes = lazylibrarian.CONFIG['AUDIOBOOK_TYPE']
         banwords = lazylibrarian.CONFIG['REJECT_AUDIO']
-    elif book_type.lower() == 'magazine':
-        maxsize = lazylibrarian.CONFIG['REJECT_MAGSIZE']
-        minsize = lazylibrarian.CONFIG['REJECT_MAGMIN']
-        filetypes = lazylibrarian.CONFIG['MAG_TYPE']
-        banwords = lazylibrarian.CONFIG['REJECT_MAGS']
     else:  # shouldn't happen
         maxsize = 0
         minsize = 0
@@ -1262,7 +1272,7 @@ def process_book(pp_path=None, bookID=None):
     # noinspection PyBroadException
     try:
         # Move a book into LL folder structure given just the folder and bookID, returns True or False
-        # Called from "import_alternate" or if we find a "LL.(xxx)" folder that doesn't match a snatched book/mag
+        # Called from "import_alternate" or if we find a "LL.(xxx)" folder that doesn't match a snatched book
         if lazylibrarian.LOGLEVEL & lazylibrarian.log_postprocess:
             logger.debug("process_book %s" % pp_path)
         is_audio = False
@@ -1276,7 +1286,7 @@ def process_book(pp_path=None, bookID=None):
         cmd = 'SELECT AuthorName,BookName from books,authors WHERE BookID=? and books.AuthorID = authors.AuthorID'
         data = myDB.match(cmd, (bookID,))
         if data:
-            cmd = 'SELECT BookID, NZBprov, AuxInfo FROM wanted WHERE BookID=? and Status="Snatched"'
+            cmd = 'SELECT BookID, NZBurl, NZBtitle, NZBprov, AuxInfo FROM wanted WHERE BookID=? and Status="Snatched"'
             # we may have wanted to snatch an ebook and audiobook of the same title/id
             was_snatched = myDB.select(cmd, (bookID,))
             want_audio = False
@@ -1341,6 +1351,12 @@ def process_book(pp_path=None, bookID=None):
                     controlValueDict = {"BookID": bookID}
                     newValueDict = {"Status": "Processed", "NZBDate": now(), "DLResult": dest_file}
                     myDB.upsert("wanted", newValueDict, controlValueDict)
+
+                    # Add to blacklist if BLACKLIST_PROCESSED is enabled
+                    if lazylibrarian.CONFIG['BLACKLIST_PROCESSED']:
+                        add_to_blacklist(was_snatched[0]['NZBurl'], was_snatched[0]['NZBtitle'],
+                                         was_snatched[0]['NZBprov'], bookID,
+                                         was_snatched[0].get('AuxInfo'), 'Processed')
                 else:
                     controlValueDict = {"BookID": bookID}
                     newValueDict = {"AuxInfo": book_type}
@@ -1469,11 +1485,11 @@ def processExtras(dest_file=None, global_name=None, bookid=None, book_type="eBoo
 
 def processDestination(pp_path=None, dest_path=None, authorname=None, bookname=None, global_name=None, bookid=None,
                        booktype=None):
-    """ Copy/move book/mag and associated files into target directory
+    """ Copy/move book and associated files into target directory
         Return True, full_path_to_book  or False, error_message"""
 
     if not bookname:
-        booktype = 'mag'
+        return False, 'No bookname provided'
 
     booktype = booktype.lower()
 
@@ -1491,7 +1507,7 @@ def processDestination(pp_path=None, dest_path=None, authorname=None, bookname=N
     if bestmatch:
         match = bestmatch
         logger.debug('One format import, best match = %s' % bestmatch)
-    else:  # mag or audiobook or multi-format book
+    else:  # audiobook or multi-format book
         match = False
         for fname in os.listdir(makeBytestr(pp_path)):
             fname = makeUnicode(fname)
@@ -1500,7 +1516,7 @@ def processDestination(pp_path=None, dest_path=None, authorname=None, bookname=N
                 break
 
     if not match:
-        # no book/mag found in a format we wanted. Leave for the user to delete or convert manually
+        # no book found in a format we wanted. Leave for the user to delete or convert manually
         return False, 'Unable to locate a valid filetype (%s) in %s, leaving for manual processing' % (
             booktype, pp_path)
 
@@ -1632,7 +1648,7 @@ def processDestination(pp_path=None, dest_path=None, authorname=None, bookname=N
         except Exception as e:
             return False, 'calibredb import failed, %s %s' % (type(e).__name__, str(e))
     else:
-        # we are copying the files ourselves, either it's audiobook, magazine or we don't want to use calibre
+        # we are copying the files ourselves, either it's audiobook or we don't want to use calibre
         if lazylibrarian.LOGLEVEL & lazylibrarian.log_postprocess:
             logger.debug("BookType: %s, calibredb: [%s]" % (booktype, lazylibrarian.CONFIG['IMP_CALIBREDB']))
         if not os.path.exists(dest_path):
@@ -1726,9 +1742,6 @@ def processAutoAdd(src_path=None, booktype='book'):
     # Called to copy/move the book files to an auto add directory for the likes of Calibre which can't do nested dirs
     autoadddir = lazylibrarian.CONFIG['IMP_AUTOADD']
     savefiles = lazylibrarian.CONFIG['IMP_AUTOADD_COPY']
-    if booktype == 'mag':
-        autoadddir = lazylibrarian.CONFIG['IMP_AUTOADDMAG']
-        savefiles = lazylibrarian.CONFIG['IMP_AUTOADDMAG_COPY']
 
     if not os.path.exists(autoadddir):
         logger.error('AutoAdd directory for %s [%s] is missing or not set - cannot perform autoadd' % (
@@ -1762,9 +1775,6 @@ def processAutoAdd(src_path=None, booktype='book'):
                 logger.debug('Skipping %s' % os.path.splitext(name)[1])
             elif booktype == 'book' and lazylibrarian.CONFIG['IMP_AUTOADD_BOOKONLY'] and not \
                     is_valid_booktype(name, booktype="book"):
-                logger.debug('Skipping %s' % name)
-            elif booktype == 'mag' and lazylibrarian.CONFIG['IMP_AUTOADD_MAGONLY'] and not \
-                    is_valid_booktype(name, booktype="mag"):
                 logger.debug('Skipping %s' % name)
             else:
                 srcname = os.path.join(src_path, name)
@@ -1824,43 +1834,6 @@ def processIMG(dest_path=None, bookid=None, bookimg=None, global_name=None, over
     except Exception as e:
         logger.error("Error copying image to %s, %s %s" % (coverfile, type(e).__name__, str(e)))
         return
-
-
-def processMAGOPF(issuefile, title, issue, issueID, overwrite=False):
-    """ Needs calibre to be configured to read metadata from file contents, not filename """
-    if not lazylibrarian.CONFIG['IMP_MAGOPF']:
-        return
-    dest_path, global_name = os.path.split(issuefile)
-    global_name, extn = os.path.splitext(global_name)
-
-    if len(issue) == 10 and issue[8:] == '01' and issue[4] == '-' and issue[7] == '-':  # yyyy-mm-01
-        yr = issue[0:4]
-        mn = issue[5:7]
-        month = lazylibrarian.MONTHNAMES[int(mn)][0]
-        iname = "%s - %s%s %s" % (title, month[0].upper(), month[1:], yr)  # The Magpi - January 2017
-    elif title in issue:
-        iname = issue  # 0063 - Android Magazine -> 0063
-    else:
-        iname = "%s - %s" % (title, issue)  # Android Magazine - 0063
-
-    mtime = os.path.getmtime(issuefile)
-    iss_acquired = datetime.date.isoformat(datetime.date.fromtimestamp(mtime))
-
-    data = {
-        'AuthorName': title,
-        'BookID': issueID,
-        'BookName': iname,
-        'BookDesc': '',
-        'BookIsbn': '',
-        'BookDate': iss_acquired,
-        'BookLang': 'eng',
-        'BookImg': global_name + '.jpg',
-        'BookPub': '',
-        'Series': title,
-        'Series_index': issue
-    }  # type: dict
-    # noinspection PyTypeChecker
-    _ = processOPF(dest_path, data, global_name, overwrite=overwrite)
 
 
 def processOPF(dest_path=None, data=None, global_name=None, overwrite=False):

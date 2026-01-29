@@ -19,6 +19,7 @@ import traceback
 import lazylibrarian
 from lazylibrarian import logger, database
 from lazylibrarian.common import scheduleJob
+from lazylibrarian.database import add_to_blacklist
 from lazylibrarian.downloadmethods import NZBDownloadMethod, TORDownloadMethod, DirectDownloadMethod
 from lazylibrarian.formatter import unaccented_str, replace_all, getList, now, check_int
 from lazylibrarian.providers import get_searchterm
@@ -109,13 +110,13 @@ def findBestResult(resultlist, book, searchtype, source):
                 logger.debug("Rejecting %s, no URL found" % resultTitle)
 
             if not rejected and lazylibrarian.CONFIG['BLACKLIST_FAILED']:
-                blacklisted = myDB.match('SELECT * from wanted WHERE NZBurl=? and Status="Failed"', (url,))
+                blacklisted = myDB.match('SELECT * from blacklist WHERE NZBurl=? and Reason="Failed"', (url,))
                 if blacklisted:
                     logger.debug("Rejecting %s, url blacklisted (Failed) at %s" %
                                  (resultTitle, blacklisted['NZBprov']))
                     rejected = True
                 if not rejected:
-                    blacklisted = myDB.match('SELECT * from wanted WHERE NZBprov=? and NZBtitle=? and Status="Failed"',
+                    blacklisted = myDB.match('SELECT * from blacklist WHERE NZBprov=? and NZBtitle=? and Reason="Failed"',
                                              (res[prefix + 'prov'], resultTitle))
                     if blacklisted:
                         logger.debug("Rejecting %s, title blacklisted (Failed) at %s" %
@@ -123,18 +124,37 @@ def findBestResult(resultlist, book, searchtype, source):
                         rejected = True
 
             if not rejected and lazylibrarian.CONFIG['BLACKLIST_PROCESSED']:
-                blacklisted = myDB.match('SELECT * from wanted WHERE NZBurl=?', (url,))
+                blacklisted = myDB.match('SELECT * from blacklist WHERE NZBurl=?', (url,))
                 if blacklisted:
                     logger.debug("Rejecting %s, url blacklisted (%s) at %s" %
-                                 (resultTitle, blacklisted['Status'], blacklisted['NZBprov']))
+                                 (resultTitle, blacklisted['Reason'], blacklisted['NZBprov']))
                     rejected = True
                 if not rejected:
-                    blacklisted = myDB.match('SELECT * from wanted WHERE NZBprov=? and NZBtitle=?',
+                    blacklisted = myDB.match('SELECT * from blacklist WHERE NZBprov=? and NZBtitle=?',
                                              (res[prefix + 'prov'], resultTitle))
                     if blacklisted:
                         logger.debug("Rejecting %s, title blacklisted (%s) at %s" %
-                                     (resultTitle, blacklisted['Status'], blacklisted['NZBprov']))
+                                     (resultTitle, blacklisted['Reason'], blacklisted['NZBprov']))
                         rejected = True
+
+            # Check for per-book user blacklisting (interactive search feature)
+            # Also filter by library type (AuxInfo) so ebook blocks don't affect audiobook searches
+            if not rejected:
+                bookid_to_check = book.get('bookid', '')
+                if bookid_to_check:
+                    blacklisted = myDB.match(
+                        'SELECT * from blacklist WHERE NZBurl=? and BookID=? and AuxInfo=? and Reason="UserBlacklisted"',
+                        (url, bookid_to_check, auxinfo))
+                    if blacklisted:
+                        logger.debug("Rejecting %s, url blacklisted for this %s by user" % (resultTitle, auxinfo))
+                        rejected = True
+                    if not rejected:
+                        blacklisted = myDB.match(
+                            'SELECT * from blacklist WHERE NZBprov=? and NZBtitle=? and BookID=? and AuxInfo=? and Reason="UserBlacklisted"',
+                            (res[prefix + 'prov'], resultTitle, bookid_to_check, auxinfo))
+                        if blacklisted:
+                            logger.debug("Rejecting %s, title blacklisted for this %s by user" % (resultTitle, auxinfo))
+                            rejected = True
 
             if not rejected and source == 'rss':
                 if searchtype in ['book', 'shortbook'] and 'E' not in res['types']:
@@ -314,6 +334,11 @@ def downloadResult(match, book):
         else:
             myDB.action('UPDATE wanted SET status="Failed",DLResult=? WHERE NZBurl=?',
                         (res, controlValueDict["NZBurl"]))
+            # Add to blacklist if BLACKLIST_FAILED is enabled
+            if lazylibrarian.CONFIG['BLACKLIST_FAILED']:
+                add_to_blacklist(controlValueDict["NZBurl"], newValueDict["NZBtitle"],
+                                 newValueDict["NZBprov"], newValueDict.get("BookID"),
+                                 newValueDict.get("AuxInfo"), 'Failed')
         return 0
     except Exception:
         logger.error('Unhandled exception in downloadResult: %s' % traceback.format_exc())

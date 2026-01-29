@@ -20,13 +20,14 @@ from fuzzywuzzy import fuzz
 from urllib.parse import quote_plus
 
 
-def searchItem(item=None, bookid=None, cat=None):
+def searchItem(item=None, bookid=None, cat=None, min_score=40):
     """
     Call all active search providers to search for item
     return a list of results, each entry in list containing percentage_match, title, provider, size, url
     item = searchterm to use for general search
     bookid = link to data for book/audio searches
     cat = category to search [general, book, audio]
+    min_score = minimum fuzzy match score to include result (default 40, use 0 for interactive search)
     """
     results = []
 
@@ -120,9 +121,7 @@ def searchItem(item=None, bookid=None, cat=None):
             if not size:
                 size = '1000'
 
-            url = url.encode('utf-8')
             if mode == 'torznab':
-                # noinspection PyTypeChecker
                 if url.startswith('magnet'):
                     mode = 'magnet'
 
@@ -132,7 +131,7 @@ def searchItem(item=None, bookid=None, cat=None):
             words = len(getList(searchterm))
             words -= len(getList(title))
             score -= abs(words)
-            if score >= 40:  # ignore wildly wrong results?
+            if score >= min_score:  # ignore wildly wrong results (min_score=0 for interactive search)
                 result = {'score': score, 'title': title, 'provider': provider, 'size': size, 'date': date,
                           'url': quote_plus(url), 'mode': mode}
 

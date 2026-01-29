@@ -1,0 +1,194 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'blocklist'
+%>
+<%def name="headIncludes()">
+    <link href="css/datatables.bootstrap5.min.css" rel="stylesheet">
+</%def>
+<%def name="styleIncludes()">
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <h1 class="ll-page-title">${title}</h1>
+            <p class="ll-page-subtitle">Manage blocked downloads - items here will not be re-downloaded</p>
+        </div>
+        <div class="ll-page-header-actions">
+            %if perm&lazylibrarian.perm_status:
+            <a href="clearBlocklist?reason=all" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                </svg>
+                Clear All
+            </a>
+            <a href="clearBlocklist?reason=Processed" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+                Clear Processed
+            </a>
+            <a href="clearBlocklist?reason=Failed" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+                Clear Failed
+            </a>
+            %endif
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="ll-toolbar">
+        <div class="ll-toolbar-left">
+            %if lazylibrarian.CONFIG['TOGGLES']:
+            <span class="ll-toolbar-label">Toggle:</span>
+            <div class="ll-btn-group">
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="0">Title</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="1">Type</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="2">ID</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="3">Provider</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="4">Date</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="5">Reason</button>
+            </div>
+            %endif
+        </div>
+        <div class="ll-toolbar-right">
+        </div>
+    </div>
+
+    <!-- Blocklist -->
+    <div class="ll-card">
+        <div class="ll-card-body ll-card-body-flush">
+            <div class="table-responsive">
+                <table class="ll-table" id="blocklist_table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th style="width: 80px;">Type</th>
+                            <th style="width: 100px;">ID</th>
+                            <th style="width: 120px;">Provider</th>
+                            <th class="text-center" style="width: 100px;">Date</th>
+                            <th class="text-center" style="width: 100px;">Reason</th>
+                            <th class="text-center" style="width: 80px;">Actions</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/datatables.bootstrap5.min.js"></script>
+    <script src="js/natural.js"></script>
+    <script src="js/bootbox.min.js"></script>
+    <script>
+    function deleteItem(rowid, title) {
+        bootbox.confirm({
+            title: 'Remove from Blocklist',
+            message: 'Remove "<strong>' + title + '</strong>" from the blocklist?<br><br>This will allow this item to be downloaded again.',
+            buttons: {
+                cancel: {
+                    label: 'Cancel',
+                    className: 'll-btn ll-btn-secondary'
+                },
+                confirm: {
+                    label: 'Remove',
+                    className: 'll-btn ll-btn-danger'
+                }
+            },
+            callback: function(result) {
+                if (result) {
+                    $.get("deleteBlocklistItem", { 'rowid': rowid }, function(data) {
+                        location.reload(true);
+                    });
+                }
+            }
+        });
+    }
+
+    $(document).ready(function() {
+        var table = $('#blocklist_table').DataTable({
+            "responsive": true,
+            "bAutoWidth": false,
+            "stateSave": true,
+            "order": [[ 4, 'desc' ]],
+            "columnDefs": [
+                { targets: [1],
+                    'render': function(data, type, row) {
+                        var ftype = row[1];
+                        if (!ftype || ftype == 'None') ftype = 'eBook';
+                        return '<span class="ll-badge ll-badge-secondary">' + ftype + '</span>';
+                    }
+                },
+                { targets: [4],
+                    'class': 'text-center',
+                    'render': function(data, type, row) {
+                        return '<a data-bs-toggle="tooltip" title="' + row[8] + '">' + row[4] + '</a>';
+                    }
+                },
+                { targets: [5],
+                    'class': 'text-center',
+                    'render': function(data, type, row) {
+                        var reason = row[5];
+                        var badgeClass = 'secondary';
+                        if (reason === 'Processed') badgeClass = 'success';
+                        else if (reason === 'Failed') badgeClass = 'danger';
+                        return '<span class="ll-badge ll-badge-' + badgeClass + '">' + reason + '</span>';
+                    }
+                },
+                { targets: [6],
+                    'class': 'text-center',
+                    'orderable': false,
+                    'render': function(data, type, row) {
+                        %if perm&lazylibrarian.perm_status:
+                        var rowid = row[7];
+                        var title = row[0] ? row[0].replace(/'/g, "\\'") : '';
+                        return '<button onclick="deleteItem(\'' + rowid + '\', \'' + title + '\')" class="ll-btn ll-btn-danger ll-btn-sm" title="Remove from blocklist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>';
+                        %else:
+                        return '';
+                        %endif
+                    }
+                }
+            ],
+            "oLanguage": {
+                "sSearch": "",
+                "sSearchPlaceholder": "Search blocklist...",
+                "sLengthMenu": "_MENU_ per page",
+                "sEmptyTable": "No blocked items",
+                "sInfo": "Showing _START_ to _END_ of _TOTAL_ entries",
+                "sInfoEmpty": "Showing 0 to 0 of 0 entries",
+                "sInfoFiltered": "(filtered from _MAX_ total)"
+            },
+            "bServerSide": true,
+            "sAjaxSource": 'getBlocklist',
+            "bFilter": true,
+            "sPaginationType": "full_numbers",
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                return nRow;
+            },
+            "aaSorting": [[4, 'desc']]
+        });
+
+        // Style DataTables elements
+        $('.dataTables_filter input').addClass('ll-input').attr('placeholder', 'Search blocklist...');
+        $('.dataTables_length select').addClass('ll-select');
+
+        // Toggle column visibility
+        $('button.toggle-vis').click(function(e) {
+            e.preventDefault();
+            var column = table.column($(this).attr('data-column'));
+            column.visible(!column.visible());
+            $(this).toggleClass('active');
+        });
+    });
+    </script>
+</%def>

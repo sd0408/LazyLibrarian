@@ -1,0 +1,216 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+    from lazylibrarian import formatter
+%>
+<%
+    current_page = 'logs'
+%>
+<%def name="headIncludes()">
+    <link href="css/datatables.bootstrap5.min.css" rel="stylesheet">
+</%def>
+<%def name="styleIncludes()">
+.log-warning {
+    color: var(--warning) !important;
+}
+.log-error {
+    color: var(--error) !important;
+}
+.log-info {
+    color: var(--text-light);
+}
+.log-message {
+    font-family: var(--ll-font-mono);
+    font-size: 0.85rem;
+    word-break: break-word;
+}
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <h1 class="ll-page-title">${title}</h1>
+            <p class="ll-page-subtitle">View system logs and debug information</p>
+        </div>
+        <div class="ll-page-header-actions">
+            <a href="clearLog" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Clear Log
+            </a>
+            %if lazylibrarian.LOGLEVEL >= 2:
+            <a href="toggleLog" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+                Stop Debug Log
+            </a>
+            <a href="saveLog" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Save Debug Log
+            </a>
+            %else:
+            <a href="toggleLog" class="ll-btn ll-btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Start Debug Log
+            </a>
+            %endif
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="ll-toolbar">
+        <div class="ll-toolbar-left">
+            %if lazylibrarian.CONFIG['TOGGLES']:
+            <span class="ll-toolbar-label">Toggle:</span>
+            <div class="ll-btn-group">
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="0">Timestamp</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="1">Level</button>
+                %if lazylibrarian.LOGLEVEL >= 2:
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="2">Thread</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="3">File</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="4">Method</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="5">Line No</button>
+                %endif
+            </div>
+            %endif
+        </div>
+        <div class="ll-toolbar-right">
+            <label class="ll-toolbar-label">Refresh:</label>
+            <select id="refreshrate" class="ll-select" onchange="setRefresh()">
+                <option value="0" selected="selected">No Refresh</option>
+                <option value="5">5 Seconds</option>
+                <option value="15">15 Seconds</option>
+                <option value="30">30 Seconds</option>
+                <option value="60">60 Seconds</option>
+                <option value="300">5 Minutes</option>
+                <option value="600">10 Minutes</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Log Table -->
+    <div class="ll-card">
+        <div class="ll-card-body ll-card-body-flush">
+            <div class="table-responsive">
+                <table class="ll-table" id="log_table">
+                    <thead>
+                        <tr>
+                            <th style="width: 160px;">Timestamp</th>
+                            <th style="width: 80px;">Level</th>
+                            %if lazylibrarian.LOGLEVEL >= 2:
+                            <th style="width: 100px;">Thread</th>
+                            <th style="width: 120px;">File</th>
+                            <th style="width: 120px;">Method</th>
+                            <th style="width: 60px;">Line</th>
+                            %endif
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/datatables.bootstrap5.min.js"></script>
+    <script src="js/natural.js"></script>
+    <script>
+    var timer;
+
+    function setRefresh() {
+        var refreshrate = document.getElementById('refreshrate');
+        if (refreshrate != null) {
+            if (timer) {
+                clearInterval(timer);
+            }
+            if (refreshrate.value != 0) {
+                timer = setInterval(function() {
+                    $('#log_table').DataTable().ajax.reload(null, false);
+                }, 1000 * refreshrate.value);
+            }
+        }
+    }
+
+    $(document).ready(function() {
+        var oTable = $('#log_table').DataTable({
+            "bAutoWidth": false,
+            "aoColumnDefs": [
+                %if lazylibrarian.LOGLEVEL >= 2:
+                { "sWidth": "3%", "aTargets": [0, 1, 2, 3, 4, 5] },
+                { "sWidth": "60%", "aTargets": [6] }
+                %else:
+                { "sWidth": "3%", "aTargets": [0, 1] },
+                { "sWidth": "60%", "aTargets": [2] }
+                %endif
+            ],
+            "stateSave": true,
+            "order": [[ 0, 'desc' ]],
+            "oLanguage": {
+                "sSearch": "",
+                "sSearchPlaceholder": "Filter logs...",
+                "sLengthMenu": "_MENU_ per page",
+                "sEmptyTable": "No log information available",
+                "sInfo": "Showing _START_ to _END_ of _TOTAL_ entries",
+                "sInfoEmpty": "Showing 0 to 0 of 0 entries",
+                "sInfoFiltered": "(filtered from _MAX_ total)"
+            },
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "sPaginationType": "full_numbers",
+            "aaSorting": [],
+            "bServerSide": true,
+            "sAjaxSource": 'getLog',
+            "bFilter": true,
+            "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                if (aData[1] === "WARNING") {
+                    $('td', nRow).addClass("log-warning");
+                } else if (aData[1] === "ERROR") {
+                    $('td', nRow).addClass("log-error");
+                } else {
+                    $('td', nRow).addClass("log-info");
+                }
+                %if lazylibrarian.LOGLEVEL >= 2:
+                // Message column is 6 in debug mode
+                $('td', nRow).eq(6).addClass("log-message");
+                %else:
+                // Hide debug columns in non-debug mode
+                $('td', nRow).eq(2).addClass("hidden");
+                $('td', nRow).eq(3).addClass("hidden");
+                $('td', nRow).eq(4).addClass("hidden");
+                $('td', nRow).eq(5).addClass("hidden");
+                // Message column is 2 (visible) in non-debug mode
+                $('td', nRow).eq(2).addClass("log-message");
+                %endif
+                return nRow;
+            },
+            "fnServerData": function(sSource, aoData, fnCallback) {
+                $.getJSON(sSource, aoData, function(json) {
+                    fnCallback(json);
+                });
+            }
+        });
+
+        // Style DataTables elements
+        $('.dataTables_filter input').addClass('ll-input').attr('placeholder', 'Filter logs...');
+        $('.dataTables_length select').addClass('ll-select');
+
+        // Toggle column visibility
+        $('button.toggle-vis').click(function(e) {
+            e.preventDefault();
+            var column = oTable.column($(this).attr('data-column'));
+            column.visible(!column.visible());
+            $(this).toggleClass('active');
+        });
+    });
+    </script>
+</%def>

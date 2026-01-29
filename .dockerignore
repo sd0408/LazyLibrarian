@@ -1,0 +1,77 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# GitHub
+.github
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+ENV
+env
+.eggs
+*.egg-info
+*.egg
+.pytest_cache
+.coverage
+coverage.xml
+htmlcov
+.tox
+.nox
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+!CLAUDE.md
+docs/
+
+# Testing
+lazylibrarian/unittests/
+pytest.ini
+
+# Development files
+requirements-dev.txt
+pyproject.toml
+setup.py
+setup.cfg
+.flake8
+.pre-commit-config.yaml
+
+# Logs and databases
+*.log
+*.db
+*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Config files (user-specific)
+config.ini
+*.ini.bak
+
+# Cache directories
+cache/
+.cache/
+
+# Plans
+.claude/

@@ -28,18 +28,13 @@ from mako.lookup import TemplateLookup
 
 
 def get_template_lookup() -> TemplateLookup:
-    """Get the Mako template lookup configured for the current theme.
+    """Get the Mako template lookup configured for the modern theme.
 
     Returns:
-        TemplateLookup instance for the current HTTP_LOOK setting
+        TemplateLookup instance for the modern interface
     """
     interface_dir = os.path.join(str(lazylibrarian.PROG_DIR), 'data/interfaces/')
-    template_dir = os.path.join(str(interface_dir), lazylibrarian.CONFIG['HTTP_LOOK'])
-
-    if not os.path.isdir(template_dir):
-        logger.error("Unable to locate template [%s], reverting to legacy" % template_dir)
-        lazylibrarian.CONFIG['HTTP_LOOK'] = 'legacy'
-        template_dir = os.path.join(str(interface_dir), lazylibrarian.CONFIG['HTTP_LOOK'])
+    template_dir = os.path.join(str(interface_dir), 'modern')
 
     return TemplateLookup(directories=[template_dir], input_encoding='utf-8')
 
@@ -50,7 +45,7 @@ def serve_template(templatename: str, **kwargs: Any) -> str:
     This function:
     1. Sets the current thread name to WEBSERVER
     2. Checks for database upgrade in progress
-    3. Handles legacy mode (no user accounts)
+    3. Handles no user accounts mode
     4. Validates user permissions for the requested template
     5. Renders the template with appropriate context
 
@@ -76,8 +71,8 @@ def serve_template(templatename: str, **kwargs: Any) -> str:
                 timer=5
             )
 
-        # Legacy mode or no user accounts - grant admin permissions
-        if lazylibrarian.CONFIG['HTTP_LOOK'] == 'legacy' or not lazylibrarian.CONFIG['USER_ACCOUNTS']:
+        # No user accounts - grant admin permissions
+        if not lazylibrarian.CONFIG['USER_ACCOUNTS']:
             template = _hplookup.get_template(templatename)
             return template.render(perm=lazylibrarian.perm_admin, **kwargs)
 

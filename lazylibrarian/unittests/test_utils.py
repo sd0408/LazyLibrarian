@@ -121,25 +121,6 @@ def generate_random_magazine():
     }
 
 
-def generate_random_series():
-    """Generate random series test data.
-
-    Returns:
-        Dictionary with series fields suitable for database insertion.
-    """
-    series_id = random.randint(1, 100000)
-    series_names = ['The Dark Tower', 'Harry Potter', 'Game of Thrones',
-                    'The Expanse', 'Discworld', 'Foundation', 'Dune']
-
-    return {
-        'SeriesID': series_id,
-        'SeriesName': f'{random.choice(series_names)} {series_id}',
-        'Status': random.choice(['Active', 'Ignored']),
-        'Have': random.randint(0, 5),
-        'Total': random.randint(5, 15),
-    }
-
-
 def assert_api_success(result):
     """Assert that an API call was successful.
 
@@ -285,13 +266,6 @@ class TestUtilityFunctions:
         required = ['Title', 'Status', 'IssueStatus']
         for field in required:
             assert field in mag
-
-    def test_generate_random_series_has_required_fields(self):
-        """generate_random_series should return all required fields."""
-        series = generate_random_series()
-        required = ['SeriesID', 'SeriesName', 'Status', 'Have', 'Total']
-        for field in required:
-            assert field in series
 
     def test_assert_api_success_passes_for_ok(self):
         """assert_api_success should pass for 'OK' result."""

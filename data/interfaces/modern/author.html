@@ -1,0 +1,707 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+
+    def get_stats(context, name):
+        """Get stats dict from context, with default fallback"""
+        default = {'total': 0, 'have': 0, 'skipped': 0, 'ignored': 0}
+        try:
+            stats = context.get(name)
+            if stats and isinstance(stats, dict):
+                return stats
+        except:
+            pass
+        return default
+%>
+<%
+    current_page = 'authors'
+%>
+<%def name="headIncludes()">
+    %if author['Status'] == 'Loading':
+    <meta http-equiv="refresh" content="12">
+    %endif
+    <link href="css/datatables.bootstrap5.min.css" rel="stylesheet">
+</%def>
+<%def name="styleIncludes()">
+.ll-author-header {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+.ll-author-image {
+    flex-shrink: 0;
+    width: 200px;
+}
+.ll-author-image img {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.ll-author-info {
+    flex: 1;
+}
+.ll-author-name {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+.ll-author-name a {
+    color: inherit;
+    text-decoration: none;
+}
+.ll-author-name a:hover {
+    color: var(--primary);
+}
+.ll-author-meta {
+    color: var(--text-light);
+    margin-bottom: 1rem;
+}
+.ll-author-stats {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+.ll-author-stat {
+    text-align: center;
+}
+.ll-author-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+.ll-author-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+}
+.ll-author-progress {
+    max-width: 300px;
+}
+.ll-progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+@media (max-width: 768px) {
+    .ll-author-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .ll-author-image {
+        width: 150px;
+    }
+    .ll-author-stats {
+        justify-content: center;
+    }
+    .ll-author-progress {
+        margin: 0 auto;
+    }
+}
+/* Utility classes */
+.ll-flex { display: flex; }
+.ll-items-center { align-items: center; }
+.ll-gap-3 { gap: 1rem; }
+.ll-mb-3 { margin-bottom: 1rem; }
+</%def>
+<%def name="body()">
+    <!-- Author Actions -->
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <a href="authors" class="ll-btn ll-btn-ghost ll-btn-sm" style="margin-bottom: 0.5rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Back to Authors
+            </a>
+        </div>
+        <div class="ll-page-header-actions">
+            %if perm&lazylibrarian.perm_force:
+                %if author['Status'] == 'Paused':
+                <a href="resumeAuthor?AuthorID=${author['AuthorID']}" class="ll-btn ll-btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Resume
+                </a>
+                %elif author['Status'] == 'Active':
+                <a href="pauseAuthor?AuthorID=${author['AuthorID']}" class="ll-btn ll-btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    Pause
+                </a>
+                %elif author['Status'] == 'Wanted':
+                <a href="ignoreAuthor?AuthorID=${author['AuthorID']}" class="ll-btn ll-btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    </svg>
+                    Ignore
+                </a>
+                %else:
+                <a href="pauseAuthor?AuthorID=${author['AuthorID']}" class="ll-btn ll-btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    Pause
+                </a>
+                %endif
+                <a href="refreshAuthor?AuthorID=${author['AuthorID']}" class="ll-btn ll-btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                        <path d="M16 21h5v-5"></path>
+                    </svg>
+                    Refresh
+                </a>
+                <a href="libraryScanAuthor?AuthorID=${author['AuthorID']}&library=eBook" class="ll-btn ll-btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    eBook Scan
+                </a>
+                %if lazylibrarian.SHOW_AUDIO > 0:
+                <a href="libraryScanAuthor?AuthorID=${author['AuthorID']}&library=AudioBook" class="ll-btn ll-btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                    </svg>
+                    Audio Scan
+                </a>
+                %endif
+                <button class="ll-btn ll-btn-danger" id="removeme">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Remove
+                </button>
+            %endif
+        </div>
+    </div>
+
+    <!-- Author Header Card -->
+    <div class="ll-card" style="margin-bottom: 1.5rem;">
+        <div class="ll-card-body">
+            <div class="ll-author-header">
+                %if lazylibrarian.CONFIG['AUTHOR_IMG']:
+                <div class="ll-author-image">
+                    <img src="${author['AuthorImg']}" alt="${author['AuthorName']}" onerror="this.src='images/nophoto.png'">
+                </div>
+                %endif
+                <div class="ll-author-info">
+                    <h1 class="ll-author-name">
+                        <a href="${author['AuthorLink']}" target="_blank" rel="noreferrer">${author['AuthorName']}</a>
+                        %if perm&lazylibrarian.perm_edit:
+                        <a href="editAuthor?authorid=${author['AuthorID']}" class="ll-btn ll-btn-ghost ll-btn-sm" style="margin-left: 0.5rem;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            Edit
+                        </a>
+                        %endif
+                    </h1>
+                    <div class="ll-author-meta">
+                        %if author['AuthorDeath']:
+                        <strong>Born:</strong> ${author['AuthorBorn']}, <strong>Died:</strong> ${author['AuthorDeath']}
+                        %elif author['AuthorBorn']:
+                        <strong>Born:</strong> ${author['AuthorBorn']}
+                        %endif
+                    </div>
+
+                    %if author['Status'] == 'Loading':
+                    <div class="ll-alert ll-alert-info" style="margin-bottom: 1rem;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="animation: spin 1s linear infinite;">
+                            <line x1="12" y1="2" x2="12" y2="6"></line>
+                            <line x1="12" y1="18" x2="12" y2="22"></line>
+                            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                            <line x1="2" y1="12" x2="6" y2="12"></line>
+                            <line x1="18" y1="12" x2="22" y2="12"></line>
+                            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                        </svg>
+                        Fetching information for this author...
+                    </div>
+                    %endif
+
+                    <%
+                        _ebook_stats = get_stats(context, 'ebook_stats')
+                        _audio_stats = get_stats(context, 'audio_stats')
+                    %>
+                    <!-- eBook Stats -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <div class="ll-author-stat-label" style="margin-bottom: 0.5rem; font-weight: 600;">eBooks</div>
+                        <div class="ll-author-stats">
+                            <div class="ll-author-stat">
+                                <div class="ll-author-stat-value">${_ebook_stats['total']}</div>
+                                <div class="ll-author-stat-label">Total</div>
+                            </div>
+                            <div class="ll-author-stat">
+                                <div class="ll-author-stat-value">${_ebook_stats['have']}</div>
+                                <div class="ll-author-stat-label">Have</div>
+                            </div>
+                            <div class="ll-author-stat">
+                                <div class="ll-author-stat-value">${_ebook_stats['skipped']}</div>
+                                <div class="ll-author-stat-label">Skipped</div>
+                            </div>
+                            <div class="ll-author-stat">
+                                <div class="ll-author-stat-value">${_ebook_stats['ignored']}</div>
+                                <div class="ll-author-stat-label">Ignored</div>
+                            </div>
+                        </div>
+                        <%
+                            ebook_base = _ebook_stats['total'] - _ebook_stats['ignored']
+                            try:
+                                ebook_percent = (_ebook_stats['have']*100.0)/ebook_base
+                                if ebook_percent > 100:
+                                    ebook_percent = 100
+                                if ebook_percent > 75:
+                                    ebook_css = "success"
+                                elif ebook_percent > 50:
+                                    ebook_css = "info"
+                                elif ebook_percent > 25:
+                                    ebook_css = "warning"
+                                else:
+                                    ebook_css = "danger"
+                            except (ZeroDivisionError, TypeError):
+                                ebook_percent = 0
+                                ebook_base = 0
+                                ebook_css = "danger"
+                        %>
+                        <div class="ll-author-progress" style="margin-top: 0.5rem;">
+                            <div class="ll-progress-label">
+                                <span>Progress</span>
+                                <span>${_ebook_stats['have']} / ${ebook_base}</span>
+                            </div>
+                            <div class="ll-progress" style="height: 8px;">
+                                <div class="ll-progress-bar ll-progress-${ebook_css}" style="width: ${ebook_percent}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AudioBook Stats -->
+                    %if lazylibrarian.SHOW_AUDIO and _audio_stats['total'] > 0:
+                    <div>
+                        <div class="ll-author-stat-label" style="margin-bottom: 0.5rem; font-weight: 600;">AudioBooks</div>
+                        <div class="ll-author-stats">
+                            <div class="ll-author-stat">
+                                <div class="ll-author-stat-value">${_audio_stats['total']}</div>
+                                <div class="ll-author-stat-label">Total</div>
+                            </div>
+                            <div class="ll-author-stat">
+                                <div class="ll-author-stat-value">${_audio_stats['have']}</div>
+                                <div class="ll-author-stat-label">Have</div>
+                            </div>
+                            <div class="ll-author-stat">
+                                <div class="ll-author-stat-value">${_audio_stats['skipped']}</div>
+                                <div class="ll-author-stat-label">Skipped</div>
+                            </div>
+                            <div class="ll-author-stat">
+                                <div class="ll-author-stat-value">${_audio_stats['ignored']}</div>
+                                <div class="ll-author-stat-label">Ignored</div>
+                            </div>
+                        </div>
+                        <%
+                            audio_base = _audio_stats['total'] - _audio_stats['ignored']
+                            try:
+                                audio_percent = (_audio_stats['have']*100.0)/audio_base
+                                if audio_percent > 100:
+                                    audio_percent = 100
+                                if audio_percent > 75:
+                                    audio_css = "success"
+                                elif audio_percent > 50:
+                                    audio_css = "info"
+                                elif audio_percent > 25:
+                                    audio_css = "warning"
+                                else:
+                                    audio_css = "danger"
+                            except (ZeroDivisionError, TypeError):
+                                audio_percent = 0
+                                audio_base = 0
+                                audio_css = "danger"
+                        %>
+                        <div class="ll-author-progress" style="margin-top: 0.5rem;">
+                            <div class="ll-progress-label">
+                                <span>Progress</span>
+                                <span>${_audio_stats['have']} / ${audio_base}</span>
+                            </div>
+                            <div class="ll-progress" style="height: 8px;">
+                                <div class="ll-progress-bar ll-progress-${audio_css}" style="width: ${audio_percent}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    %endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Actions (shown when items selected) -->
+    %if perm&lazylibrarian.perm_status or lazylibrarian.CONFIG['USER_ACCOUNTS']:
+    <form action="markBooks" method="get" id="markBooksForm" style="display: none;" class="ll-mb-3">
+        <input type="hidden" name="AuthorID" value="${author['AuthorID']}">
+        <input type="hidden" name="redirect" value="author">
+        <input type="hidden" name="booklang" value="${booklang}">
+        <input type="hidden" name="library" value="${library}">
+        <input type="hidden" name="ignored" value="${ignored}">
+        <div class="ll-card">
+            <div class="ll-card-body ll-flex ll-items-center ll-gap-3">
+                <span id="selectedCount">0 selected</span>
+                <select id="action" name="action" class="ll-select" style="width: auto;">
+                    %if perm&lazylibrarian.perm_status:
+                    <optgroup label="Status">
+                        <option value="Wanted">Wanted</option>
+                        <option value="Have">Have</option>
+                        <option value="Ignored">Ignored</option>
+                        <option value="Skipped">Skipped</option>
+                    </optgroup>
+                    <optgroup label="Destructive">
+                        <option value="Remove">Remove from list</option>
+                        <option value="Delete">Delete files</option>
+                    </optgroup>
+                    %endif
+                    %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
+                    <optgroup label="Reading List">
+                        <option value="Unread">Unread</option>
+                        <option value="Read">Read</option>
+                        <option value="ToRead">To Read</option>
+                    </optgroup>
+                    %endif
+                </select>
+                <button type="submit" class="ll-btn ll-btn-primary ll-btn-sm">Apply</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm" id="clearSelection">Cancel</button>
+            </div>
+        </div>
+    </form>
+    %endif
+
+    <!-- Toolbar -->
+    <div class="ll-toolbar">
+        <div class="ll-toolbar-left">
+        </div>
+        <div class="ll-toolbar-right">
+            %if ignored == 'True':
+            <a href="authorPage?AuthorID=${author['AuthorID']}&amp;Ignored=False" class="ll-btn ll-btn-secondary ll-btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                Show Active
+            </a>
+            %else:
+            <a href="authorPage?AuthorID=${author['AuthorID']}&amp;Ignored=True" class="ll-btn ll-btn-secondary ll-btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                </svg>
+                Show Ignored
+            </a>
+            %endif
+            %if len(types) > 1 and perm&lazylibrarian.perm_audio:
+            <div class="ll-toolbar-form">
+                <label class="ll-toolbar-label">Library:</label>
+                <select id="chooselib" class="ll-select">
+                    %for lib in types:
+                    <option value="${lib}">${lib}</option>
+                    %endfor
+                </select>
+            </div>
+            %endif
+            %if len(languages) > 1:
+            <div class="ll-toolbar-form">
+                <label class="ll-toolbar-label">Language:</label>
+                <select id="chooselanguage" class="ll-select">
+                    <option value="">All</option>
+                    %for language in languages:
+                    <option value="${language['BookLang']}">${language['BookLang']}</option>
+                    %endfor
+                </select>
+            </div>
+            %endif
+        </div>
+    </div>
+
+    <!-- Books List -->
+    <div class="ll-card">
+        <div class="ll-card-body ll-card-body-flush">
+            <div class="table-responsive">
+                <table class="ll-table" id="book_table">
+                    <thead>
+                        <tr>
+                            <th class="text-center no-sort" style="width: 40px;"><input type="checkbox" onClick="toggleAll(this)" /></th>
+                            <th class="text-center no-sort" style="width: 60px;">Cover</th>
+                            <th class="hidden">Author</th>
+                            <th>Title</th>
+                            <th class="text-center" style="width: 80px;">Rating</th>
+                            <th class="text-center" style="width: 100px;">Added</th>
+                            <th class="text-center" style="width: 120px;">Status</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/datatables.bootstrap5.min.js"></script>
+    <script src="js/natural.js"></script>
+    <script src="js/bootbox.min.js"></script>
+    <script>
+    function toggleAll(source) {
+        var checkboxes = document.querySelectorAll('input.checkbox');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = source.checked;
+        }
+        updateBulkActions();
+    }
+
+    function updateBulkActions() {
+        var form = document.getElementById('markBooksForm');
+        var countEl = document.getElementById('selectedCount');
+        if (form && countEl) {
+            var checked = document.querySelectorAll('input.checkbox:checked');
+            if (checked.length > 0) {
+                form.style.display = 'block';
+                countEl.textContent = checked.length + ' selected';
+            } else {
+                form.style.display = 'none';
+            }
+        }
+    }
+
+    function truncateOnWord(str, limit) {
+        var bits, i;
+        if (typeof str !== 'string') { return ''; }
+        bits = str.split('');
+        if (bits.length > limit) {
+            for (i = bits.length - 1; i > -1; --i) {
+                if (i > limit) { bits.length = i; }
+                else if (' ' === bits[i]) { bits.length = i; break; }
+            }
+            bits.push('...');
+        }
+        return bits.join('');
+    }
+
+    function getUrlVars() {
+        var vars = {};
+        window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+            vars[key] = value;
+        });
+        return vars;
+    }
+
+    function bookinfo(bookid) {
+        $.get('getBookInfo', { 'bookid': bookid }, function(data) {
+            bootbox.dialog({
+                title: 'Book Information',
+                message: '<div style="max-height: 60vh; overflow-y: auto;">' + data + '</div>',
+                size: 'large',
+                buttons: {
+                    close: { label: 'Close', className: 'll-btn ll-btn-secondary' }
+                }
+            });
+        });
+    }
+
+    $(document).ready(function() {
+        // Remove author handler
+        $('#removeme').click(function() {
+            bootbox.confirm({
+                message: "Are you sure you want to permanently delete this author?",
+                buttons: {
+                    confirm: { label: 'Yes', className: 'll-btn ll-btn-danger' },
+                    cancel: { label: 'No', className: 'll-btn ll-btn-secondary' }
+                },
+                callback: function(result) {
+                    if (result) {
+                        $.get("removeAuthor", {'AuthorID': '${author['AuthorID']}'}, function(data) {
+                            window.location = 'authors';
+                        });
+                    }
+                }
+            });
+        });
+
+        // Language/library selectors
+        $('#chooselanguage').change(function() {
+            var new_settings = 'authorPage?AuthorID=${author['AuthorID']}&BookLang=' + $(this).val();
+            if (typeof $("#chooselib").val() !== 'undefined') {
+                new_settings += '&library=' + $("#chooselib").val();
+            }
+            window.location = new_settings;
+        });
+        $('#chooselib').change(function() {
+            var new_settings = 'authorPage?AuthorID=${author['AuthorID']}&library=' + $(this).val();
+            if (typeof $("#chooselanguage").val() !== 'undefined') {
+                new_settings += '&BookLang=' + $("#chooselanguage").val();
+            }
+            window.location = new_settings;
+        });
+        $('#chooselanguage').val(getUrlVars()['BookLang']);
+        $('#chooselib').val(getUrlVars()['library']);
+
+        if ($("#chooselib").val() !== 'AudioBook') {
+            $('#chooselib').val('eBook');
+        }
+
+        var show = "" + ${lazylibrarian.CONFIG['BOOK_IMG']};
+        var showimg = (show === '1');
+
+        // Clear any old DataTables state that had different columns
+        localStorage.removeItem('DataTables_book_table_' + window.location.pathname);
+
+        var oTable = $('#book_table').DataTable({
+            "order": [[ 5, 'desc' ]],
+            "bAutoWidth": false,
+            "stateSave": false,
+            "columns": [
+                { "data": 0, "className": "text-center", "orderable": false,
+                    "render": function(data, type, row) {
+                        return '<input type="checkbox" name="' + data + '" class="checkbox" />';
+                    }
+                },
+                { "data": 1, "className": "text-center", "orderable": false, "visible": showimg,
+                    "render": function(data, type, row) {
+                        return '<a href="' + data + '" target="_blank" rel="noreferrer"><img src="' + data + '" alt="Cover" style="max-height: 50px; border-radius: 4px;"></a>';
+                    }
+                },
+                { "data": 2, "className": "hidden", "visible": false },
+                { "data": 3,
+                    "render": function(data, type, row) {
+                        var pre = String(data).split('<');
+                        var limit = window.innerWidth / 30;
+                        var title = truncateOnWord(pre[0], limit);
+                        var tail = String(data).slice(pre[0].length);
+                        var btn = '<button onclick="bookinfo(\'' + row[9] + '\')" class="ll-btn ll-btn-link" type="button" ';
+                        return btn + ' title="' + pre[0] + '">' + title + '</button>' + tail;
+                    }
+                },
+                { "data": 4, "className": "text-center",
+                    "render": function(data, type, row) {
+                        return '<img src="images/' + data + '-stars.png" alt="Rating" style="height: 12px;">';
+                    }
+                },
+                { "data": 5, "className": "text-center",
+                    "render": function(data, type, row) {
+                        var dtime = row[10];
+                        var str = String(dtime).substr(0, 10);
+                        if (str === "null") { str = ""; }
+                        return str;
+                    }
+                },
+                { "data": 6, "className": "text-center",
+                    "render": function(data, type, row) {
+                        var btn = row[11];
+                        var flag = row[13];
+                        btn = btn + flag;
+                        if (btn.indexOf('Open') >= 0) {
+                            return '<a class="ll-badge ll-badge-success" href="openBook?bookid=' + row[9] + '&library=${library}"><i class="fa fa-book"></i> ' + btn + '</a>';
+                        }
+                        else if (btn.indexOf('Wanted') >= 0) {
+                            return '<span class="ll-badge ll-badge-warning">' + btn + '</span><br><a class="ll-badge ll-badge-primary" href="searchForBook?bookid=' + row[9] + '&library=${library}" style="margin-top: 4px;"><i class="fa fa-search"></i> Search</a> <a class="ll-badge ll-badge-info" href="interactiveSearch?bookid=' + row[9] + '&library=${library}" style="margin-top: 4px;" title="Interactive search - pick from all results"><i class="fa fa-list"></i> Pick</a>';
+                        }
+                        else if (btn.indexOf('Snatched') >= 0) {
+                            return '<span class="ll-badge ll-badge-info">' + btn + '</span>';
+                        }
+                        else if (btn.indexOf('Have') >= 0) {
+                            %if perm&lazylibrarian.perm_status:
+                            return '<span class="ll-badge ll-badge-info">' + btn + '</span>';
+                            %else:
+                            return '<a class="ll-badge ll-badge-secondary" href="requestBook?bookid=' + row[9] + '&library=${library}">Request</a>';
+                            %endif
+                        }
+                        else {
+                            %if perm&lazylibrarian.perm_status:
+                            return '<span class="ll-badge ll-badge-secondary">' + btn + '</span>';
+                            %else:
+                            return '<a class="ll-badge ll-badge-secondary" href="requestBook?bookid=' + row[9] + '&library=${library}">Request</a>';
+                            %endif
+                        }
+                    }
+                }
+            ],
+            "oLanguage": {
+                "sSearch": "",
+                "sSearchPlaceholder": "Search books...",
+                "sLengthMenu": "_MENU_ per page",
+                "sEmptyTable": "No books found",
+                "sInfo": "Showing _START_ to _END_ of _TOTAL_ books",
+                "sInfoEmpty": "Showing 0 to 0 of 0 books",
+                "sInfoFiltered": "(filtered from _MAX_ total)"
+            },
+            "sPaginationType": "full_numbers",
+            "aaSorting": [[5, 'desc']],
+            "bServerSide": true,
+            "sAjaxSource": 'getBooks?source=Author&AuthorID=${author['AuthorID']}&booklang=${booklang}&library=${library}&ignored=${ignored}',
+            "bFilter": true,
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+                return nRow;
+            }
+        });
+
+        var page = oTable.page();
+        if (page !== '0') {
+            if (${firstpage}) { oTable.page('first').draw('page'); }
+        }
+
+        // Style DataTables elements
+        $('.dataTables_filter input').addClass('ll-input').attr('placeholder', 'Search books...');
+        $('.dataTables_length select').addClass('ll-select');
+
+        // Event delegation for checkbox changes (since DataTables renders dynamically)
+        $('#book_table').on('change', 'input.checkbox', function() {
+            updateBulkActions();
+        });
+
+        // Clear selection button
+        $('#clearSelection').on('click', function() {
+            $('input.checkbox').prop('checked', false);
+            $('input[type="checkbox"][onClick]').prop('checked', false); // header checkbox
+            updateBulkActions();
+        });
+
+        // Form submit handler - collect checkboxes and submit
+        $('#markBooksForm').on('submit', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var action = $('#action').val();
+
+            // Check for destructive actions
+            if (action === 'Delete' || action === 'Remove') {
+                var count = $('input.checkbox:checked').length;
+                var msg = (count === 1)
+                    ? "Are you sure you want to " + action.toLowerCase() + " the selected book?"
+                    : "Are you sure you want to " + action.toLowerCase() + " the " + count + " selected books?";
+                if (!confirm(msg)) {
+                    return false;
+                }
+            }
+
+            // Remove any previously added hidden book inputs
+            form.find('input.book-checkbox-hidden').remove();
+
+            // Collect checked checkboxes and add as hidden inputs
+            $('input.checkbox:checked').each(function() {
+                var bookId = $(this).attr('name');
+                form.append('<input type="hidden" name="' + bookId + '" value="on" class="book-checkbox-hidden">');
+            });
+
+            // Now submit the form
+            this.submit();
+        });
+    });
+    </script>
+</%def>

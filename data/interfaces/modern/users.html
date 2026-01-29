@@ -1,0 +1,342 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'users'
+%>
+<%def name="headIncludes()">
+</%def>
+<%def name="styleIncludes()">
+.ll-users-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+.ll-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+@media (max-width: 600px) {
+    .ll-form-row {
+        grid-template-columns: 1fr;
+    }
+}
+.ll-perm-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <h1 class="ll-page-title">${title}</h1>
+            <p class="ll-page-subtitle">Manage user accounts and permissions</p>
+        </div>
+        <div class="ll-page-header-actions">
+            <button type="button" id="loadusers" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Import Users
+            </button>
+            <button type="button" id="saveusers" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Export Users
+            </button>
+        </div>
+    </div>
+
+    <div class="ll-users-container">
+        <div class="ll-card">
+            <div class="ll-card-header">
+                <h3 class="ll-card-title">User Details</h3>
+            </div>
+            <div class="ll-card-body">
+                <div class="ll-form-group">
+                    <label class="ll-form-label" for="user">Select User</label>
+                    <select id="user" name="user" class="ll-select">
+                        <option value="">-- Add a new user --</option>
+                        %for item in users:
+                        <option value="${item['UserName']}">${item['UserName']}</option>
+                        %endfor
+                    </select>
+                </div>
+
+                <div class="ll-form-row">
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="username">Username</label>
+                        <input type="text" id="username" name="username" class="ll-input">
+                    </div>
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="fullname">Full Name</label>
+                        <input type="text" id="fullname" name="fullname" class="ll-input">
+                    </div>
+                </div>
+
+                <div class="ll-form-row">
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="email">Email (for messages)</label>
+                        <input type="email" id="email" name="email" class="ll-input">
+                    </div>
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="sendto">Send To (e.g. Kindle email)</label>
+                        <input type="text" id="sendto" name="sendto" class="ll-input">
+                    </div>
+                </div>
+
+                <div class="ll-form-row">
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="perms">Permissions</label>
+                        <input type="text" id="perms" name="perms" class="ll-input">
+                        <div class="ll-perm-buttons">
+                            <button type="button" id="admin" class="ll-btn ll-btn-ghost ll-btn-sm">Admin</button>
+                            <button type="button" id="friend" class="ll-btn ll-btn-ghost ll-btn-sm">Friend</button>
+                            <button type="button" id="guest" class="ll-btn ll-btn-ghost ll-btn-sm">Guest</button>
+                        </div>
+                    </div>
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="password">Password</label>
+                        <input type="text" id="password" name="password" class="ll-input" placeholder="Keep existing password">
+                        <button type="button" id="generatepwd" class="ll-btn ll-btn-ghost ll-btn-sm" style="margin-top: 0.5rem;">
+                            Generate Password
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ll-form-row">
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="calread">Calibre Read Column</label>
+                        <input type="text" id="calread" name="calread" class="ll-input">
+                    </div>
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="caltoread">Calibre ToRead Column</label>
+                        <input type="text" id="caltoread" name="caltoread" class="ll-input">
+                    </div>
+                </div>
+
+                <div class="ll-form-row">
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="booktype">Preferred Book Type</label>
+                        <input type="text" id="booktype" name="booktype" class="ll-input" placeholder="e.g. epub, mobi, pdf">
+                    </div>
+                    <div class="ll-form-group">
+                        <label class="ll-form-label" for="userid">User ID</label>
+                        <input type="text" id="userid" name="userid" class="ll-input" readonly>
+                        <small class="ll-form-help">Read-only identifier</small>
+                    </div>
+                </div>
+            </div>
+            <div class="ll-card-footer" style="display: flex; gap: 1rem;">
+                <button type="button" id="save" class="ll-btn ll-btn-primary" style="flex: 1;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Save User
+                </button>
+                <button type="button" id="delete" class="ll-btn ll-btn-danger" style="flex: 1;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+</%def>
+<%def name="javascriptIncludes()">
+    <script src="js/bootbox.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        // Permission presets
+        $('#admin').click(function() {
+            $("#perms").val(${lazylibrarian.perm_admin});
+        });
+        $('#friend').click(function() {
+            $("#perms").val(${lazylibrarian.perm_friend});
+        });
+        $('#guest').click(function() {
+            $("#perms").val(${lazylibrarian.perm_guest});
+        });
+
+        // Generate password
+        $('#generatepwd').click(function() {
+            $.get("generatepwd", function(data) {
+                $("#password").val(data);
+            });
+        });
+
+        // Load user data when selected
+        $('#user').change(function() {
+            var user = $.trim($("#user").val());
+            if (user) {
+                $.get("admin_userdata", {'user': user}, function(data) {
+                    var obj = JSON.parse(data);
+                    $("#username").val(user);
+                    $("#email").val(obj['email']);
+                    $("#sendto").val(obj['sendto']);
+                    $("#fullname").val(obj['name']);
+                    $("#perms").val(obj['perms']);
+                    $("#calread").val(obj['calread']);
+                    $("#caltoread").val(obj['caltoread']);
+                    $("#booktype").val(obj['booktype']);
+                    $("#userid").val(obj['userid']);
+                    $("#password").val("");
+                });
+            } else {
+                // Clear form for new user
+                $("#username").val("");
+                $("#email").val("");
+                $("#sendto").val("");
+                $("#fullname").val("");
+                $("#perms").val("");
+                $("#calread").val("");
+                $("#caltoread").val("");
+                $("#booktype").val("");
+                $("#userid").val("");
+                $("#password").val("");
+            }
+        });
+
+        // Export users
+        $('#saveusers').on('click', function(e) {
+            $.get('saveUsers', function(data) {
+                bootbox.dialog({
+                    title: 'Export Users',
+                    message: '<pre style="white-space: pre-wrap;">' + data + '</pre>',
+                    buttons: {
+                        primary: {
+                            label: "Close",
+                            className: 'll-btn ll-btn-primary'
+                        }
+                    }
+                });
+            });
+        });
+
+        // Import users
+        $('#loadusers').on('click', function(e) {
+            $.get('loadUsers', function(data) {
+                bootbox.dialog({
+                    title: 'Import Users',
+                    message: '<pre style="white-space: pre-wrap;">' + data + '</pre>',
+                    buttons: {
+                        primary: {
+                            label: "Close",
+                            className: 'll-btn ll-btn-primary'
+                        }
+                    }
+                });
+            });
+        });
+
+        // Delete user
+        $('#delete').click(function() {
+            var user = $.trim($("#user").val());
+            if (!user) {
+                bootbox.alert({
+                    title: 'No User Selected',
+                    message: 'Please select a user to delete.',
+                    buttons: {
+                        ok: { className: 'll-btn ll-btn-primary' }
+                    }
+                });
+                return;
+            }
+            bootbox.confirm({
+                title: 'Delete User',
+                message: "Are you sure you want to permanently delete <strong>" + user + "</strong>?",
+                buttons: {
+                    confirm: {
+                        label: 'Yes, Delete',
+                        className: 'll-btn ll-btn-danger'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'll-btn ll-btn-secondary'
+                    }
+                },
+                callback: function(result) {
+                    if (result) {
+                        $.get("admin_delete", {'user': user}, function(data) {
+                            bootbox.dialog({
+                                title: 'Delete User',
+                                message: '<pre style="white-space: pre-wrap;">' + data + '</pre>',
+                                buttons: {
+                                    primary: {
+                                        label: "Close",
+                                        className: 'll-btn ll-btn-primary',
+                                        callback: function() { window.location.reload(true); }
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            });
+        });
+
+        // Save user
+        $('#save').click(function() {
+            var user = $.trim($("#user").val());
+            var username = $.trim($("#username").val());
+            var fullname = $.trim($("#fullname").val());
+            var email = $.trim($("#email").val());
+            var sendto = $.trim($("#sendto").val());
+            var perms = $.trim($("#perms").val());
+            var calread = $.trim($("#calread").val());
+            var caltoread = $.trim($("#caltoread").val());
+            var booktype = $.trim($("#booktype").val());
+            var password = $.trim($("#password").val());
+
+            if (!username) {
+                bootbox.alert({
+                    title: 'Username Required',
+                    message: 'Please enter a username.',
+                    buttons: {
+                        ok: { className: 'll-btn ll-btn-primary' }
+                    }
+                });
+                return;
+            }
+
+            $.get("admin_users", {
+                'user': user,
+                'username': username,
+                'fullname': fullname,
+                'email': email,
+                'sendto': sendto,
+                'perms': perms,
+                'password': password,
+                'calread': calread,
+                'caltoread': caltoread,
+                'booktype': booktype
+            }, function(data) {
+                bootbox.dialog({
+                    title: 'Update User',
+                    message: '<pre style="white-space: pre-wrap;">' + data + '</pre>',
+                    buttons: {
+                        primary: {
+                            label: "Close",
+                            className: 'll-btn ll-btn-primary',
+                            callback: function() { window.location.reload(true); }
+                        }
+                    }
+                });
+            });
+        });
+    });
+    </script>
+</%def>

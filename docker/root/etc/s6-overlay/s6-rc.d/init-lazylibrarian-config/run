@@ -1,0 +1,22 @@
+#!/command/with-contenv bash
+# shellcheck shell=bash
+
+# Create required directories
+mkdir -p \
+    /config/log \
+    /config/cache \
+    /downloads \
+    /books
+
+# Copy default config if not present
+if [[ ! -f /config/config.ini ]]; then
+    echo "Creating default config.ini..."
+    cp /defaults/config.ini /config/config.ini
+fi
+
+# Set permissions
+lsiown -R abc:abc /config
+lsiown abc:abc /downloads 2>/dev/null || true
+lsiown abc:abc /books 2>/dev/null || true
+
+echo "LazyLibrarian configuration initialized."

@@ -21,8 +21,7 @@ import requests
 
 import lazylibrarian
 from lazylibrarian import logger, database
-from lazylibrarian.bookwork import getWorkSeries, getWorkPage, deleteEmptySeries, \
-    setSeries, setStatus, thingLang
+from lazylibrarian.bookwork import getWorkPage, setStatus, thingLang
 from lazylibrarian.images import getBookCover
 from lazylibrarian.cache import gb_json_request, cache_img
 from lazylibrarian.formatter import plural, today, replace_all, unaccented, unaccented_str, is_valid_isbn, \
@@ -525,17 +524,7 @@ class GoogleBooks:
                                     else:
                                         logger.debug('Failed to cache image for %s' % book['img'])
 
-                                serieslist = []
-                                if book['series']:
-                                    serieslist = [('', book['seriesNum'], cleanName(unaccented(book['series']), '&/'))]
-                                if lazylibrarian.CONFIG['ADD_SERIES']:
-                                    newserieslist = getWorkSeries(bookid)
-                                    if newserieslist:
-                                        serieslist = newserieslist
-                                        logger.debug('Updated series: %s [%s]' % (bookid, serieslist))
-                                    setSeries(serieslist, bookid)
-
-                                new_status = setStatus(bookid, serieslist, bookstatus)
+                                new_status = setStatus(bookid, bookstatus)
 
                                 if not new_status == book_status:
                                     book_status = new_status
@@ -557,7 +546,6 @@ class GoogleBooks:
             except KeyError:
                 pass
 
-            deleteEmptySeries()
             logger.debug('[%s] The Google Books API was hit %s time%s to populate book list' %
                          (authorname, api_hits, plural(api_hits)))
             cmd = 'SELECT BookName, BookLink, BookDate, BookImg, BookID from books WHERE AuthorID=?'
@@ -716,16 +704,6 @@ class GoogleBooks:
                     myDB.upsert("books", newValueDict, controlValueDict)
                 else:
                     logger.debug('Failed to cache image for %s' % book['img'])
-
-        serieslist = []
-        if book['series']:
-            serieslist = [('', book['seriesNum'], cleanName(unaccented(book['series']), '&/'))]
-        if lazylibrarian.CONFIG['ADD_SERIES']:
-            newserieslist = getWorkSeries(bookid)
-            if newserieslist:
-                serieslist = newserieslist
-                logger.debug('Updated series: %s [%s]' % (bookid, serieslist))
-            setSeries(serieslist, bookid)
 
         worklink = getWorkPage(bookid)
         if worklink:

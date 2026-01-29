@@ -1,0 +1,136 @@
+<%
+    import lazylibrarian
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LazyLibrarian - Login</title>
+    <link rel="shortcut icon" type="image/png" href="images/ll.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="css/modern.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--ll-primary) 0%, var(--ll-primary-dark) 100%);
+        }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+        }
+        .login-card {
+            background: var(--ll-surface);
+            border-radius: var(--ll-radius-lg);
+            box-shadow: var(--ll-shadow-lg);
+            padding: 40px;
+        }
+        .login-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        .login-logo svg {
+            width: 48px;
+            height: 48px;
+            color: var(--ll-primary);
+        }
+        .login-logo span {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--ll-text);
+        }
+        .login-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .login-subtitle {
+            text-align: center;
+            color: var(--ll-text-light);
+            margin-bottom: 32px;
+        }
+        .login-form .ll-form-group {
+            margin-bottom: 20px;
+        }
+        .login-form .ll-btn {
+            width: 100%;
+            margin-top: 8px;
+        }
+        .login-footer {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--ll-border);
+        }
+        .login-footer a {
+            color: var(--ll-primary);
+            text-decoration: none;
+        }
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--ll-radius);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .alert-error {
+            background: var(--ll-error-light);
+            color: var(--ll-error-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span>LazyLibrarian</span>
+            </div>
+
+            <h1 class="login-title">Welcome Back</h1>
+            <p class="login-subtitle">Sign in to continue to your library</p>
+
+            %if 'message' in dir() and message:
+            <div class="alert alert-error">${message}</div>
+            %endif
+
+            <form class="login-form" action="checkLogin" method="post">
+                <div class="ll-form-group">
+                    <label class="ll-label" for="username">Username</label>
+                    <input type="text" class="ll-input" id="username" name="username"
+                           placeholder="Enter your username" required autofocus>
+                </div>
+                <div class="ll-form-group">
+                    <label class="ll-label" for="password">Password</label>
+                    <input type="password" class="ll-input" id="password" name="password"
+                           placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="ll-btn ll-btn-primary">
+                    Sign In
+                </button>
+            </form>
+
+            %if lazylibrarian.CONFIG.get('ALLOW_REGISTER', False):
+            <div class="login-footer">
+                <p>Don't have an account? <a href="register">Register</a></p>
+            </div>
+            %endif
+        </div>
+    </div>
+</body>
+</html>

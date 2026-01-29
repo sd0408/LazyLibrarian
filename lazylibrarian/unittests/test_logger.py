@@ -81,16 +81,6 @@ class TestLoggerFunctions:
 class TestLogLevelFlags:
     """Tests for log level flag constants."""
 
-    def test_log_magdates_flag(self):
-        """log_magdates should be defined."""
-        assert hasattr(lazylibrarian, 'log_magdates')
-        assert lazylibrarian.log_magdates == 4
-
-    def test_log_searchmag_flag(self):
-        """log_searchmag should be defined."""
-        assert hasattr(lazylibrarian, 'log_searchmag')
-        assert lazylibrarian.log_searchmag == 8
-
     def test_log_dlcomms_flag(self):
         """log_dlcomms should be defined."""
         assert hasattr(lazylibrarian, 'log_dlcomms')
@@ -119,8 +109,6 @@ class TestLogLevelFlags:
     def test_log_flags_are_powers_of_two(self):
         """Log flags should be powers of 2 for bitwise operations."""
         flags = [
-            lazylibrarian.log_magdates,
-            lazylibrarian.log_searchmag,
             lazylibrarian.log_dlcomms,
             lazylibrarian.log_dbcomms,
             lazylibrarian.log_postprocess,

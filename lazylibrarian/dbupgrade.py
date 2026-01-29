@@ -89,8 +89,10 @@ def upgrade_needed():
     # 42 add SendTo to users table
     # 43 remove foreign key constraint on wanted tabe
     # 44 move hosting to gitlab
+    # 45 remove series functionality - clear series tables
+    # 46 add explicit blacklist table for processed downloads
 
-    db_current_version = 44
+    db_current_version = 46
 
     if db_version < db_current_version:
         return db_current_version
@@ -188,6 +190,8 @@ def dbupgrade(db_current_version):
                     myDB.action('CREATE TABLE failedsearch (BookID TEXT REFERENCES books (BookID) ' +
                                 'ON DELETE CASCADE, Library TEXT, Time TEXT, Interval INTEGER DEFAULT 0, ' +
                                 'Count INTEGER DEFAULT 0)')
+                    myDB.action('CREATE TABLE blacklist (NZBurl TEXT, NZBtitle TEXT, NZBprov TEXT, ' +
+                                'BookID TEXT, AuxInfo TEXT, DateAdded TEXT, Reason TEXT)')
 
                     # pastissues table has same layout as wanted table, code below is to save typos if columns change
                     res = myDB.match("SELECT sql FROM sqlite_master WHERE type='table' AND name='wanted'")
@@ -202,6 +206,8 @@ def dbupgrade(db_current_version):
                     myDB.action('CREATE INDEX books_index_status ON books(Status)')
                     myDB.action('CREATE INDEX authors_index_status ON authors(Status)')
                     myDB.action('CREATE INDEX wanted_index_status ON wanted(Status)')
+                    myDB.action('CREATE INDEX blacklist_url_index ON blacklist (NZBurl)')
+                    myDB.action('CREATE INDEX blacklist_prov_title_index ON blacklist (NZBprov, NZBtitle)')
 
                 index = db_version + 1
                 while 'db_v%s' % index in globals():
@@ -1213,4 +1219,34 @@ def db_v44(myDB, upgradelog):
     # Legacy migration for git host change - no longer needed
     # Automatic updates have been removed; use Docker/deployment for updates
     upgradelog.write("%s v44: complete (no-op)\n" % time.ctime())
+
+
+def db_v45(myDB, upgradelog):
+    # Series functionality has been removed - clear all series data
+    # Tables are kept for schema compatibility but data is cleared
+    lazylibrarian.UPDATE_MSG = 'Removing series data (series functionality removed)'
+    upgradelog.write("%s v45: %s\n" % (time.ctime(), lazylibrarian.UPDATE_MSG))
+    myDB.action('DELETE FROM member')
+    myDB.action('DELETE FROM seriesauthors')
+    myDB.action('DELETE FROM series')
+    myDB.action('UPDATE books SET SeriesDisplay = NULL')
+    upgradelog.write("%s v45: complete\n" % time.ctime())
+
+
+def db_v46(myDB, upgradelog):
+    # Add explicit blacklist table for processed downloads
+    # This allows BLACKLIST_PROCESSED to check a dedicated table rather than the wanted table
+    lazylibrarian.UPDATE_MSG = 'Creating blacklist table for processed downloads'
+    upgradelog.write("%s v46: %s\n" % (time.ctime(), lazylibrarian.UPDATE_MSG))
+    myDB.action('CREATE TABLE IF NOT EXISTS blacklist ('
+                'NZBurl TEXT, '
+                'NZBtitle TEXT, '
+                'NZBprov TEXT, '
+                'BookID TEXT, '
+                'AuxInfo TEXT, '
+                'DateAdded TEXT, '
+                'Reason TEXT)')
+    myDB.action('CREATE INDEX IF NOT EXISTS blacklist_url_index ON blacklist (NZBurl)')
+    myDB.action('CREATE INDEX IF NOT EXISTS blacklist_prov_title_index ON blacklist (NZBprov, NZBtitle)')
+    upgradelog.write("%s v46: complete\n" % time.ctime())
     

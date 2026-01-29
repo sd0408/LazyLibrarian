@@ -33,6 +33,7 @@ except Exception:
 import lazylibrarian
 from lazylibrarian import logger, database, nzbget, sabnzbd, classes, utorrent, transmission, qbittorrent, \
     deluge, rtorrent, synology
+from lazylibrarian.database import add_to_blacklist
 from lazylibrarian.cache import fetchURL
 from lazylibrarian.common import setperm, getUserAgent, proxyList, mymakedirs
 from lazylibrarian.formatter import cleanName, unaccented_str, getList, makeUnicode
@@ -495,6 +496,12 @@ def TORDownloadMethod(bookid=None, tor_title=None, tor_url=None, library='eBook'
                 if rejected:
                     myDB.action('UPDATE wanted SET status="Failed",DLResult=? WHERE NZBurl=?',
                                 (rejected, full_url))
+                    # Add to blacklist if BLACKLIST_FAILED is enabled
+                    if lazylibrarian.CONFIG['BLACKLIST_FAILED']:
+                        wanted = myDB.match('SELECT NZBtitle, NZBprov FROM wanted WHERE NZBurl=?', (full_url,))
+                        if wanted:
+                            add_to_blacklist(full_url, wanted['NZBtitle'], wanted['NZBprov'],
+                                             bookid, library, 'Failed')
                     delete_task(Source, downloadID, True)
                     return False
                 else:

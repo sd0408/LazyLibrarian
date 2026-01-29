@@ -420,6 +420,34 @@ def book_file(search_dir=None, booktype=None):
     return ""
 
 
+def get_files_by_type(search_dir):
+    """
+    Scan a directory and return a dict with lists of files by type.
+    Returns: {'ebook': [...], 'audiobook': [...], 'other': [...]}
+    """
+    result = {'ebook': [], 'audiobook': [], 'other': []}
+    if not search_dir or not os.path.isdir(search_dir):
+        return result
+
+    try:
+        for fname in os.listdir(makeBytestr(search_dir)):
+            fname = makeUnicode(fname)
+            fpath = os.path.join(search_dir, fname)
+            if os.path.isfile(fpath):
+                if is_valid_booktype(fname, booktype='ebook'):
+                    result['ebook'].append(fname)
+                elif is_valid_booktype(fname, booktype='audiobook'):
+                    result['audiobook'].append(fname)
+                else:
+                    extn = os.path.splitext(fname)[1].lstrip('.').lower()
+                    if extn:
+                        result['other'].append(fname)
+    except Exception as e:
+        logger.warn('Error scanning directory [%s]: %s %s' % (search_dir, type(e).__name__, str(e)))
+
+    return result
+
+
 def mimeType(filename):
     name = filename.lower()
     if name.endswith('.epub'):
@@ -465,7 +493,7 @@ def is_overdue():
 
 def scheduleJob(action='Start', target=None):
     """ Start or stop or restart a cron job by name eg
-        target=search_magazines, target=processDir, target=search_book """
+        target=processDir, target=search_book """
     if target is None:
         return
 
@@ -487,12 +515,6 @@ def scheduleJob(action='Start', target=None):
             minutes = check_int(lazylibrarian.CONFIG['SCAN_INTERVAL'], 0)
             lazylibrarian.SCHED.add_interval_job(lazylibrarian.postprocess.cron_processDir, minutes=minutes)
             logger.debug("%s %s job in %s minute%s" % (action, target, minutes, plural(minutes)))
-        elif 'search_magazines' in target and check_int(lazylibrarian.CONFIG['SEARCH_MAGINTERVAL'], 0):
-            minutes = check_int(lazylibrarian.CONFIG['SEARCH_MAGINTERVAL'], 0)
-            if lazylibrarian.USE_TOR() or lazylibrarian.USE_NZB() \
-                    or lazylibrarian.USE_RSS() or lazylibrarian.USE_DIRECT():
-                lazylibrarian.SCHED.add_interval_job(lazylibrarian.searchmag.cron_search_magazines, minutes=minutes)
-                logger.debug("%s %s job in %s minute%s" % (action, target, minutes, plural(minutes)))
         elif 'search_book' in target and check_int(lazylibrarian.CONFIG['SEARCH_BOOKINTERVAL'], 0):
             minutes = check_int(lazylibrarian.CONFIG['SEARCH_BOOKINTERVAL'], 0)
             if lazylibrarian.USE_NZB() or lazylibrarian.USE_TOR() or lazylibrarian.USE_DIRECT():
@@ -595,7 +617,6 @@ def restartJobs(start='Restart'):
     scheduleJob(start, 'search_book')
     scheduleJob(start, 'search_rss_book')
     scheduleJob(start, 'search_wishlist')
-    scheduleJob(start, 'search_magazines')
     scheduleJob(start, 'authorUpdate')
 
 
@@ -636,11 +657,6 @@ def checkRunningJobs():
     else:
         scheduleJob('Stop', 'search_wishlist')
 
-    if lazylibrarian.USE_NZB() or lazylibrarian.USE_TOR() or lazylibrarian.USE_RSS() or lazylibrarian.USE_DIRECT():
-        ensureRunning('search_magazines')
-    else:
-        scheduleJob('Stop', 'search_magazines')
-
     ensureRunning('authorUpdate')
 
 
@@ -677,16 +693,6 @@ def showStats():
     res = myDB.match("SELECT count(*) as counter FROM series WHERE Total=0")
     series_stats.append(['Blank', res['counter']])
 
-    mag_stats = []
-    res = myDB.match("SELECT count(*) as counter FROM magazines")
-    mag_stats.append(['Magazine', res['counter']])
-    res = myDB.match("SELECT count(*) as counter FROM issues")
-    mag_stats.append(['Issues', res['counter']])
-    cmd = 'select (select count(*) as counter from issues where magazines.title = issues.title) '
-    cmd += 'as counter from magazines where counter=0'
-    res = myDB.match(cmd)
-    mag_stats.append(['Empty', len(res)])
-
     book_stats = []
     audio_stats = []
     res = myDB.match("SELECT count(*) as counter FROM books")
@@ -714,7 +720,7 @@ def showStats():
     author_stats.append(['Blank', res['counter']])
     overdue, _, _, _ = is_overdue()
     author_stats.append(['Overdue', overdue])
-    for stats in [author_stats, book_stats, series_stats, audio_stats, mag_stats]:
+    for stats in [author_stats, book_stats, series_stats, audio_stats]:
         header = ''
         data = ''
         for item in stats:
@@ -731,9 +737,7 @@ def showJobs():
 
     for job in lazylibrarian.SCHED.get_jobs():
         job = str(job)
-        if "search_magazines" in job:
-            jobname = "Magazine search"
-        elif "search_book" in job:
+        if "search_book" in job:
             jobname = "Book search"
         elif "search_rss_book" in job:
             jobname = "RSS book search"
@@ -827,7 +831,7 @@ def logHeader():
     popen_list = [sys.executable, lazylibrarian.FULL_PATH]
     popen_list += lazylibrarian.ARGS
     header = "Startup cmd: %s\n" % str(popen_list)
-    header += 'Interface: %s\n' % lazylibrarian.CONFIG['HTTP_LOOK']
+    header += 'Interface: modern\n'
     header += 'Loglevel: %s\n' % lazylibrarian.LOGLEVEL
     header += 'Sys_Encoding: %s\n' % lazylibrarian.SYS_ENCODING
     for item in lazylibrarian.CONFIG_GIT:
@@ -1119,24 +1123,6 @@ def cleanCache():
             else:
                 kept += 1
     msg = "Cleaned %i file%s from SeriesCache, kept %i" % (cleaned, plural(cleaned), kept)
-    result.append(msg)
-    logger.debug(msg)
-
-    cache = os.path.join(lazylibrarian.CACHEDIR, "magazine")
-    cleaned = 0
-    kept = 0
-    if os.path.isdir(cache):
-        # we can clear the magazine cache, it gets rebuilt as required
-        # this does not delete our magazine cover files, only the small cached copy
-        for cached_file in os.listdir(makeBytestr(cache)):
-            cached_file = makeUnicode(cached_file)
-            target = os.path.join(cache, cached_file)
-            if target.endswith('.jpg'):
-                os.remove(target)
-                cleaned += 1
-            else:
-                kept += 1
-    msg = "Cleaned %i file%s from magazine cache, kept %i" % (cleaned, plural(cleaned), kept)
     result.append(msg)
     logger.debug(msg)
 

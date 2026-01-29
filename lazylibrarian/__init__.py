@@ -26,11 +26,11 @@ import webbrowser
 import sqlite3
 
 import cherrypy
-from lazylibrarian import logger, database, postprocess, searchbook, searchmag, searchrss, \
+from lazylibrarian import logger, database, postprocess, searchbook, searchrss, \
     importer, webServe
 from lazylibrarian.cache import fetchURL
 from lazylibrarian.common import restartJobs, logHeader, scheduleJob
-from lazylibrarian.formatter import getList, bookSeries, plural, unaccented, check_int, unaccented_str, makeUnicode
+from lazylibrarian.formatter import getList, plural, unaccented, check_int, unaccented_str, makeUnicode
 from lazylibrarian.dbupgrade import check_db
 from vendor.apscheduler.scheduler import Scheduler
 import configparser
@@ -90,20 +90,16 @@ RSS_PROV = []
 BOOKSTRAP_THEMELIST = []
 PROVIDER_BLOCKLIST = []
 USER_BLOCKLIST = []
-SHOW_MAGS = 1
-SHOW_SERIES = 1
 SHOW_AUDIO = 0
-MAG_UPDATE = 0
 EBOOK_UPDATE = 0
 AUDIO_UPDATE = 0
 AUTHORS_UPDATE = 0
+POSTPROCESS_UPDATE = 0
 LOGIN_MSG = ''
 GROUP_CONCAT = 0
 HIST_REFRESH = 1000
 
 # extended loglevels
-log_magdates = 1 << 2  # 4 magazine date matching
-log_searchmag = 1 << 3  # 8 extra searchmag logging
 log_dlcomms = 1 << 4  # 16 detailed downloader communication
 log_dbcomms = 1 << 5  # 32 database comms
 log_postprocess = 1 << 6  # 64 detailed postprocessing
@@ -120,10 +116,8 @@ perm_config = 1 << 0  # 1 access to config page
 perm_logs = 1 << 1  # 2 access to logs
 perm_history = 1 << 2  # 4 access to history
 perm_managebooks = 1 << 3  # 8 access to manage page
-perm_magazines = 1 << 4  # 16 access to magazines/issues/pastissues
 perm_audio = 1 << 5  # 32 access to audiobooks page
 perm_ebook = 1 << 6  # 64 can access ebooks page
-perm_series = 1 << 7  # 128 access to series/seriesmembers
 perm_edit = 1 << 8  # 256 can edit book or author details
 perm_search = 1 << 9  # 512 can search goodreads/googlebooks for books/authors
 perm_status = 1 << 10  # 1024 can change book status (wanted/skipped etc)
@@ -131,7 +125,7 @@ perm_force = 1 << 11  # 2048 can use background tasks (refresh authors/librarysc
 perm_download = 1 << 12  # 4096 can download existing books/mags
 
 perm_authorbooks = perm_audio + perm_ebook
-perm_guest = perm_download + perm_series + perm_authorbooks + perm_magazines
+perm_guest = perm_download + perm_authorbooks
 perm_friend = perm_guest + perm_search + perm_status
 perm_admin = 65535
 
@@ -173,13 +167,13 @@ CONFIG_NONWEB = ['NAME_POSTFIX', 'DIR_PERM', 'FILE_PERM', 'BLOCKLIST_TIMER', 'DI
 # default interface does not know about these items, so leaves them unchanged
 CONFIG_NONDEFAULT = ['BOOKSTRAP_THEME', 'AUDIOBOOK_TYPE', 'AUDIO_DIR', 'AUDIO_TAB', 'REJECT_AUDIO',
                      'REJECT_MAXAUDIO', 'REJECT_MINAUDIO', 'NEWAUDIO_STATUS', 'TOGGLES', 'FOUND_STATUS',
-                     'USER_ACCOUNTS', 'AUDIOBOOK_DEST_FILE', 'SINGLE_USER', 'FMT_SERNAME', 'FMT_SERNUM', 'FMT_SERIES',
-                     'AUTOADDMAG', 'AUTOADD_MAGONLY', 'TRANSMISSION_DIR', 'DELUGE_DIR', 'QBITTORRENT_DIR',
-                     'BANNED_EXT', 'MAG_RENAME', 'LOGFILES', 'LOGSIZE', 'ISS_FORMAT', 'DATE_FORMAT',
+                     'USER_ACCOUNTS', 'AUDIOBOOK_DEST_FILE', 'SINGLE_USER',
+                     'TRANSMISSION_DIR', 'DELUGE_DIR', 'QBITTORRENT_DIR',
+                     'BANNED_EXT', 'LOGFILES', 'LOGSIZE', 'DATE_FORMAT',
                      'NO_ISBN', 'NO_SETS', 'NO_LANG', 'NO_PUBDATE', 'IMP_IGNORE', 'IMP_GOOGLEIMAGE', 'DELETE_CSV',
                      'BLACKLIST_FAILED', 'BLACKLIST_PROCESSED', 'WISHLIST_INTERVAL', 'IMP_PREPROCESS',
                      'OPDS_ENABLED', 'OPDS_AUTHENTICATION', 'OPDS_USERNAME', 'OPDS_PASSWORD', 'OPDS_METAINFO',
-                     'OPDS_PAGE', 'DELAYSEARCH', 'SEED_WAIT', 'MAG_DELFOLDER']
+                     'OPDS_PAGE', 'DELAYSEARCH', 'SEED_WAIT']
 
 CONFIG_DEFINITIONS = {
     # Name      Type   Section   Default
@@ -212,20 +206,14 @@ CONFIG_DEFINITIONS = {
     'HTTP_PASS': ('str', 'General', ''),
     'HTTP_PROXY': ('bool', 'General', 0),
     'HTTP_ROOT': ('str', 'General', ''),
-    'HTTP_LOOK': ('str', 'General', 'bookstrap'),
     'HTTPS_ENABLED': ('bool', 'General', 0),
     'HTTPS_CERT': ('str', 'General', ''),
     'HTTPS_KEY': ('str', 'General', ''),
     'SSL_VERIFY': ('bool', 'General', 0),
     'HTTP_TIMEOUT': ('int', 'General', 30),
     'HTTP_EXT_TIMEOUT': ('int', 'General', 90),
-    'BOOKSTRAP_THEME': ('str', 'General', 'slate'),
-    'MAG_SINGLE': ('bool', 'General', 1),
     'AUTHOR_IMG': ('bool', 'General', 1),
     'BOOK_IMG': ('bool', 'General', 1),
-    'MAG_IMG': ('bool', 'General', 1),
-    'SERIES_TAB': ('bool', 'General', 1),
-    'MAG_TAB': ('bool', 'General', 1),
     'AUDIO_TAB': ('bool', 'General', 1),
     'TOGGLES': ('bool', 'General', 1),
     'SORT_DEFINITE': ('bool', 'General', 0),
@@ -240,15 +228,11 @@ CONFIG_DEFINITIONS = {
     'SKIPPED_EXT': ('str', 'General', 'fail, part, bts, !ut, torrent, magnet, nzb, unpack'),
     'BANNED_EXT': ('str', 'General', 'avi, mp4, mov, iso, m4v'),
     'IMP_PREFLANG': ('str', 'General', 'en, eng, en-US, en-GB'),
-    'ISS_FORMAT': ('str', 'General', '$Y-$m-$d'),
     'DATE_FORMAT': ('str', 'General', '$Y-$m-$d'),
     'IMP_MONTHLANG': ('str', 'General', ''),
     'IMP_AUTOADD': ('str', 'General', ''),
     'IMP_AUTOADD_COPY': ('bool', 'General', 1),
     'IMP_AUTOADD_BOOKONLY': ('bool', 'General', 0),
-    'IMP_AUTOADDMAG': ('str', 'General', ''),
-    'IMP_AUTOADDMAG_COPY': ('bool', 'General', 1),
-    'IMP_AUTOADD_MAGONLY': ('bool', 'General', 0),
     'IMP_AUTOSEARCH': ('bool', 'General', 0),
     'IMP_CALIBREDB': ('str', 'General', ''),
     'BLACKLIST_FAILED': ('bool', 'General', 1),
@@ -260,9 +244,6 @@ CONFIG_DEFINITIONS = {
     'CALIBRE_RENAME': ('bool', 'General', 0),
     'IMP_SINGLEBOOK': ('bool', 'General', 0),
     'IMP_RENAME': ('bool', 'General', 0),
-    'MAG_RENAME': ('bool', 'General', 0),
-    'IMP_MAGOPF': ('bool', 'General', 1),
-    'IMP_MAGCOVER': ('bool', 'General', 1),
     'IMP_CONVERT': ('str', 'General', ''),
     'IMP_PREPROCESS': ('str', 'General', ''),
     'CACHE_AGE': ('int', 'General', 30),
@@ -388,26 +369,19 @@ CONFIG_DEFINITIONS = {
     'NEWZBIN': ('bool', 'Newzbin', 0),
     'EBOOK_TYPE': ('str', 'General', 'epub, mobi, pdf'),
     'AUDIOBOOK_TYPE': ('str', 'General', 'mp3'),
-    'MAG_TYPE': ('str', 'General', 'pdf'),
     'REJECT_WORDS': ('str', 'General', 'audiobook, mp3'),
     'REJECT_AUDIO': ('str', 'General', 'epub, mobi'),
-    'REJECT_MAGS': ('str', 'General', ''),
     'REJECT_MAXSIZE': ('int', 'General', 0),
     'REJECT_MINSIZE': ('int', 'General', 0),
     'REJECT_MAXAUDIO': ('int', 'General', 0),
     'REJECT_MINAUDIO': ('int', 'General', 0),
-    'REJECT_MAGSIZE': ('int', 'General', 0),
-    'REJECT_MAGMIN': ('int', 'General', 0),
-    'MAG_AGE': ('int', 'General', 31),
     'SEARCH_BOOKINTERVAL': ('int', 'SearchScan', '360'),
-    'SEARCH_MAGINTERVAL': ('int', 'SearchScan', '360'),
     'SCAN_INTERVAL': ('int', 'SearchScan', '10'),
     'SEARCHRSS_INTERVAL': ('int', 'SearchScan', '20'),
     'WISHLIST_INTERVAL': ('int', 'SearchScan', '24'),
     'DELAYSEARCH': ('bool', 'SearchScan', 0),
     'FULL_SCAN': ('bool', 'LibraryScan', 0),
     'ADD_AUTHOR': ('bool', 'LibraryScan', 1),
-    'ADD_SERIES': ('bool', 'LibraryScan', 1),
     'NOTFOUND_STATUS': ('str', 'LibraryScan', 'Skipped'),
     'FOUND_STATUS': ('str', 'LibraryScan', 'Open'),
     'NEWBOOK_STATUS': ('str', 'LibraryScan', 'Skipped'),
@@ -427,17 +401,10 @@ CONFIG_DEFINITIONS = {
     'EBOOK_DEST_FILE': ('str', 'PostProcess', '$Title - $Author'),
     'AUDIOBOOK_DEST_FILE': ('str', 'PostProcess', '$Author - $Title Part $Part of $Total'),
     'ONE_FORMAT': ('bool', 'PostProcess', 0),
-    'MAG_DEST_FOLDER': ('str', 'PostProcess', '_Magazines/$Title/$IssueDate'),
-    'MAG_DEST_FILE': ('str', 'PostProcess', '$IssueDate - $Title'),
-    'MAG_RELATIVE': ('bool', 'PostProcess', 1),
-    'MAG_DELFOLDER': ('bool', 'PostProcess', 1),
     'BOOK_API': ('str', 'API', 'GoogleBooks'),
     'LT_DEVKEY': ('str', 'API', ''),
     'GB_API': ('str', 'API', ''),  # API key has daily limits, each user needs their own
     'GB_COUNTRY': ('str', 'API', ''),  # optional two letter country code for geographically restricted results
-    'FMT_SERNAME': ('str', 'FMT', '$SerName'),
-    'FMT_SERNUM': ('str', 'FMT', 'Book #$SerNum -$$'),
-    'FMT_SERIES': ('str', 'FMT', '( $FmtName $FmtNum )'),
     'OPDS_ENABLED': ('bool', 'OPDS', 0),
     'OPDS_AUTHENTICATION': ('bool', 'OPDS', 0),
     'OPDS_USERNAME': ('str', 'OPDS', ''),
@@ -517,9 +484,9 @@ def check_setting(cfg_type, cfg_name, item_name, def_val, log=True):
 def initialize():
     global FULL_PATH, PROG_DIR, ARGS, DAEMON, SIGNAL, PIDFILE, DATADIR, CONFIGFILE, SYS_ENCODING, LOGLEVEL, \
         CONFIG, CFG, DBFILE, COMMIT_LIST, SCHED, INIT_LOCK, __INITIALIZED__, started, LOGLIST, LOGTOGGLE, \
-        UPDATE_MSG, CURRENT_TAB, CACHE_HIT, CACHE_MISS, LAST_LIBRARYTHING, SHOW_SERIES, SHOW_MAGS, \
+        UPDATE_MSG, CURRENT_TAB, CACHE_HIT, CACHE_MISS, LAST_LIBRARYTHING, \
         SHOW_AUDIO, CACHEDIR, BOOKSTRAP_THEMELIST, MONTHNAMES, CONFIG_DEFINITIONS, isbn_979_dict, isbn_978_dict, \
-        CONFIG_NONWEB, CONFIG_NONDEFAULT, MAG_UPDATE, AUDIO_UPDATE, EBOOK_UPDATE, \
+        CONFIG_NONWEB, CONFIG_NONDEFAULT, AUDIO_UPDATE, EBOOK_UPDATE, POSTPROCESS_UPDATE, \
         GROUP_CONCAT, LT_SLEEP, GB_CALLS
 
     with INIT_LOCK:
@@ -580,7 +547,7 @@ def initialize():
             except OSError as e:
                 logger.error('Could not create cachedir; %s' % e)
 
-        for item in ['book', 'author', 'SeriesCache', 'JSONCache', 'XMLCache', 'WorkCache', 'magazine']:
+        for item in ['book', 'author', 'SeriesCache', 'JSONCache', 'XMLCache', 'WorkCache']:
             cachelocation = os.path.join(CACHEDIR, item)
             if not os.path.isdir(cachelocation):
                 try:
@@ -646,7 +613,7 @@ def initialize():
 # noinspection PyUnresolvedReferences
 def config_read(reloaded=False):
     global CONFIG, CONFIG_DEFINITIONS, CONFIG_NONWEB, CONFIG_NONDEFAULT, NEWZNAB_PROV, TORZNAB_PROV, RSS_PROV, \
-        SHOW_SERIES, SHOW_MAGS, SHOW_AUDIO, NABAPICOUNT
+        SHOW_AUDIO, NABAPICOUNT
     # legacy name conversion
     if not CFG.has_option('General', 'ebook_dir'):
         ebook_dir = check_setting('str', 'General', 'destination_dir', '')
@@ -698,10 +665,8 @@ def config_read(reloaded=False):
                              "API": check_setting('str', newz_name, 'api', ''),
                              "GENERALSEARCH": check_setting('str', newz_name, 'generalsearch', 'search'),
                              "BOOKSEARCH": check_setting('str', newz_name, 'booksearch', ''),
-                             "MAGSEARCH": check_setting('str', newz_name, 'magsearch', ''),
                              "AUDIOSEARCH": check_setting('str', newz_name, 'audiosearch', ''),
                              "BOOKCAT": check_setting('str', newz_name, 'bookcat', '7000,7020'),
-                             "MAGCAT": check_setting('str', newz_name, 'magcat', '7010'),
                              "AUDIOCAT": check_setting('str', newz_name, 'audiocat', '3030'),
                              "EXTENDED": check_setting('str', newz_name, 'extended', '1'),
                              "UPDATED": check_setting('str', newz_name, 'updated', ''),
@@ -709,7 +674,7 @@ def config_read(reloaded=False):
                              "APILIMIT": check_setting('int', newz_name, 'apilimit', 0),
                              "APICOUNT": 0,
                              "DLPRIORITY": check_setting('int', newz_name, 'dlpriority', 0),
-                             "DLTYPES": check_setting('str', newz_name, 'dltypes', 'A,E,M'),
+                             "DLTYPES": check_setting('str', newz_name, 'dltypes', 'A,E'),
                              })
         count += 1
     # if the last slot is full, add an empty one on the end
@@ -739,10 +704,8 @@ def config_read(reloaded=False):
                              "API": check_setting('str', torz_name, 'api', ''),
                              "GENERALSEARCH": check_setting('str', torz_name, 'generalsearch', 'search'),
                              "BOOKSEARCH": check_setting('str', torz_name, 'booksearch', ''),
-                             "MAGSEARCH": check_setting('str', torz_name, 'magsearch', ''),
                              "AUDIOSEARCH": check_setting('str', torz_name, 'audiosearch', ''),
                              "BOOKCAT": check_setting('str', torz_name, 'bookcat', '8000,8010'),
-                             "MAGCAT": check_setting('str', torz_name, 'magcat', '8030'),
                              "AUDIOCAT": check_setting('str', torz_name, 'audiocat', '3030'),
                              "EXTENDED": check_setting('str', torz_name, 'extended', '1'),
                              "UPDATED": check_setting('str', torz_name, 'updated', ''),
@@ -750,7 +713,7 @@ def config_read(reloaded=False):
                              "APILIMIT": check_setting('int', torz_name, 'apilimit', 0),
                              "APICOUNT": 0,
                              "DLPRIORITY": check_setting('int', torz_name, 'dlpriority', 0),
-                             "DLTYPES": check_setting('str', torz_name, 'dltypes', 'A,E,M'),
+                             "DLTYPES": check_setting('str', torz_name, 'dltypes', 'A,E'),
                              })
         count += 1
     # if the last slot is full, add an empty one on the end
@@ -807,14 +770,9 @@ def config_read(reloaded=False):
     # to make extension matching easier
     CONFIG['EBOOK_TYPE'] = CONFIG['EBOOK_TYPE'].lower()
     CONFIG['AUDIOBOOK_TYPE'] = CONFIG['AUDIOBOOK_TYPE'].lower()
-    CONFIG['MAG_TYPE'] = CONFIG['MAG_TYPE'].lower()
-    CONFIG['REJECT_MAGS'] = CONFIG['REJECT_MAGS'].lower()
     CONFIG['REJECT_WORDS'] = CONFIG['REJECT_WORDS'].lower()
     CONFIG['REJECT_AUDIO'] = CONFIG['REJECT_AUDIO'].lower()
     CONFIG['BANNED_EXT'] = CONFIG['BANNED_EXT'].lower()
-    if CONFIG['HTTP_LOOK'] == 'default':
-        logger.warn('default interface is deprecated, new features are in bookstrap')
-        CONFIG['HTTP_LOOK'] = 'legacy'
 
     myDB = database.DBConnection()
     # check if we have an active database yet, not a fresh install
@@ -827,32 +785,13 @@ def config_read(reloaded=False):
     ###################################################################
     # ensure all these are boolean 1 0, not True False for javascript #
     ###################################################################
-    # Suppress series tab if there are none and user doesn't want to add any
-    series_list = ''
-    if version:  # if zero, there is no series table yet
-        series_list = myDB.select('SELECT SeriesID from series')
-
-    SHOW_SERIES = len(series_list)
-    if CONFIG['ADD_SERIES']:
-        SHOW_SERIES = 1
-    # Or suppress if tab is disabled
-    if not CONFIG['SERIES_TAB']:
-        SHOW_SERIES = 0
-    # Suppress magazine tab if disabled
-    if CONFIG['MAG_TAB']:
-        SHOW_MAGS = 1
-    else:
-        SHOW_MAGS = 0
-    # Suppress audio tab if on legacy interface
-    if CONFIG['HTTP_LOOK'] == 'legacy':
-        SHOW_AUDIO = 0
-    # or if disabled
-    elif CONFIG['AUDIO_TAB']:
+    # Show audio tab based on config
+    if CONFIG['AUDIO_TAB']:
         SHOW_AUDIO = 1
     else:
         SHOW_AUDIO = 0
 
-    for item in ['BOOK_IMG', 'MAG_IMG', 'AUTHOR_IMG', 'TOGGLES']:
+    for item in ['BOOK_IMG', 'AUTHOR_IMG', 'TOGGLES']:
         if CONFIG[item]:
             CONFIG[item] = 1
         else:
@@ -866,7 +805,7 @@ def config_read(reloaded=False):
 
 # noinspection PyUnresolvedReferences
 def config_write(part=None):
-    global SHOW_SERIES, SHOW_MAGS, SHOW_AUDIO, CONFIG_NONWEB, CONFIG_NONDEFAULT, LOGLEVEL, NEWZNAB_PROV, \
+    global SHOW_AUDIO, CONFIG_NONWEB, CONFIG_NONDEFAULT, LOGLEVEL, NEWZNAB_PROV, \
         TORZNAB_PROV, RSS_PROV
 
     if part:
@@ -891,7 +830,7 @@ def config_write(part=None):
             value = CONFIG[key]
             if key == 'LOGLEVEL':
                 LOGLEVEL = check_int(value, 1)
-            elif key in ['REJECT_WORDS', 'REJECT_AUDIO', 'REJECT_MAGS', 'MAG_TYPE', 'EBOOK_TYPE',
+            elif key in ['REJECT_WORDS', 'REJECT_AUDIO', 'EBOOK_TYPE',
                          'BANNED_EXT', 'AUDIOBOOK_TYPE']:
                 value = value.lower()
         else:
@@ -915,14 +854,12 @@ def config_write(part=None):
                     value = 'E'
                 CONFIG[key] = value
 
-        if key in ['SEARCH_BOOKINTERVAL', 'SEARCH_MAGINTERVAL', 'SCAN_INTERVAL',
+        if key in ['SEARCH_BOOKINTERVAL', 'SCAN_INTERVAL',
                    'SEARCHRSS_INTERVAL', 'WISHLIST_INTERVAL']:
             oldvalue = CFG.get(section, key.lower())
             if value != oldvalue:
                 if key == 'SEARCH_BOOKINTERVAL':
                     scheduleJob('Restart', 'search_book')
-                elif key == 'SEARCH_MAGINTERVAL':
-                    scheduleJob('Restart', 'search_magazine')
                 elif key == 'SEARCHRSS_INTERVAL':
                     scheduleJob('Restart', 'search_rss_book')
                 elif key == 'WISHLIST_INTERVAL':
@@ -938,8 +875,8 @@ def config_write(part=None):
             logger.warn('Unsaved/invalid config key: %s' % key)
 
     if not part or part.startswith('Newznab') or part.startswith('Torznab'):
-        NAB_ITEMS = ['ENABLED', 'DISPNAME', 'HOST', 'API', 'GENERALSEARCH', 'BOOKSEARCH', 'MAGSEARCH',
-                     'AUDIOSEARCH', 'BOOKCAT', 'MAGCAT', 'AUDIOCAT', 'EXTENDED', 'DLPRIORITY', 'DLTYPES',
+        NAB_ITEMS = ['ENABLED', 'DISPNAME', 'HOST', 'API', 'GENERALSEARCH', 'BOOKSEARCH',
+                     'AUDIOSEARCH', 'BOOKCAT', 'AUDIOCAT', 'EXTENDED', 'DLPRIORITY', 'DLTYPES',
                      'UPDATED', 'MANUAL', 'APILIMIT']
         for entry in [[NEWZNAB_PROV, 'Newznab'], [TORZNAB_PROV, 'Torznab']]:
             new_list = []
@@ -1027,21 +964,8 @@ def config_write(part=None):
 
         RSS_PROV = new_list
         add_rss_slot()
-    #
-    series_list = myDB.select('SELECT SeriesID from series')
-    SHOW_SERIES = len(series_list)
-    if CONFIG['ADD_SERIES']:
-        SHOW_SERIES = 1
-    if not CONFIG['SERIES_TAB']:
-        SHOW_SERIES = 0
 
-    SHOW_MAGS = len(CONFIG['MAG_DEST_FOLDER'])
-    if not CONFIG['MAG_TAB']:
-        SHOW_MAGS = 0
-
-    if CONFIG['HTTP_LOOK'] == 'legacy':
-        SHOW_AUDIO = 0
-    elif CONFIG['AUDIO_TAB']:
+    if CONFIG['AUDIO_TAB']:
         SHOW_AUDIO = 1
     else:
         SHOW_AUDIO = 0
@@ -1098,10 +1022,8 @@ def add_newz_slot():
                  "API": '',
                  "GENERALSEARCH": 'search',
                  "BOOKSEARCH": 'book',
-                 "MAGSEARCH": '',
                  "AUDIOSEARCH": '',
                  "BOOKCAT": '7000,7020',
-                 "MAGCAT": '7010',
                  "AUDIOCAT": '3030',
                  "EXTENDED": '1',
                  "UPDATED": '',
@@ -1109,7 +1031,7 @@ def add_newz_slot():
                  "APILIMIT": 0,
                  "APICOUNT": 0,
                  "DLPRIORITY": 0,
-                 "DLTYPES": 'A,E,M'
+                 "DLTYPES": 'A,E'
                  }
         NEWZNAB_PROV.append(empty)
 
@@ -1131,10 +1053,8 @@ def add_torz_slot():
                  "API": '',
                  "GENERALSEARCH": 'search',
                  "BOOKSEARCH": 'book',
-                 "MAGSEARCH": '',
                  "AUDIOSEARCH": '',
                  "BOOKCAT": '8000,8010',
-                 "MAGCAT": '8030',
                  "AUDIOCAT": '8030',
                  "EXTENDED": '1',
                  "UPDATED": '',
@@ -1142,7 +1062,7 @@ def add_torz_slot():
                  "APILIMIT": 0,
                  "APICOUNT": 0,
                  "DLPRIORITY": 0,
-                 "DLTYPES": 'A,E,M'
+                 "DLTYPES": 'A,E'
                  }
         TORZNAB_PROV.append(empty)
 
@@ -1298,7 +1218,7 @@ def build_monthtable():
 
     if not table:
         # Default Month names table to hold long/short month names for multiple languages
-        # which we can match against magazine issues
+        # which we can use for date matching
         table = [
             ['en_GB.UTF-8', 'en_GB.UTF-8'],
             ['january', 'jan'],
@@ -1452,24 +1372,16 @@ def launch_browser(host, port, root):
 
 
 def start():
-    global __INITIALIZED__, started, SHOW_SERIES, SHOW_MAGS, SHOW_AUDIO
+    global __INITIALIZED__, started, SHOW_AUDIO
 
     if __INITIALIZED__:
         # Crons and scheduled jobs started here
         SCHED.start()
         started = True
         if not UPDATE_MSG:
-            myDB = database.DBConnection()
             restartJobs(start='Start')
-            series_list = myDB.select('SELECT SeriesID from series')
-            SHOW_SERIES = len(series_list)
-            if CONFIG['ADD_SERIES']:
-                SHOW_SERIES = 1
-            SHOW_MAGS = len(CONFIG['MAG_DEST_FOLDER'])
 
-            if CONFIG['HTTP_LOOK'] == 'legacy':
-                SHOW_AUDIO = 0
-            elif CONFIG['AUDIO_TAB']:
+            if CONFIG['AUDIO_TAB']:
                 SHOW_AUDIO = 1
             else:
                 SHOW_AUDIO = 0

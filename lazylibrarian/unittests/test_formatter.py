@@ -299,42 +299,6 @@ class TestFormatAuthorName:
         assert result == "John Doe"
 
 
-class TestBookSeries:
-    """Tests for bookSeries() function."""
-
-    def test_bookSeries_extracts_series_info(self):
-        """bookSeries should extract series name and number."""
-        series, num = formatter.bookSeries("The Great Book (Amazing Series, #5)")
-        assert series == "Amazing Series"
-        assert num == "5"
-
-    def test_bookSeries_handles_decimal_numbers(self):
-        """bookSeries should handle decimal series numbers."""
-        # Using documented example from function docstring
-        series, num = formatter.bookSeries("Mrs Bradshaws Handbook (Discworld, #40.5)")
-        assert series == "Discworld"
-        assert num == "40.5"
-
-    def test_bookSeries_handles_multiple_series(self):
-        """bookSeries should extract first series from multiple."""
-        # Using documented example from function docstring
-        series, num = formatter.bookSeries("The Shepherds Crown (Discworld, #41; Tiffany Aching, #5)")
-        assert series == "Discworld"
-        assert num == "41"
-
-    def test_bookSeries_returns_empty_for_no_series(self):
-        """bookSeries should return empty strings for no series."""
-        series, num = formatter.bookSeries("Just A Book Title")
-        assert series == ""
-        assert num == ""
-
-    def test_bookSeries_rejects_non_series_words(self):
-        """bookSeries should reject known non-series words."""
-        series, num = formatter.bookSeries("Book (Unabridged, #1)")
-        assert series == ""
-        assert num == ""
-
-
 class TestSplitTitle:
     """Tests for split_title() function."""
 

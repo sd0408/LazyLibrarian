@@ -141,3 +141,30 @@ class DBConnection:
                 query += ", ".join(list(valueDict.keys()) + list(keyDict.keys())) + ") VALUES ("
                 query += ", ".join(["?"] * len(list(valueDict.keys()) + list(keyDict.keys()))) + ")"
                 self._action(query, list(valueDict.values()) + list(keyDict.values()), suppress="UNIQUE")
+
+
+def add_to_blacklist(nzb_url, nzb_title, nzb_prov, book_id=None, aux_info=None, reason='Processed'):
+    """
+    Add an entry to the blacklist table to prevent re-downloading.
+
+    Args:
+        nzb_url: The download URL
+        nzb_title: The title of the download
+        nzb_prov: The provider name
+        book_id: Optional book ID reference
+        aux_info: Optional auxiliary info (e.g., 'eBook', 'AudioBook')
+        reason: Reason for blacklisting (default: 'Processed')
+    """
+    from lazylibrarian.formatter import now
+
+    myDB = DBConnection()
+    # Check if already blacklisted by URL to avoid duplicates
+    existing = myDB.match('SELECT * FROM blacklist WHERE NZBurl=?', (nzb_url,))
+    if not existing:
+        myDB.action(
+            'INSERT INTO blacklist (NZBurl, NZBtitle, NZBprov, BookID, AuxInfo, DateAdded, Reason) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?)',
+            (nzb_url, nzb_title, nzb_prov, book_id, aux_info, now(), reason)
+        )
+        if lazylibrarian.LOGLEVEL & lazylibrarian.log_dlcomms:
+            logger.debug("Added to blacklist: %s from %s (%s)" % (nzb_title, nzb_prov, reason))

@@ -129,14 +129,20 @@ class TestSABnzbdFunction:
         assert result is False
         assert 'Invalid' in msg
 
-    def test_SABnzbd_invalid_port(self, sab_config):
-        """SABnzbd should return error for invalid port configuration."""
-        lazylibrarian.CONFIG['SAB_PORT'] = 'notaport'
+    @patch('lazylibrarian.sabnzbd.requests.get')
+    def test_SABnzbd_zero_port_uses_host_only(self, mock_get, sab_config):
+        """SABnzbd should use hostname without port when port is 0 or invalid."""
+        lazylibrarian.CONFIG['SAB_PORT'] = 0
+        mock_response = Mock()
+        mock_response.json.return_value = {'status': True, 'nzo_ids': ['test123']}
+        mock_get.return_value = mock_response
 
         result, msg = sabnzbd.SABnzbd(title='Test', nzburl='http://example.com/test.nzb')
 
-        assert result is False
-        assert 'Invalid' in msg
+        # Verify the URL used doesn't have :0 appended
+        call_url = mock_get.call_args[0][0]
+        assert ':0/' not in call_url
+        assert 'http://localhost/api' in call_url
 
     @patch('lazylibrarian.sabnzbd.requests.get')
     def test_SABnzbd_add_nzb_success(self, mock_get, sab_config):

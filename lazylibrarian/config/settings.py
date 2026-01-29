@@ -82,7 +82,6 @@ class GeneralSettings:
     dir_perm: str = '0o755'
 
     # UI tabs
-    series_tab: bool = True
     mag_tab: bool = True
     audio_tab: bool = True
     toggles: bool = True
@@ -515,14 +514,12 @@ class Configuration:
             'HTTP_PASS': ('http', 'password'),
             'HTTP_PROXY': ('http', 'proxy'),
             'HTTP_ROOT': ('http', 'root'),
-            'HTTP_LOOK': ('http', 'look'),
             'HTTP_TIMEOUT': ('http', 'timeout'),
             'HTTP_EXT_TIMEOUT': ('http', 'ext_timeout'),
             'HTTPS_ENABLED': ('http', 'https_enabled'),
             'HTTPS_CERT': ('http', 'https_cert'),
             'HTTPS_KEY': ('http', 'https_key'),
             'SSL_VERIFY': ('http', 'ssl_verify'),
-            'BOOKSTRAP_THEME': ('http', 'bookstrap_theme'),
             'LAUNCH_BROWSER': ('http', 'launch_browser'),
 
             # General settings

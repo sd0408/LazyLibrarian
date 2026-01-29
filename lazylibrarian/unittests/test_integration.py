@@ -146,51 +146,6 @@ class TestBookStatusWorkflow:
 # ============================================================================
 # Magazine Workflow Integration Tests
 # ============================================================================
-
-@pytest.mark.integration
-class TestMagazineWorkflow:
-    """Integration tests for magazine management."""
-
-    @patch('cherrypy.request')
-    def test_add_remove_magazine_workflow(self, mock_request, api_config, temp_db):
-        """Adding and removing a magazine should work correctly."""
-        mock_request.headers = {'X-Forwarded-For': None}
-        mock_request.remote = Mock(ip='127.0.0.1')
-
-        mag_name = 'Integration Test Magazine'
-
-        # Add magazine
-        api1 = Api()
-        api1.checkParams(apikey='a' * 32, cmd='addMagazine', name=mag_name)
-        api1.fetchData
-
-        db = DBConnection()
-        result = db.match("SELECT * FROM magazines WHERE Title=?", (mag_name,))
-        assert result is not None
-        assert result['Status'] == 'Active'
-
-        # Verify it appears in getMagazines
-        api2 = Api()
-        api2.checkParams(apikey='a' * 32, cmd='getMagazines')
-        mags = json.loads(api2.fetchData)
-        assert any(m['Title'] == mag_name for m in mags)
-
-        # Remove magazine
-        api3 = Api()
-        api3.checkParams(apikey='a' * 32, cmd='removeMagazine', name=mag_name)
-        api3.fetchData
-
-        result = db.match("SELECT * FROM magazines WHERE Title=?", (mag_name,))
-        assert result is None or result == []
-
-        # Verify it no longer appears in getMagazines
-        api4 = Api()
-        api4.checkParams(apikey='a' * 32, cmd='getMagazines')
-        mags = json.loads(api4.fetchData)
-        assert not any(m['Title'] == mag_name for m in mags)
-
-
-# ============================================================================
 # User Authentication Workflow Integration Tests
 # ============================================================================
 
