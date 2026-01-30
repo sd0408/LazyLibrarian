@@ -1736,6 +1736,9 @@ If you did not request this reset, you can ignore this email.
 
     @cherrypy.expose
     def snatchBook(self, bookid=None, mode=None, provider=None, url=None, size=None, library=None, redirect=None):
+        # Decode URL if it was URL-encoded by the browser
+        if url:
+            url = unquote_plus(url)
         logger.debug("snatch bookid %s mode=%s from %s url=[%s]" % (bookid, mode, provider, url))
         myDB = database.DBConnection()
         bookdata = myDB.match('SELECT AuthorID, BookName from books WHERE BookID=?', (bookid,))
