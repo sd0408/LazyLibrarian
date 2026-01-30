@@ -61,7 +61,7 @@ def multibook(foldername, recurse=False):
 
 
 def bookSeries(bookname):
-    """
+    r"""
     Try to get a book series/seriesNum from a bookname, or return empty string
     See if book is in multiple series first, if so return first one
     eg "The Shepherds Crown (Discworld, #41; Tiffany Aching, #5)"

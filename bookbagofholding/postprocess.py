@@ -101,8 +101,13 @@ def fail_type_mismatch(book, book_type, pp_path, files_found):
 
     # Blacklist if enabled
     if bookbagofholding.CONFIG['BLACKLIST_FAILED']:
+        # sqlite3.Row doesn't support .get(), use try/except for optional column
+        try:
+            aux_info = book['AuxInfo']
+        except (KeyError, IndexError):
+            aux_info = None
         add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
-                         book['BookID'], book.get('AuxInfo'), 'TypeMismatch')
+                         book['BookID'], aux_info, 'TypeMismatch')
 
     # Delete from downloader (with files)
     if book['Source'] and book['Source'] != 'DIRECT':
@@ -428,7 +433,7 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                         # Add to blacklist if BLACKLIST_FAILED is enabled
                         if bookbagofholding.CONFIG['BLACKLIST_FAILED']:
                             add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
-                                             book['BookID'], book.get('AuxInfo'), 'Failed')
+                                             book['BookID'], book['AuxInfo'] if 'AuxInfo' in book.keys() else None, 'Failed')
                         delete_task(book['Source'], book['DownloadID'], True)
 
         for download_dir in dirlist:
@@ -636,7 +641,7 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                         # Add to blacklist if BLACKLIST_PROCESSED is enabled
                         if bookbagofholding.CONFIG['BLACKLIST_PROCESSED']:
                             add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
-                                             book['BookID'], book.get('AuxInfo'), 'Processed')
+                                             book['BookID'], book['AuxInfo'] if 'AuxInfo' in book.keys() else None, 'Processed')
 
                         if bookname:  # it's ebook or audiobook
                             processExtras(dest_file, global_name, book['BookID'], book_type)
@@ -794,7 +799,7 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                     # Add to blacklist if BLACKLIST_FAILED is enabled
                     if bookbagofholding.CONFIG['BLACKLIST_FAILED']:
                         add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
-                                         book['BookID'], book.get('AuxInfo'), 'Failed')
+                                         book['BookID'], book['AuxInfo'] if 'AuxInfo' in book.keys() else None, 'Failed')
 
                     delete_task(book['Source'], book['DownloadID'], True)
             else:

@@ -521,7 +521,7 @@ def calculate_torrent_hash(link, data=None):
     """
 
     if link.startswith("magnet:"):
-        torrent_hash = re.findall("urn:btih:([\w]{32,40})", link)[0]
+        torrent_hash = re.findall(r"urn:btih:([\w]{32,40})", link)[0]
         if len(torrent_hash) == 32:
             torrent_hash = b16encode(b32decode(torrent_hash)).lower()
     elif data:

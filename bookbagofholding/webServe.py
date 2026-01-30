@@ -4571,6 +4571,7 @@ If you did not request this reset, you can ignore this email.
     def testCalibredb(self, **kwargs):
         threading.currentThread().name = "WEBSERVER"
         cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
+        cherrypy.response.headers['Content-Type'] = "text/plain"
         if 'prg' in kwargs and kwargs['prg']:
             bookbagofholding.CONFIG['IMP_CALIBREDB'] = kwargs['prg']
         try:

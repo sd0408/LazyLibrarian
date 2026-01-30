@@ -80,9 +80,9 @@ def addTorrent(link, data=None):
             # Extract torrent name from .torrent
             try:
                 logger.debug('Deluge: Getting torrent name length')
-                name_length = int(re.findall('name([0-9]*)\:.*?\:', torrentfile)[0])
+                name_length = int(re.findall(r'name([0-9]*)\:.*?\:', torrentfile)[0])
                 logger.debug('Deluge: Getting torrent name')
-                name = re.findall('name[0-9]*\:(.*?)\:', torrentfile)[0][:name_length]
+                name = re.findall(r'name[0-9]*\:(.*?)\:', torrentfile)[0][:name_length]
             except Exception as e:
                 logger.debug('Deluge: Could not get torrent name, getting file name')
                 # get last part of link/path (name only)

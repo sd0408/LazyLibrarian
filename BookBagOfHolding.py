@@ -42,7 +42,7 @@ def configure_ssl_verification():
 
 def main():
     # rename this thread
-    threading.currentThread().name = "MAIN"
+    threading.current_thread().name = "MAIN"
 
     # Set paths
     if hasattr(sys, 'frozen'):

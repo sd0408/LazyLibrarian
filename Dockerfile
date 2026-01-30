@@ -22,6 +22,11 @@ FROM ghcr.io/linuxserver/baseimage-ubuntu:noble AS calibre-builder
 
 ARG TARGETPLATFORM
 
+# Pin Calibre version for compatibility with calibre-web
+# Calibre 9.0+ changed the database schema (removed books.isbn column)
+# which breaks calibre-web until it's updated to support the new schema
+ARG CALIBRE_VERSION=8.16.2
+
 RUN \
   echo "**** install build dependencies ****" && \
   apt-get update && \
@@ -30,7 +35,6 @@ RUN \
     jq \
     xz-utils && \
   echo "**** download calibre ****" && \
-  CALIBRE_VERSION=$(curl -sL "https://api.github.com/repos/kovidgoyal/calibre/releases/latest" | jq -r '.tag_name' | sed 's/^v//') && \
   echo "Downloading Calibre version: ${CALIBRE_VERSION}" && \
   if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then \
     CALIBRE_ARCH="x86_64"; \
@@ -88,6 +92,7 @@ RUN \
     zlib1g \
     # Calibre runtime dependencies
     libgl1 \
+    libopengl0 \
     libnss3 \
     libxcomposite1 \
     libxdamage1 \

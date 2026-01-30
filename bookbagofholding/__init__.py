@@ -239,6 +239,7 @@ CONFIG_DEFINITIONS = {
     'CALIBRE_SERVER': ('str', 'General', ''),
     'CALIBRE_USER': ('str', 'General', ''),
     'CALIBRE_PASS': ('str', 'General', ''),
+    'CALIBRE_LIBRARY': ('str', 'General', ''),
     'CALIBRE_RENAME': ('bool', 'General', 0),
     'IMP_SINGLEBOOK': ('bool', 'General', 0),
     'IMP_RENAME': ('bool', 'General', 0),

@@ -1934,12 +1934,6 @@ mark {
                     <span class="help-block">This will include details for other books by new authors found in wishlists or csv files,<br>
                       or when manually importing a book by a new author</span>
                   </div>
-                  <div class="form-group">
-                    <label for="imp_preprocess">PreProcessor program:</label>
-                    <input type="text" id="imp_preprocess" name="imp_preprocess" value="${bookbagofholding.CONFIG['IMP_PREPROCESS']}" class="form-control">
-                    <span class="help-block">Path to preprocessor to run before importing books into the library</span>
-                    <input type="button" value="Test preprocessor" id="testpreprocessor" class="btn btn-secondary" />
-                  </div>
                 <legend>Calibre</legend>
                   <fieldset>
                   <div class="form-group">
@@ -1947,6 +1941,12 @@ mark {
                     <input type="text" id="imp_calibredb" name="imp_calibredb" value="${bookbagofholding.CONFIG['IMP_CALIBREDB']}" class="form-control" placeholder="calibredb program">
                     <span class="help-block">Path to "calibredb" to import books into the library</span>
                     <input type="button" value="Test calibredb" id="testCalibredb" class="btn btn-secondary" />
+                    <div id="calibredbResult" class="mt-2" style="display:none;"></div>
+                  </div>
+                  <div class="form-group">
+                    <label for="calibre_library">Calibre Library Path:</label>
+                    <input type="text" id="calibre_library" name="calibre_library" value="${bookbagofholding.CONFIG['CALIBRE_LIBRARY']}" class="form-control" placeholder="/path/to/calibre/library">
+                    <span class="help-block">Path to Calibre library folder (containing metadata.db). Leave empty to use eBook Directory.</span>
                   </div>
                   <div class="checkbox">
                       <%
@@ -3332,35 +3332,20 @@ mark {
 
         $('#testCalibredb').click(function () {
             var prg = $.trim($("#imp_calibredb").val());
-            $.get("testCalibredb", { 'prg': prg},
-                function (data) {
-                    bootbox.dialog({
-                        title: 'CalibreDB',
-                        message: '<pre>'+data+'</pre>',
-                        buttons: {
-                            primary: {
-                                label: "Close",
-                                className: 'btn-primary'
-                            }
-                        }
-                    });
-                });
-        });
-
-        $('#testpreprocessor').click(function () {
-            var prg = $.trim($("#imp_preprocessor").val());
-            $.get("testPreProcessor", { 'prg': prg},
-                function (data) {
-                    bootbox.dialog({
-                        title: 'PreProcessor',
-                        message: '<pre>'+data+'</pre>',
-                        buttons: {
-                            primary: {
-                                label: "Close",
-                                className: 'btn-primary'
-                            }
-                        }
-                    });
+            var $btn = $(this);
+            var $result = $('#calibredbResult');
+            $btn.val('Testing...').prop('disabled', true);
+            $result.hide();
+            $.get("testCalibredb", { 'prg': prg})
+                .done(function (data) {
+                    $btn.val('Test calibredb').prop('disabled', false);
+                    var isSuccess = data.indexOf('ok') !== -1;
+                    var alertClass = isSuccess ? 'alert-success' : 'alert-warning';
+                    $result.html('<div class="alert ' + alertClass + ' mb-0"><pre class="mb-0">' + data + '</pre></div>').show();
+                })
+                .fail(function (xhr, status, error) {
+                    $btn.val('Test calibredb').prop('disabled', false);
+                    $result.html('<div class="alert alert-danger mb-0">Request failed: ' + status + ' - ' + error + '</div>').show();
                 });
         });
 

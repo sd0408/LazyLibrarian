@@ -359,7 +359,13 @@ def calibreTest():
     if not bookbagofholding.CONFIG['IMP_CALIBREDB']:
         return "calibredb not configured. Set 'Calibredb import program' in config."
 
-    logger.debug('Testing calibredb: %s' % bookbagofholding.CONFIG['IMP_CALIBREDB'])
+    # Determine library path for display
+    if bookbagofholding.CONFIG['CALIBRE_USE_SERVER']:
+        lib_path = bookbagofholding.CONFIG['CALIBRE_SERVER']
+    else:
+        lib_path = bookbagofholding.CONFIG['CALIBRE_LIBRARY'] or bookbagofholding.DIRECTORY('eBook')
+
+    logger.debug('Testing calibredb: %s with library: %s' % (bookbagofholding.CONFIG['IMP_CALIBREDB'], lib_path))
 
     res, err, rc = calibredb('--version')
     if rc:
@@ -376,20 +382,42 @@ def calibreTest():
         res = res.split('(calibre ')[1]
         vernum = res[:-1]
         res = 'calibredb ok, version ' + vernum
+        res = res + '\nLibrary: ' + lib_path
         # get a list of categories and counters from the database
-        cats, err, rc = calibredb('list_categories', ['-i'])
+        cats, lib_url, rc = calibredb('list_categories', ['-i'])
         cnt = 0
-        if not len(cats):
-            res = res + '\nDatabase READ Failed'
+        if rc:
+            res = res + '\nDatabase READ Failed (rc=%s)' % rc
+            if cats:
+                res = res + ': ' + cats[:100]
+        elif not len(cats):
+            res = res + '\nDatabase READ Failed (empty response)'
         else:
             for entry in cats.split('\n'):
+                # Skip warning messages and empty lines
+                if not entry.strip() or 'No write access' in entry or entry.startswith('category'):
+                    continue
                 words = entry.split()
+                if not words:
+                    continue
+                # Calibre <7.0 uses "ITEMS", Calibre 7.0+ uses "count"
                 if 'ITEMS' in words:
                     idx = words.index('ITEMS') + 1
-                    if words[idx].isdigit():
+                    if idx < len(words) and words[idx].isdigit():
                         cnt += int(words[idx])
+                # For Calibre 7.0+ format: category tag_name count rating
+                # Data rows look like: authors "Author Name" 5 0
+                # The count is typically the 3rd or 2nd-to-last numeric column
+                elif len(words) >= 3:
+                    # Try to find a digit in position 2 (0-indexed) or later
+                    for i in range(2, len(words)):
+                        # Clean up bytes notation if present (b'value')
+                        val = words[i].strip("b'\"")
+                        if val.isdigit():
+                            cnt += int(val)
+                            break
         if cnt:
-            res = res + '\nDatabase READ ok'
+            res = res + '\nDatabase READ ok (%s items)' % cnt
             wrt, err, rc = calibredb('add', ['--authors', 'Bookbag of Holding', '--title', 'dummy', '--empty'], [])
             if 'Added book ids' not in wrt:
                 res = res + '\nDatabase WRITE Failed'
@@ -404,7 +432,10 @@ def calibreTest():
                 else:
                     res = res + '\nDatabase WRITE2 Failed: '
         else:
-            res = res + '\nDatabase READ Failed or database is empty'
+            # cnt is 0 - either empty database or unexpected output format
+            if cats:
+                # Show first 200 chars of output to help debug
+                res = res + '\nDatabase empty or unexpected format. Response: ' + cats[:200].replace('\n', ' | ')
     else:
         res = 'calibredb Failed'
     return res
@@ -486,7 +517,8 @@ def calibredb(cmd=None, prelib=None, postlib=None):
             params.extend(['--username', bookbagofholding.CONFIG['CALIBRE_USER'],
                            '--password', bookbagofholding.CONFIG['CALIBRE_PASS']])
     else:
-        dest_url = bookbagofholding.DIRECTORY('eBook')
+        # Use explicit CALIBRE_LIBRARY if set, otherwise fall back to eBook directory
+        dest_url = bookbagofholding.CONFIG['CALIBRE_LIBRARY'] or bookbagofholding.DIRECTORY('eBook')
     if prelib:
         params.extend(prelib)
 
