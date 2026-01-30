@@ -8,6 +8,8 @@
 
 BookBagOfHolding is an open-source metadata aggregation and download automation system for digital reading materials. It monitors your favorite authors, tracks new releases, and automates the acquisition and organization of ebooks, audiobooks, magazines, and comics.
 
+> **Note:** This project is a modernized fork of [LazyLibrarian](https://gitlab.com/LazyLibrarian/LazyLibrarian). We extend our gratitude to the original developers and community.
+
 ---
 
 ## Table of Contents
@@ -601,7 +603,15 @@ See [LICENSE](LICENSE) for the full text.
 
 ## Acknowledgments
 
-BookBagOfHolding builds on the work of many open-source projects:
+### LazyLibrarian
+
+BookBagOfHolding is a fork of [LazyLibrarian](https://gitlab.com/LazyLibrarian/LazyLibrarian), an excellent open-source project that has served the book automation community for many years. We are deeply grateful to the LazyLibrarian developers and contributors whose work made this project possible.
+
+This fork aims to modernize the codebase while preserving the core functionality that made LazyLibrarian so valuable to its users.
+
+### Open Source Libraries
+
+BookBagOfHolding also builds on the work of many other open-source projects:
 
 - [CherryPy](https://cherrypy.dev/) - Web framework
 - [Mako](https://www.makotemplates.org/) - Template engine
