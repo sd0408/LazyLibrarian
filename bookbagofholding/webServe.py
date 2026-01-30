@@ -1233,9 +1233,6 @@ If you did not request this reset, you can ignore this email.
     @cherrypy.expose
     def config(self):
         self.label_thread('CONFIG')
-        http_look_dir = os.path.join(bookbagofholding.PROG_DIR, 'data' + os.path.sep + 'interfaces')
-        http_look_list = [name for name in os.listdir(http_look_dir)
-                          if os.path.isdir(os.path.join(http_look_dir, name))]
         status_list = ['Skipped', 'Wanted', 'Have', 'Ignored']
 
         # Reset api counters if it's a new day
@@ -1249,7 +1246,6 @@ If you did not request this reset, you can ignore this email.
         # Don't pass the whole config, no need to pass the
         # bookbagofholding.globals
         config = {
-            "http_look_list": http_look_list,
             "status_list": status_list,
             "namevars": nameVars('test'),
         }
@@ -1281,7 +1277,6 @@ If you did not request this reset, you can ignore this email.
         if 'current_tab' in kwargs:
             bookbagofholding.CURRENT_TAB = kwargs['current_tab']
 
-        interface = bookbagofholding.CFG.get('General', 'http_look')
         # now the config file entries
         for key in list(bookbagofholding.CONFIG_DEFINITIONS.keys()):
             item_type, section, default = bookbagofholding.CONFIG_DEFINITIONS[key]
@@ -1298,12 +1293,6 @@ If you did not request this reset, you can ignore this email.
             else:
                 # no key is returned for strings not available in config html page so leave these unchanged
                 if key in bookbagofholding.CONFIG_NONWEB or key in bookbagofholding.CONFIG_GIT:
-                    pass
-                # default interface doesn't know about other interfaces variables
-                elif interface == 'legacy' and key in bookbagofholding.CONFIG_NONDEFAULT:
-                    pass
-                # default interface doesn't know about download priorities or displaynames
-                elif interface == 'legacy' and ('dlpriority' in key.lower() or 'dispname' in key.lower()):
                     pass
                 # no key is returned for empty tickboxes...
                 elif item_type == 'bool':
@@ -1338,15 +1327,14 @@ If you did not request this reset, you can ignore this email.
                 'newznab_%i_updated' % count, '')
             bookbagofholding.NEWZNAB_PROV[count]['MANUAL'] = bool(kwargs.get(
                 'newznab_%i_manual' % count, False))
-            if interface != 'legacy':
-                bookbagofholding.NEWZNAB_PROV[count]['APILIMIT'] = check_int(kwargs.get(
-                    'newznab_%i_apilimit' % count, 0), 0)
-                bookbagofholding.NEWZNAB_PROV[count]['DLPRIORITY'] = check_int(kwargs.get(
-                    'newznab_%i_dlpriority' % count, 0), 0)
-                bookbagofholding.NEWZNAB_PROV[count]['DLTYPES'] = kwargs.get(
-                    'newznab_%i_dltypes' % count, 'E')
-                bookbagofholding.NEWZNAB_PROV[count]['DISPNAME'] = kwargs.get(
-                    'newznab_%i_dispname' % count, '')
+            bookbagofholding.NEWZNAB_PROV[count]['APILIMIT'] = check_int(kwargs.get(
+                'newznab_%i_apilimit' % count, 0), 0)
+            bookbagofholding.NEWZNAB_PROV[count]['DLPRIORITY'] = check_int(kwargs.get(
+                'newznab_%i_dlpriority' % count, 0), 0)
+            bookbagofholding.NEWZNAB_PROV[count]['DLTYPES'] = kwargs.get(
+                'newznab_%i_dltypes' % count, 'E')
+            bookbagofholding.NEWZNAB_PROV[count]['DISPNAME'] = kwargs.get(
+                'newznab_%i_dispname' % count, '')
             count += 1
 
         count = 0
@@ -1373,28 +1361,26 @@ If you did not request this reset, you can ignore this email.
                 'torznab_%i_updated' % count, '')
             bookbagofholding.TORZNAB_PROV[count]['MANUAL'] = bool(kwargs.get(
                 'torznab_%i_manual' % count, False))
-            if interface != 'legacy':
-                bookbagofholding.TORZNAB_PROV[count]['APILIMIT'] = check_int(kwargs.get(
-                    'torznab_%i_apilimit' % count, 0), 0)
-                bookbagofholding.TORZNAB_PROV[count]['DLPRIORITY'] = check_int(kwargs.get(
-                    'torznab_%i_dlpriority' % count, 0), 0)
-                bookbagofholding.TORZNAB_PROV[count]['DLTYPES'] = kwargs.get(
-                    'torznab_%i_dltypes' % count, 'E')
-                bookbagofholding.TORZNAB_PROV[count]['DISPNAME'] = kwargs.get(
-                    'torznab_%i_dispname' % count, '')
+            bookbagofholding.TORZNAB_PROV[count]['APILIMIT'] = check_int(kwargs.get(
+                'torznab_%i_apilimit' % count, 0), 0)
+            bookbagofholding.TORZNAB_PROV[count]['DLPRIORITY'] = check_int(kwargs.get(
+                'torznab_%i_dlpriority' % count, 0), 0)
+            bookbagofholding.TORZNAB_PROV[count]['DLTYPES'] = kwargs.get(
+                'torznab_%i_dltypes' % count, 'E')
+            bookbagofholding.TORZNAB_PROV[count]['DISPNAME'] = kwargs.get(
+                'torznab_%i_dispname' % count, '')
             count += 1
 
         count = 0
         while count < len(bookbagofholding.RSS_PROV):
             bookbagofholding.RSS_PROV[count]['ENABLED'] = bool(kwargs.get('rss_%i_enabled' % count, False))
             bookbagofholding.RSS_PROV[count]['HOST'] = kwargs.get('rss_%i_host' % count, '')
-            if interface != 'legacy':
-                bookbagofholding.RSS_PROV[count]['DLPRIORITY'] = check_int(kwargs.get(
-                    'rss_%i_dlpriority' % count, 0), 0)
-                bookbagofholding.RSS_PROV[count]['DLTYPES'] = kwargs.get(
-                    'rss_%i_dltypes' % count, 'E')
-                bookbagofholding.RSS_PROV[count]['DISPNAME'] = kwargs.get(
-                    'rss_%i_dispname' % count, '')
+            bookbagofholding.RSS_PROV[count]['DLPRIORITY'] = check_int(kwargs.get(
+                'rss_%i_dlpriority' % count, 0), 0)
+            bookbagofholding.RSS_PROV[count]['DLTYPES'] = kwargs.get(
+                'rss_%i_dltypes' % count, 'E')
+            bookbagofholding.RSS_PROV[count]['DISPNAME'] = kwargs.get(
+                'rss_%i_dispname' % count, '')
             count += 1
 
         bookbagofholding.config_write()
