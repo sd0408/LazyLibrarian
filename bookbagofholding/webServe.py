@@ -4200,14 +4200,20 @@ If you did not request this reset, you can ignore this email.
 
             # Determine library type
             library_type = file_row['LibraryType'] or library or 'eBook'
+            found_status = bookbagofholding.CONFIG.get('FOUND_STATUS', 'Open')
+
+            logger.debug('matchUnmatchedFile: library_type=%s, found_status=%s, bookid=%s' %
+                         (library_type, found_status, bookid))
 
             # Update the book's file location
             if library_type == 'eBook':
                 myDB.action('UPDATE books SET BookFile=?, Status=?, BookLibrary=? WHERE BookID=?',
-                            (filepath, bookbagofholding.CONFIG['FOUND_STATUS'], now(), bookid))
+                            (filepath, found_status, now(), bookid))
+                logger.info('Updated book %s: Status=%s, BookFile=%s' % (bookid, found_status, filepath))
             else:  # AudioBook
                 myDB.action('UPDATE books SET AudioFile=?, AudioStatus=?, AudioLibrary=? WHERE BookID=?',
-                            (filepath, bookbagofholding.CONFIG['FOUND_STATUS'], now(), bookid))
+                            (filepath, found_status, now(), bookid))
+                logger.info('Updated book %s: AudioStatus=%s, AudioFile=%s' % (bookid, found_status, filepath))
 
             # Mark the unmatched file as matched
             mark_unmatched_file_matched(fileid, bookid, 'Manually matched by user')
@@ -4289,13 +4295,16 @@ If you did not request this reset, you can ignore this email.
             if bookid:
                 # Match found - link the file
                 filepath = file_row['FilePath']
+                found_status = bookbagofholding.CONFIG.get('FOUND_STATUS', 'Open')
 
                 if library_type == 'eBook':
                     myDB.action('UPDATE books SET BookFile=?, Status=?, BookLibrary=? WHERE BookID=?',
-                                (filepath, bookbagofholding.CONFIG['FOUND_STATUS'], now(), bookid))
+                                (filepath, found_status, now(), bookid))
+                    logger.info('Retry match: Updated book %s: Status=%s' % (bookid, found_status))
                 else:
                     myDB.action('UPDATE books SET AudioFile=?, AudioStatus=?, AudioLibrary=? WHERE BookID=?',
-                                (filepath, bookbagofholding.CONFIG['FOUND_STATUS'], now(), bookid))
+                                (filepath, found_status, now(), bookid))
+                    logger.info('Retry match: Updated book %s: AudioStatus=%s' % (bookid, found_status))
 
                 # Mark as matched
                 mark_unmatched_file_matched(fileid, bookid, 'Auto-matched on retry')
