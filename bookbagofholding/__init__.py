@@ -875,6 +875,21 @@ def config_write(part=None):
                 if provider['HOST']:
                     new_list.append(provider)
 
+            # Remove duplicate providers by HOST URL (handles Prowlarr syncing duplicates)
+            seen_hosts = set()
+            unique_list = []
+            for provider in new_list:
+                host_key = provider['HOST'].lower().rstrip('/')
+                if host_key not in seen_hosts:
+                    seen_hosts.add(host_key)
+                    unique_list.append(provider)
+                else:
+                    logger.warn('Removing duplicate %s provider: %s (%s)' %
+                                (entry[1], provider.get('DISPNAME', ''), provider['HOST']))
+            if len(unique_list) < len(new_list):
+                logger.info('Removed %d duplicate %s providers' % (len(new_list) - len(unique_list), entry[1]))
+            new_list = unique_list
+
             if part:  # only update the named provider
                 for provider in new_list:
                     if provider['NAME'].lower() != part.lower():  # keep old values
@@ -920,6 +935,21 @@ def config_write(part=None):
         for provider in RSS_PROV:
             if provider['HOST']:
                 new_list.append(provider)
+
+        # Remove duplicate RSS providers by HOST URL
+        seen_hosts = set()
+        unique_list = []
+        for provider in new_list:
+            host_key = provider['HOST'].lower().rstrip('/')
+            if host_key not in seen_hosts:
+                seen_hosts.add(host_key)
+                unique_list.append(provider)
+            else:
+                logger.warn('Removing duplicate RSS provider: %s (%s)' %
+                            (provider.get('DISPNAME', ''), provider['HOST']))
+        if len(unique_list) < len(new_list):
+            logger.info('Removed %d duplicate RSS providers' % (len(new_list) - len(unique_list)))
+        new_list = unique_list
 
         if part:  # only update the named provider
             for provider in new_list:

@@ -137,5 +137,17 @@ def searchItem(item=None, bookid=None, cat=None, min_score=40):
 
                 searchresults.append(result)
 
-    logger.debug('Found %s %s results for %s' % (len(searchresults), cat, searchterm))
-    return searchresults
+    # De-duplicate results by URL (handles duplicate providers from Prowlarr sync)
+    seen_urls = set()
+    unique_results = []
+    for result in searchresults:
+        url_key = result['url']
+        if url_key not in seen_urls:
+            seen_urls.add(url_key)
+            unique_results.append(result)
+
+    if len(unique_results) < len(searchresults):
+        logger.debug('Removed %d duplicate results (by URL)' % (len(searchresults) - len(unique_results)))
+
+    logger.debug('Found %s %s results for %s' % (len(unique_results), cat, searchterm))
+    return unique_results

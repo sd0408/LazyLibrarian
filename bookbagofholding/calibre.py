@@ -355,12 +355,20 @@ def syncCalibreList(col_read=None, col_toread=None, userid=None):
 
 
 def calibreTest():
+    # First check if calibredb is configured
+    if not bookbagofholding.CONFIG['IMP_CALIBREDB']:
+        return "calibredb not configured. Set 'Calibredb import program' in config."
+
+    logger.debug('Testing calibredb: %s' % bookbagofholding.CONFIG['IMP_CALIBREDB'])
+
     res, err, rc = calibredb('--version')
     if rc:
         msg = "calibredb communication failed: "
         if err:
             return msg + err
-        return msg + res
+        if res:
+            return msg + res
+        return msg + "Return code %s" % rc
 
     res = res.strip('\n')
     if '(calibre ' in res and res.endswith(')'):
@@ -400,6 +408,66 @@ def calibreTest():
     else:
         res = 'calibredb Failed'
     return res
+
+
+def calibreImportBook(filepath, bookid, authorname, bookname):
+    """
+    Import a single book file into Calibre database.
+    Called when manually matching files to books.
+    Returns (success, message)
+    """
+    if not bookbagofholding.CONFIG['IMP_CALIBREDB']:
+        return True, 'Calibre not configured, skipping import'
+
+    import os
+    if not os.path.isfile(filepath):
+        return False, 'File does not exist: %s' % filepath
+
+    logger.debug('Importing %s into calibre for book %s' % (filepath, bookid))
+
+    try:
+        # Check if the file is already in Calibre by searching for the book
+        # First, try to add the file
+        res, err, rc = calibredb('add', ['-1', '-d'], [filepath])
+
+        if rc:
+            return False, 'calibredb add failed: %s' % (err or res)
+
+        if 'already exist' in err or 'already exist' in res:
+            logger.debug('Book already exists in Calibre library')
+            return True, 'Book already in Calibre'
+
+        if 'Added book ids' not in res:
+            return False, 'Calibre failed to import: no book ids returned'
+
+        calibre_id = res.split("book ids: ", 1)[1].split("\n", 1)[0]
+        logger.debug('Calibre ID: %s' % calibre_id)
+
+        # Set metadata if we have it
+        if bookid.isdigit():
+            identifier = "goodreads:%s" % bookid
+        else:
+            identifier = "google:%s" % bookid
+
+        # Set author, title, and identifier
+        _, _, rc = calibredb('set_metadata', ['--field', 'authors:%s' % unaccented(authorname)], [calibre_id])
+        if rc:
+            logger.warn("calibredb unable to set author")
+
+        _, _, rc = calibredb('set_metadata', ['--field', 'title:%s' % unaccented(bookname)], [calibre_id])
+        if rc:
+            logger.warn("calibredb unable to set title")
+
+        _, _, rc = calibredb('set_metadata', ['--field', 'identifiers:%s' % identifier], [calibre_id])
+        if rc:
+            logger.warn("calibredb unable to set identifier")
+
+        logger.info('Successfully imported %s into Calibre (ID: %s)' % (bookname, calibre_id))
+        return True, 'Imported to Calibre (ID: %s)' % calibre_id
+
+    except Exception as e:
+        logger.error('calibreImportBook error: %s' % str(e))
+        return False, 'Calibre import failed: %s' % str(e)
 
 
 def calibredb(cmd=None, prelib=None, postlib=None):

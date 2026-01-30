@@ -56,6 +56,7 @@ class qbittorrentclient(object):
         self.password = bookbagofholding.CONFIG['QBITTORRENT_PASS']
         self.cookiejar = http_cookiejar.CookieJar()
         self.opener = self._make_opener()
+        self.use_new_api = False  # Will be set by _get_sid
         self._get_sid(self.base_url, self.username, self.password)
         self.api = self._api_version()
 
@@ -68,28 +69,103 @@ class qbittorrentclient(object):
     def _api_version(self):
         # noinspection PyBroadException
         try:
-            version = int(self._command('version/api'))
+            if self.use_new_api:
+                # v2 API returns version as string like "2.8.3"
+                version_str = self._command('app/apiVersion', use_api_prefix=True)
+                # Parse major version number (e.g., "2.8.3" -> 2)
+                try:
+                    version = int(str(version_str).split('.')[0]) * 10
+                except (ValueError, IndexError):
+                    version = 20  # Default to v2 if parsing fails
+            else:
+                version = int(self._command('version/api', use_api_prefix=False))
         except Exception as err:
             logger.warn('Error getting api version. qBittorrent %s: %s' % (type(err).__name__, str(err)))
-            version = 1
+            version = 20 if self.use_new_api else 1
+        logger.debug('qBittorrent API version: %s (new_api=%s)' % (version, self.use_new_api))
         return version
 
     def _get_sid(self, base_url, username, password):
         # login so we can capture SID cookie
+        # Try new API (v2) first, then fall back to old API for older qBittorrent versions
         login_data = makeBytestr(urlencode({'username': username, 'password': password}))
+
+        # Try new API endpoint first (qBittorrent 4.1+)
         try:
+            logger.debug('Trying qBittorrent v2 API login at %s/api/v2/auth/login' % base_url)
+            _ = self.opener.open(base_url + '/api/v2/auth/login', login_data)
+            self.use_new_api = True
+            logger.debug('Successfully logged in using v2 API')
+            for cookie in self.cookiejar:
+                logger.debug('login cookie: ' + cookie.name + ', value: ' + cookie.value)
+            return
+        except Exception as err:
+            # Check if it's a 404 (endpoint doesn't exist) - try old API
+            err_str = str(err)
+            if '404' in err_str:
+                logger.debug('v2 API not available, trying legacy API')
+            else:
+                logger.debug('v2 API login failed: %s %s' % (type(err).__name__, err_str))
+
+        # Try old API endpoint (pre-4.1 qBittorrent)
+        try:
+            logger.debug('Trying qBittorrent legacy API login at %s/login' % base_url)
             _ = self.opener.open(base_url + '/login', login_data)
+            self.use_new_api = False
+            logger.debug('Successfully logged in using legacy API')
+            for cookie in self.cookiejar:
+                logger.debug('login cookie: ' + cookie.name + ', value: ' + cookie.value)
+            return
         except Exception as err:
             logger.error('Error getting SID. qBittorrent %s: %s' % (type(err).__name__, str(err)))
-            logger.warn('Unable to log in to %s/login' % base_url)
+            logger.warn('Unable to log in to qBittorrent at %s (tried both v2 and legacy APIs)' % base_url)
             return
-        for cookie in self.cookiejar:
-            logger.debug('login cookie: ' + cookie.name + ', value: ' + cookie.value)
-        return
 
-    def _command(self, command, args=None, content_type=None, files=None):
-        logger.debug('QBittorrent WebAPI Command: %s' % command)
-        url = self.base_url + '/' + command
+    def _command(self, command, args=None, content_type=None, files=None, use_api_prefix=None):
+        # Map old API commands to new API v2 commands
+        api_v2_mapping = {
+            'version/api': 'app/apiVersion',
+            'query/torrents': 'torrents/info',
+            'query/preferences': 'app/preferences',
+            'query/propertiesFiles/': 'torrents/files?hash=',
+            'query/propertiesGeneral/': 'torrents/properties?hash=',
+            'command/resume': 'torrents/resume',
+            'command/pause': 'torrents/pause',
+            'command/setFilePrio': 'torrents/filePrio',
+            'command/deletePerm': 'torrents/delete',
+            'command/delete': 'torrents/delete',
+            'command/download': 'torrents/add',
+            'command/upload': 'torrents/add',
+        }
+
+        # Determine if we should use the new API prefix
+        if use_api_prefix is None:
+            use_api_prefix = self.use_new_api
+
+        # Translate command if using new API
+        original_command = command
+        if use_api_prefix:
+            # Check for commands with hash suffix (like query/propertiesFiles/HASH)
+            for old_cmd, new_cmd in api_v2_mapping.items():
+                if old_cmd.endswith('/') and command.startswith(old_cmd):
+                    hashid = command[len(old_cmd):]
+                    command = new_cmd + hashid
+                    break
+                elif command == old_cmd:
+                    command = new_cmd
+                    break
+            # Handle delete commands which need different parameter in v2
+            if original_command in ('command/deletePerm', 'command/delete') and args:
+                if 'hashes' in args:
+                    args['deleteFiles'] = 'true' if original_command == 'command/deletePerm' else 'false'
+
+        logger.debug('QBittorrent WebAPI Command: %s (original: %s, use_api_prefix: %s)' %
+                     (command, original_command, use_api_prefix))
+
+        if use_api_prefix:
+            url = self.base_url + '/api/v2/' + command
+        else:
+            url = self.base_url + '/' + command
         data = None
         headers = dict()
 
@@ -125,7 +201,7 @@ class qbittorrentclient(object):
                 # some commands return plain text
                 resp = makeUnicode(resp)
                 logger.debug("QBitTorrent returned %s" % resp)
-                if command == 'version/api':
+                if original_command == 'version/api' or command == 'app/apiVersion':
                     return resp
                 # some just return Ok. or Fails.
                 if resp and resp != 'Ok.':
@@ -157,12 +233,20 @@ class qbittorrentclient(object):
 
     def start(self, hashid):
         logger.debug('qb.start(%s)' % hashid)
-        args = {'hash': hashid}
+        # v2 API uses 'hashes' parameter, old API uses 'hash'
+        if self.use_new_api:
+            args = {'hashes': hashid}
+        else:
+            args = {'hash': hashid}
         return self._command('command/resume', args, 'application/x-www-form-urlencoded')
 
     def pause(self, hashid):
         logger.debug('qb.pause(%s)' % hashid)
-        args = {'hash': hashid}
+        # v2 API uses 'hashes' parameter, old API uses 'hash'
+        if self.use_new_api:
+            args = {'hashes': hashid}
+        else:
+            args = {'hash': hashid}
         return self._command('command/pause', args, 'application/x-www-form-urlencoded')
 
     def getfiles(self, hashid):

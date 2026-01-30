@@ -31,7 +31,7 @@ from bookbagofholding import logger, database, \
     qbittorrent, utorrent, rtorrent, transmission, sabnzbd, nzbget, deluge, synology
 from bookbagofholding.database import add_to_blacklist, mark_unmatched_file_matched, mark_unmatched_file_ignored
 from bookbagofholding.cache import cache_img
-from bookbagofholding.calibre import calibreTest, syncCalibreList, calibredb
+from bookbagofholding.calibre import calibreTest, syncCalibreList, calibredb, calibreImportBook
 from bookbagofholding.common import showJobs, showStats, restartJobs, clearLog, scheduleJob, checkRunningJobs, setperm, \
     aaUpdate, csv_file, saveLog, logHeader, pwd_generator, pwd_check, isValidEmail, mimeType, zipAudio, runScript
 from bookbagofholding.csvfile import import_CSV, export_CSV, dump_table, restore_table
@@ -4224,9 +4224,23 @@ If you did not request this reset, you can ignore this email.
             # Update author totals
             update_totals(book_row['AuthorID'])
 
+            # Import to Calibre if configured (eBooks only)
+            calibre_msg = ''
+            if library_type == 'eBook' and bookbagofholding.CONFIG.get('IMP_CALIBREDB'):
+                # Get author name
+                author_row = myDB.match('SELECT AuthorName FROM authors WHERE AuthorID=?',
+                                        (book_row['AuthorID'],))
+                authorname = author_row['AuthorName'] if author_row else 'Unknown'
+                success, calibre_msg = calibreImportBook(filepath, bookid, authorname, book_row['BookName'])
+                if not success:
+                    logger.warn('Calibre import failed: %s' % calibre_msg)
+
             logger.info('Manually matched file [%s] to book [%s]' % (filepath, book_row['BookName']))
 
-            return {'success': True, 'message': 'File matched successfully'}
+            message = 'File matched successfully'
+            if calibre_msg:
+                message += ' (%s)' % calibre_msg
+            return {'success': True, 'message': message}
 
         except Exception as e:
             logger.error('matchUnmatchedFile error: %s' % str(e))
@@ -4559,7 +4573,13 @@ If you did not request this reset, you can ignore this email.
         cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
         if 'prg' in kwargs and kwargs['prg']:
             bookbagofholding.CONFIG['IMP_CALIBREDB'] = kwargs['prg']
-        return calibreTest()
+        try:
+            result = calibreTest()
+            return result
+        except Exception as e:
+            import traceback
+            logger.error('testCalibredb exception: %s' % traceback.format_exc())
+            return 'Error testing calibredb: %s %s' % (type(e).__name__, str(e))
 
     @cherrypy.expose
     def testPreProcessor(self, **kwargs):
