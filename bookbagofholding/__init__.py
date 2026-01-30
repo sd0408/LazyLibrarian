@@ -813,8 +813,6 @@ def config_write(part=None):
     threading.currentThread().name = "CONFIG_WRITE"
     myDB = database.DBConnection()
 
-    interface = CFG.get('General', 'http_look')
-
     for key in list(CONFIG_DEFINITIONS.keys()):
         item_type, section, default = CONFIG_DEFINITIONS[key]
         if key in ['WALL_COLUMNS', 'DISPLAY_LENGTH']:  # may be modified by user interface but not on config page
@@ -823,7 +821,7 @@ def config_write(part=None):
             value = CFG.get(section, key.lower())  # keep the old value
             # if CONFIG['LOGLEVEL'] > 2:
             #     logger.debug("Leaving %s unchanged (%s)" % (key, value))
-        elif key not in CONFIG_NONWEB and not (interface == 'legacy' and key in CONFIG_NONDEFAULT):
+        elif key not in CONFIG_NONWEB:
             check_section(section)
             value = CONFIG[key]
             if key == 'LOGLEVEL':

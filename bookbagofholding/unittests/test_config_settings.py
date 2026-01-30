@@ -37,7 +37,6 @@ class TestHttpSettings(unittest.TestCase):
         settings = HttpSettings()
         self.assertEqual(settings.port, 5299)
         self.assertEqual(settings.host, '0.0.0.0')
-        self.assertEqual(settings.look, 'bookstrap')
         self.assertEqual(settings.timeout, 30)
         self.assertFalse(settings.https_enabled)
 
@@ -276,7 +275,6 @@ class TestConfigLoaderIntegration(unittest.TestCase):
 
             # Should have defaults
             self.assertEqual(config.http.port, 5299)
-            self.assertEqual(config.http.look, 'bookstrap')
 
         finally:
             if os.path.exists(config_path):
@@ -295,8 +293,6 @@ class TestConfigLoaderIntegration(unittest.TestCase):
 
             # Should have the specified value
             self.assertEqual(config.http.port, 8888)
-            # And defaults for unspecified
-            self.assertEqual(config.http.look, 'bookstrap')
 
         finally:
             if os.path.exists(config_path):

@@ -35,7 +35,6 @@ class HttpSettings:
     password: str = ''
     proxy: bool = False
     root: str = ''
-    look: str = 'bookstrap'
     timeout: int = 30
     ext_timeout: int = 90
 

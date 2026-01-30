@@ -372,7 +372,6 @@ class ConfigLoader:
         config.http.user = self._get_setting('General', 'http_user', '') or ''
         config.http.password = self._get_setting('General', 'http_pass', '') or ''
         config.http.root = self._get_setting('General', 'http_root', '') or ''
-        config.http.look = self._get_setting('General', 'http_look', 'bookstrap') or 'bookstrap'
         config.http.timeout = int(self._get_setting('General', 'http_timeout', 30) or 30)
         config.http.bookstrap_theme = self._get_setting('General', 'bookstrap_theme', 'slate') or 'slate'
 
@@ -459,7 +458,6 @@ class ConfigLoader:
         self._parser.set('General', 'http_user', config.http.user)
         self._parser.set('General', 'http_pass', config.http.password)
         self._parser.set('General', 'http_root', config.http.root)
-        self._parser.set('General', 'http_look', config.http.look)
         self._parser.set('General', 'http_timeout', str(config.http.timeout))
 
     def _save_general_settings(self, config: Configuration) -> None:

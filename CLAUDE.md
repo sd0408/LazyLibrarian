@@ -464,8 +464,7 @@ bookbagofholding.config_write('General')
 
 ### Template System
 - **Engine:** Mako
-- **Location:** `data/interfaces/bookstrap/` (modern) or `data/interfaces/legacy/`
-- **Selection:** `HTTP_LOOK` config parameter
+- **Location:** `data/interfaces/modern/`
 - **Features:** Permission checking, caching, auto-reload in debug mode
 
 ### Authentication
