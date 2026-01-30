@@ -139,10 +139,10 @@ COPY docker/root/ /
 
 # -----------------------------------------------------------------------------
 # Layer 5: Application source code (rebuilt on every code change)
+# Note: Dependencies are installed via pip in Layer 3, not vendored
 # -----------------------------------------------------------------------------
 COPY --chown=abc:abc bookbagofholding/ /app/bookbagofholding/bookbagofholding/
-COPY --chown=abc:abc vendor/ /app/bookbagofholding/vendor/
-COPY --chown=abc:abc Bookbag of Holding.py /app/bookbagofholding/
+COPY --chown=abc:abc BookBagOfHolding.py /app/bookbagofholding/
 COPY --chown=abc:abc data/ /app/bookbagofholding/data/
 COPY --chown=abc:abc init/ /app/bookbagofholding/init/
 COPY --chown=abc:abc examples/ /app/bookbagofholding/examples/

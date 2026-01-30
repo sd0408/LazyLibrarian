@@ -19,4 +19,4 @@ lsiown -R abc:abc /config
 lsiown abc:abc /downloads 2>/dev/null || true
 lsiown abc:abc /books 2>/dev/null || true
 
-echo "Bookbag of Holding configuration initialized."
+echo "BookBagOfHolding configuration initialized."
