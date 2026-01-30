@@ -114,6 +114,7 @@ RUN \
 # -----------------------------------------------------------------------------
 # Layer 3: Python virtual environment (cached unless requirements change)
 # -----------------------------------------------------------------------------
+# Note: Keep this list in sync with pyproject.toml dependencies
 RUN \
   echo "**** create python virtual environment ****" && \
   python3 -m venv /lsiopy && \
@@ -121,16 +122,25 @@ RUN \
   echo "**** install python packages ****" && \
   /lsiopy/bin/pip install --no-cache-dir \
     cherrypy \
+    cherrypy-cors \
     mako \
     requests \
+    urllib3 \
     httplib2 \
     beautifulsoup4 \
     feedparser \
+    httpagentparser \
     fuzzywuzzy \
     python-Levenshtein \
     'bencode.py' \
-    urllib3 \
-    pyopenssl
+    python-magic \
+    unrar \
+    tinytag \
+    rfeed \
+    'APScheduler>=3.10.0,<4.0.0' \
+    bcrypt \
+    pyopenssl \
+    cryptography
 
 # -----------------------------------------------------------------------------
 # Layer 4: S6-overlay service configuration (cached unless config changes)
