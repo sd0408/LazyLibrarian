@@ -1,6 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 
     def get_stats(context, name):
         """Get stats dict from context, with default fallback"""
@@ -158,7 +158,7 @@
             </a>
         </div>
         <div class="ll-page-header-actions">
-            %if perm&lazylibrarian.perm_force:
+            %if perm&bookbagofholding.perm_force:
                 %if author['Status'] == 'Paused':
                 <a href="resumeAuthor?AuthorID=${author['AuthorID']}" class="ll-btn ll-btn-secondary">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -209,7 +209,7 @@
                     </svg>
                     <span class="scan-ebook-text">Scan Local eBooks</span>
                 </button>
-                %if lazylibrarian.SHOW_AUDIO > 0:
+                %if bookbagofholding.SHOW_AUDIO > 0:
                 <button type="button" id="scanAudioBtn" class="ll-btn ll-btn-secondary"
                         title="Search your local audiobook folder for files by this author">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="scan-audio-icon">
@@ -219,7 +219,7 @@
                     <span class="scan-audio-text">Scan Local Audio</span>
                 </button>
                 %endif
-                %if perm&lazylibrarian.perm_search:
+                %if perm&bookbagofholding.perm_search:
                 <button type="button" id="addBookBtn" class="ll-btn ll-btn-primary"
                         title="Search Google Books to add a specific book for this author">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -244,7 +244,7 @@
     <div class="ll-card" style="margin-bottom: 1.5rem;">
         <div class="ll-card-body">
             <div class="ll-author-header">
-                %if lazylibrarian.CONFIG['AUTHOR_IMG']:
+                %if bookbagofholding.CONFIG['AUTHOR_IMG']:
                 <div class="ll-author-image">
                     <img src="${author['AuthorImg']}" alt="${author['AuthorName']}" onerror="this.src='images/nophoto.png'">
                 </div>
@@ -252,7 +252,7 @@
                 <div class="ll-author-info">
                     <h1 class="ll-author-name">
                         <a href="${author['AuthorLink']}" target="_blank" rel="noreferrer">${author['AuthorName']}</a>
-                        %if perm&lazylibrarian.perm_edit:
+                        %if perm&bookbagofholding.perm_edit:
                         <a href="editAuthor?authorid=${author['AuthorID']}" class="ll-btn ll-btn-ghost ll-btn-sm" style="margin-left: 0.5rem;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -342,7 +342,7 @@
                     </div>
 
                     <!-- AudioBook Stats -->
-                    %if lazylibrarian.SHOW_AUDIO and _audio_stats['total'] > 0:
+                    %if bookbagofholding.SHOW_AUDIO and _audio_stats['total'] > 0:
                     <div>
                         <div class="ll-author-stat-label" style="margin-bottom: 0.5rem; font-weight: 600;">AudioBooks</div>
                         <div class="ll-author-stats">
@@ -399,7 +399,7 @@
     </div>
 
     <!-- Bulk Actions (shown when items selected) -->
-    %if perm&lazylibrarian.perm_status or lazylibrarian.CONFIG['USER_ACCOUNTS']:
+    %if perm&bookbagofholding.perm_status or bookbagofholding.CONFIG.get('USER_ACCOUNTS', False):
     <form action="markBooks" method="get" id="markBooksForm" style="display: none;" class="ll-mb-3">
         <input type="hidden" name="AuthorID" value="${author['AuthorID']}">
         <input type="hidden" name="redirect" value="author">
@@ -410,7 +410,7 @@
             <div class="ll-card-body ll-flex ll-items-center ll-gap-3">
                 <span id="selectedCount">0 selected</span>
                 <select id="action" name="action" class="ll-select" style="width: auto;">
-                    %if perm&lazylibrarian.perm_status:
+                    %if perm&bookbagofholding.perm_status:
                     <optgroup label="Status">
                         <option value="Wanted">Wanted</option>
                         <option value="Have">Have</option>
@@ -422,7 +422,7 @@
                         <option value="Delete">Delete files</option>
                     </optgroup>
                     %endif
-                    %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
+                    %if bookbagofholding.CONFIG.get('USER_ACCOUNTS', False):
                     <optgroup label="Reading List">
                         <option value="Unread">Unread</option>
                         <option value="Read">Read</option>
@@ -459,7 +459,7 @@
                 Show Ignored
             </a>
             %endif
-            %if len(types) > 1 and perm&lazylibrarian.perm_audio:
+            %if len(types) > 1 and perm&bookbagofholding.perm_audio:
             <div class="ll-toolbar-form">
                 <label class="ll-toolbar-label">Library:</label>
                 <select id="chooselib" class="ll-select">
@@ -868,7 +868,7 @@
             $('#chooselib').val('eBook');
         }
 
-        var show = "" + ${lazylibrarian.CONFIG['BOOK_IMG']};
+        var show = "" + ${bookbagofholding.CONFIG['BOOK_IMG']};
         var showimg = (show === '1');
 
         // Clear any old DataTables state that had different columns
@@ -928,14 +928,14 @@
                             return '<span class="ll-badge ll-badge-info">' + btn + '</span>';
                         }
                         else if (btn.indexOf('Have') >= 0) {
-                            %if perm&lazylibrarian.perm_status:
+                            %if perm&bookbagofholding.perm_status:
                             return '<span class="ll-badge ll-badge-info">' + btn + '</span>';
                             %else:
                             return '<a class="ll-badge ll-badge-secondary" href="requestBook?bookid=' + row[9] + '&library=${library}">Request</a>';
                             %endif
                         }
                         else {
-                            %if perm&lazylibrarian.perm_status:
+                            %if perm&bookbagofholding.perm_status:
                             return '<span class="ll-badge ll-badge-secondary">' + btn + '</span>';
                             %else:
                             return '<a class="ll-badge ll-badge-secondary" href="requestBook?bookid=' + row[9] + '&library=${library}">Request</a>';
@@ -959,7 +959,7 @@
             "sAjaxSource": 'getBooks?source=Author&AuthorID=${author['AuthorID']}&booklang=${booklang}&library=${library}&ignored=${ignored}',
             "bFilter": true,
             "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "iDisplayLength": ${bookbagofholding.CONFIG['DISPLAYLENGTH']},
             "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                 return nRow;
             }

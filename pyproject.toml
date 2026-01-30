@@ -6,15 +6,34 @@ requires-python = ">=3.10"
 license = {text = "GPL-3.0-or-later"}
 
 dependencies = [
+    # Web framework
     "cherrypy>=18.0.0",
+    "cherrypy-cors>=1.7.0",
     "mako>=1.2.0",
+    # HTTP & parsing
     "requests>=2.28.0",
+    "urllib3>=2.0.0",
     "httplib2>=0.20.0",
     "beautifulsoup4>=4.11.0",
     "feedparser>=6.0.0",
+    "httpagentparser>=1.9.5",
+    # Fuzzy matching
     "fuzzywuzzy>=0.18.0",
     "python-Levenshtein>=0.20.0",
+    # Encoding/file handling
     "bencode.py>=4.0.0",
+    "python-magic>=0.4.27",
+    "unrar>=0.4",
+    # Media metadata
+    "tinytag>=2.0.0",
+    # RSS generation
+    "rfeed>=1.1.1",
+    # Scheduling
+    "APScheduler>=3.10.0,<4.0.0",
+    # Security
+    "bcrypt>=4.0.0",
+    "pyOpenSSL>=23.0.0",
+    "cryptography>=41.0.0",
 ]
 
 [project.optional-dependencies]
@@ -37,4 +56,4 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["lazylibrarian", "vendor"]
+packages = ["bookbagofholding", "bookbagofholding.deluge_client", "bookbagofholding.mobi"]

@@ -140,12 +140,12 @@ COPY docker/root/ /
 # -----------------------------------------------------------------------------
 # Layer 5: Application source code (rebuilt on every code change)
 # -----------------------------------------------------------------------------
-COPY --chown=abc:abc lazylibrarian/ /app/lazylibrarian/lazylibrarian/
-COPY --chown=abc:abc vendor/ /app/lazylibrarian/vendor/
-COPY --chown=abc:abc LazyLibrarian.py /app/lazylibrarian/
-COPY --chown=abc:abc data/ /app/lazylibrarian/data/
-COPY --chown=abc:abc init/ /app/lazylibrarian/init/
-COPY --chown=abc:abc examples/ /app/lazylibrarian/examples/
+COPY --chown=abc:abc bookbagofholding/ /app/bookbagofholding/bookbagofholding/
+COPY --chown=abc:abc vendor/ /app/bookbagofholding/vendor/
+COPY --chown=abc:abc Bookbag of Holding.py /app/bookbagofholding/
+COPY --chown=abc:abc data/ /app/bookbagofholding/data/
+COPY --chown=abc:abc init/ /app/bookbagofholding/init/
+COPY --chown=abc:abc examples/ /app/bookbagofholding/examples/
 
 # Exposed port
 EXPOSE 5299

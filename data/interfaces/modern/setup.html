@@ -1,0 +1,183 @@
+<%
+    import bookbagofholding
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookbag of Holding - Initial Setup</title>
+    <link rel="shortcut icon" type="image/png" href="images/ll.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="css/modern.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--ll-primary) 0%, var(--ll-primary-dark) 100%);
+        }
+        .setup-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 24px;
+        }
+        .setup-card {
+            background: var(--ll-surface);
+            border-radius: var(--ll-radius-lg);
+            box-shadow: var(--ll-shadow-lg);
+            padding: 40px;
+        }
+        .setup-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        .setup-logo svg {
+            width: 48px;
+            height: 48px;
+            color: var(--ll-primary);
+        }
+        .setup-logo span {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--ll-text);
+        }
+        .setup-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .setup-subtitle {
+            text-align: center;
+            color: var(--ll-text-light);
+            margin-bottom: 32px;
+        }
+        .setup-form .ll-form-group {
+            margin-bottom: 20px;
+        }
+        .setup-form .ll-btn {
+            width: 100%;
+            margin-top: 8px;
+        }
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--ll-radius);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .alert-error {
+            background: var(--ll-error-light);
+            color: var(--ll-error-dark);
+        }
+        .alert-info {
+            background: var(--ll-primary-light);
+            color: var(--ll-primary-dark);
+        }
+        .password-hint {
+            font-size: 12px;
+            color: var(--ll-text-light);
+            margin-top: 4px;
+        }
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        .step {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .step-active {
+            background: var(--ll-primary);
+            color: white;
+        }
+        .step-inactive {
+            background: var(--ll-border);
+            color: var(--ll-text-light);
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-card">
+            <div class="setup-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span>Bookbag of Holding</span>
+            </div>
+
+            <h1 class="setup-title">Welcome!</h1>
+            <p class="setup-subtitle">Set up your admin account to get started.</p>
+
+            <div class="alert alert-info">
+                This is a simple, single-user setup like Radarr/Sonarr. For advanced authentication
+                (SSO, multiple users), use a reverse proxy with Authentik or Authelia.
+            </div>
+
+            %if 'message' in dir() and message:
+            <div class="alert alert-error">${message}</div>
+            %endif
+
+            <form class="setup-form" action="setupComplete" method="post">
+                <div class="ll-form-group">
+                    <label class="ll-label" for="username">Username</label>
+                    <input type="text" class="ll-input" id="username" name="username"
+                           placeholder="admin" required autofocus
+                           minlength="3" pattern="[a-zA-Z0-9_-]+">
+                </div>
+                <div class="ll-form-group">
+                    <label class="ll-label" for="password">Password</label>
+                    <input type="password" class="ll-input" id="password" name="password"
+                           placeholder="Create a password" required minlength="8">
+                    <p class="password-hint">At least 8 characters</p>
+                </div>
+                <div class="ll-form-group">
+                    <label class="ll-label" for="password2">Confirm Password</label>
+                    <input type="password" class="ll-input" id="password2" name="password2"
+                           placeholder="Confirm your password" required>
+                </div>
+                <button type="submit" class="ll-btn ll-btn-primary">
+                    Create Account & Start
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Client-side validation
+        document.querySelector('.setup-form').addEventListener('submit', function(e) {
+            var password = document.getElementById('password').value;
+            var password2 = document.getElementById('password2').value;
+
+            if (password !== password2) {
+                e.preventDefault();
+                alert('Passwords do not match');
+                return false;
+            }
+
+            if (password.indexOf(' ') >= 0) {
+                e.preventDefault();
+                alert('Password cannot contain spaces');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

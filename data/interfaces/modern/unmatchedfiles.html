@@ -1,6 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'manage'
@@ -79,7 +79,7 @@
                     <table class="ll-table" id="file_table">
                         <thead>
                             <tr>
-                                %if perm&lazylibrarian.perm_status:
+                                %if perm&bookbagofholding.perm_status:
                                 <th class="text-center no-sort" style="width: 40px;">
                                     <input type="checkbox" onClick="toggleAll(this)" />
                                 </th>
@@ -97,7 +97,7 @@
                 </form>
             </div>
         </div>
-        %if perm&lazylibrarian.perm_status:
+        %if perm&bookbagofholding.perm_status:
         <div class="ll-card-footer">
             <form action="markUnmatchedFiles" method="get" class="ll-toolbar-form">
                 <input type="hidden" name="library" value="${library}">
@@ -361,7 +361,7 @@
             "order": [[ 5, 'desc' ]],
             "columnDefs": [
                 { targets: 'no-sort', orderable: false },
-                %if perm&lazylibrarian.perm_status:
+                %if perm&bookbagofholding.perm_status:
                 { targets: [0],
                     'class': 'text-center',
                     'render': function(data, type, row) {
@@ -376,7 +376,7 @@
                     'class': 'text-center',
                     'render': function(data, type, row) {
                         var html = '';
-                        %if perm&lazylibrarian.perm_status:
+                        %if perm&bookbagofholding.perm_status:
                         html += '<button class="ll-btn ll-btn-primary ll-btn-sm match-btn" data-fileid="' + escapeAttr(row[0]) + '" data-filename="' + escapeAttr(row[3]) + '" data-author="' + escapeAttr(row[1]) + '" data-title="' + escapeAttr(row[2]) + '">Match</button> ';
                         html += '<button class="ll-btn ll-btn-secondary ll-btn-sm retry-btn" data-fileid="' + escapeAttr(row[0]) + '">Retry</button>';
                         %endif
@@ -395,7 +395,7 @@
             "bServerSide": true,
             "sAjaxSource": 'getUnmatchedFiles?library=${library}&whichStatus=${whichStatus}',
             "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "iDisplayLength": ${bookbagofholding.CONFIG['DISPLAYLENGTH']},
             "bFilter": true
         });
 

@@ -1,6 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'users'
@@ -86,39 +86,43 @@
                         <label class="ll-form-label" for="email">Email (for messages)</label>
                         <input type="email" id="email" name="email" class="ll-input">
                     </div>
-                    <div class="ll-form-group">
-                        <label class="ll-form-label" for="sendto">Send To (e.g. Kindle email)</label>
-                        <input type="text" id="sendto" name="sendto" class="ll-input">
-                    </div>
                 </div>
 
                 <div class="ll-form-row">
                     <div class="ll-form-group">
-                        <label class="ll-form-label" for="perms">Permissions</label>
-                        <input type="text" id="perms" name="perms" class="ll-input">
-                        <div class="ll-perm-buttons">
-                            <button type="button" id="admin" class="ll-btn ll-btn-ghost ll-btn-sm">Admin</button>
-                            <button type="button" id="friend" class="ll-btn ll-btn-ghost ll-btn-sm">Friend</button>
-                            <button type="button" id="guest" class="ll-btn ll-btn-ghost ll-btn-sm">Guest</button>
-                        </div>
+                        <label class="ll-form-label" for="role">Role</label>
+                        <select id="role" name="role" class="ll-select">
+                            <option value="admin">Admin - Full access</option>
+                            <option value="manager">Manager - All except settings</option>
+                            <option value="friend">Friend - Browse, search, request</option>
+                            <option value="guest" selected>Guest - Browse and download</option>
+                            <option value="readonly">Read Only - View only</option>
+                        </select>
+                        <small class="ll-form-help">Role determines user's permissions</small>
                     </div>
                     <div class="ll-form-group">
                         <label class="ll-form-label" for="password">Password</label>
                         <input type="text" id="password" name="password" class="ll-input" placeholder="Keep existing password">
-                        <button type="button" id="generatepwd" class="ll-btn ll-btn-ghost ll-btn-sm" style="margin-top: 0.5rem;">
-                            Generate Password
-                        </button>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                            <button type="button" id="generatepwd" class="ll-btn ll-btn-ghost ll-btn-sm">
+                                Generate Password
+                            </button>
+                            <button type="button" id="resetlink" class="ll-btn ll-btn-ghost ll-btn-sm">
+                                Get Reset Link
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="ll-form-row">
                     <div class="ll-form-group">
-                        <label class="ll-form-label" for="calread">Calibre Read Column</label>
-                        <input type="text" id="calread" name="calread" class="ll-input">
+                        <label class="ll-form-label" for="perms">Permissions (Advanced)</label>
+                        <input type="text" id="perms" name="perms" class="ll-input">
+                        <small class="ll-form-help">Auto-filled based on role, or enter custom value</small>
                     </div>
                     <div class="ll-form-group">
-                        <label class="ll-form-label" for="caltoread">Calibre ToRead Column</label>
-                        <input type="text" id="caltoread" name="caltoread" class="ll-input">
+                        <label class="ll-form-label" for="lastlogin">Last Login</label>
+                        <input type="text" id="lastlogin" name="lastlogin" class="ll-input" readonly>
                     </div>
                 </div>
 
@@ -160,15 +164,31 @@
     <script src="js/bootbox.min.js"></script>
     <script>
     $(document).ready(function() {
-        // Permission presets
-        $('#admin').click(function() {
-            $("#perms").val(${lazylibrarian.perm_admin});
-        });
-        $('#friend').click(function() {
-            $("#perms").val(${lazylibrarian.perm_friend});
-        });
-        $('#guest').click(function() {
-            $("#perms").val(${lazylibrarian.perm_guest});
+        // Role to permissions mapping
+        var rolePermissions = {
+            'admin': 65535,
+            'manager': 65532,
+            'friend': 5856,
+            'guest': 4320,
+            'readonly': 240
+        };
+
+        // Permissions to role mapping (for reverse lookup)
+        function getRoleFromPerms(perms) {
+            if (perms >= 65535) return 'admin';
+            if (perms >= 65532) return 'manager';
+            if (perms >= 5856) return 'friend';
+            if (perms >= 4320) return 'guest';
+            if (perms > 0) return 'readonly';
+            return 'guest';
+        }
+
+        // Role change handler
+        $('#role').change(function() {
+            var role = $(this).val();
+            if (rolePermissions[role]) {
+                $("#perms").val(rolePermissions[role]);
+            }
         });
 
         // Generate password
@@ -186,27 +206,31 @@
                     var obj = JSON.parse(data);
                     $("#username").val(user);
                     $("#email").val(obj['email']);
-                    $("#sendto").val(obj['sendto']);
                     $("#fullname").val(obj['name']);
                     $("#perms").val(obj['perms']);
-                    $("#calread").val(obj['calread']);
-                    $("#caltoread").val(obj['caltoread']);
                     $("#booktype").val(obj['booktype']);
                     $("#userid").val(obj['userid']);
+                    $("#lastlogin").val(obj['lastlogin'] || 'Never');
                     $("#password").val("");
+                    // Set role based on permissions or role field
+                    if (obj['role']) {
+                        $("#role").val(obj['role']);
+                    } else {
+                        $("#role").val(getRoleFromPerms(obj['perms']));
+                    }
                 });
             } else {
                 // Clear form for new user
                 $("#username").val("");
                 $("#email").val("");
-                $("#sendto").val("");
                 $("#fullname").val("");
-                $("#perms").val("");
-                $("#calread").val("");
-                $("#caltoread").val("");
                 $("#booktype").val("");
                 $("#userid").val("");
+                $("#lastlogin").val("");
                 $("#password").val("");
+                $("#role").val("guest");
+                // Set default permissions for guest role
+                $("#perms").val(rolePermissions['guest']);
             }
         });
 
@@ -294,12 +318,10 @@
             var username = $.trim($("#username").val());
             var fullname = $.trim($("#fullname").val());
             var email = $.trim($("#email").val());
-            var sendto = $.trim($("#sendto").val());
             var perms = $.trim($("#perms").val());
-            var calread = $.trim($("#calread").val());
-            var caltoread = $.trim($("#caltoread").val());
             var booktype = $.trim($("#booktype").val());
             var password = $.trim($("#password").val());
+            var role = $.trim($("#role").val());
 
             if (!username) {
                 bootbox.alert({
@@ -317,12 +339,10 @@
                 'username': username,
                 'fullname': fullname,
                 'email': email,
-                'sendto': sendto,
                 'perms': perms,
                 'password': password,
-                'calread': calread,
-                'caltoread': caltoread,
-                'booktype': booktype
+                'booktype': booktype,
+                'role': role
             }, function(data) {
                 bootbox.dialog({
                     title: 'Update User',
@@ -332,6 +352,46 @@
                             label: "Close",
                             className: 'll-btn ll-btn-primary',
                             callback: function() { window.location.reload(true); }
+                        }
+                    }
+                });
+            });
+        });
+
+        // Get password reset link for user
+        $('#resetlink').click(function() {
+            var user = $.trim($("#user").val());
+            if (!user) {
+                bootbox.alert({
+                    title: 'No User Selected',
+                    message: 'Please select a user first.',
+                    buttons: {
+                        ok: { className: 'll-btn ll-btn-primary' }
+                    }
+                });
+                return;
+            }
+            $.get("adminResetPassword", {'username': user}, function(data) {
+                bootbox.dialog({
+                    title: 'Password Reset Link',
+                    message: '<p>Share this reset link with the user:</p>' +
+                             '<div style="background: #f8fafc; padding: 12px; border-radius: 6px; margin-top: 12px; word-break: break-all;">' +
+                             '<code>' + window.location.origin + window.location.pathname.replace(/\/users\/?$/, '/') + data + '</code>' +
+                             '</div>' +
+                             '<p style="margin-top: 12px; color: #666; font-size: 13px;">This link will expire in 1 hour.</p>',
+                    buttons: {
+                        copy: {
+                            label: "Copy Link",
+                            className: 'll-btn ll-btn-secondary',
+                            callback: function() {
+                                var link = window.location.origin + window.location.pathname.replace(/\/users\/?$/, '/') + data;
+                                navigator.clipboard.writeText(link);
+                                return false;
+                            }
+                        },
+                        close: {
+                            label: "Close",
+                            className: 'll-btn ll-btn-primary'
                         }
                     }
                 });

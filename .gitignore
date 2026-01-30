@@ -5,7 +5,7 @@ cache/*
 cache.db*
 config.ini
 Logs/*
-lazylibrarian.db*
+bookbagofholding.db*
 version.txt
 *.log
 *.AuthorCache/*
@@ -21,7 +21,7 @@ version.txt
 #data/js/bootbox.min.js
 #data/js/bootstrap-notify.js
 #data/js/bootstrap-notify.min.js
-#data/js/lazylibrarian-bs.js
+#data/js/bookbagofholding-bs.js
 
 #  Compiled source   #
 ######################

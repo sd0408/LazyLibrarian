@@ -4,7 +4,7 @@
 # and "folder" is the folder ready to be processed
 # This example uses "ebook-convert" from calibre to make sure we have both epub and mobi of the new book.
 # Note it is not fully error trapped, just a basic working example.
-# Error messages appear as errors in the lazylibrarian log
+# Error messages appear as errors in the bookbagofholding log
 # Anything you print to stdout appears as debug messages in the log
 # The exit code and messages get passed back to the "test" button
 # Always exit zero on success, non-zero on fail

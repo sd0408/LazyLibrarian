@@ -45,7 +45,7 @@ htmlcov
 docs/
 
 # Testing
-lazylibrarian/unittests/
+bookbagofholding/unittests/
 pytest.ini
 
 # Development files

@@ -1,4 +1,4 @@
-### Bookstrap Theme (Interface) for LazyLibrarian
+### Bookstrap Theme (Interface) for Bookbag of Holding
 
 Based on bootstrap 3. Optimised for responsive design from mobile to desktop.
 
@@ -6,7 +6,7 @@ Based on bootstrap 3. Optimised for responsive design from mobile to desktop.
 
 Files include styles and javascript additions to the default interface. Does not intefere, change or overwite any of the default interface.
 
-Clone this into your LazyLibrarian data path and you should find "bookstrap" appears in your config as an additional interface / theme.
+Clone this into your Bookbag of Holding data path and you should find "bookstrap" appears in your config as an additional interface / theme.
 
 If you'd like to change the default theme you can edit the base.html file and change the "slate" css file to another name you can find here: [MaxCDN Bootswath Themes](https://www.bootstrapcdn.com/bootswatch/)
 

@@ -1,5 +1,5 @@
 <%
-    import lazylibrarian
+    import bookbagofholding
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -22,13 +22,13 @@
         }
         .login-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
             padding: 24px;
         }
         .login-card {
             background: var(--ll-surface);
             border-radius: var(--ll-radius-lg);
-            box-shadow: var(--ll-shadow-lg);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             padding: 40px;
         }
         .login-logo {
@@ -50,44 +50,104 @@
         }
         .login-title {
             text-align: center;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
             margin-bottom: 8px;
+            color: var(--ll-text);
         }
         .login-subtitle {
             text-align: center;
             color: var(--ll-text-light);
-            margin-bottom: 32px;
+            margin-bottom: 28px;
+            font-size: 14px;
         }
         .login-form .ll-form-group {
             margin-bottom: 20px;
         }
+        .login-form .ll-input {
+            padding: 12px 14px;
+            font-size: 15px;
+        }
         .login-form .ll-btn {
             width: 100%;
             margin-top: 8px;
+            padding: 12px 16px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--ll-primary);
+            cursor: pointer;
+        }
+        .remember-me span {
+            color: var(--ll-text-light);
+        }
+        .forgot-link {
+            color: var(--ll-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .forgot-link:hover {
+            text-decoration: underline;
         }
         .login-footer {
             text-align: center;
             margin-top: 24px;
             padding-top: 24px;
             border-top: 1px solid var(--ll-border);
+            font-size: 14px;
         }
         .login-footer a {
             color: var(--ll-primary);
             text-decoration: none;
+            font-weight: 500;
         }
         .login-footer a:hover {
             text-decoration: underline;
         }
         .alert {
-            padding: 12px 16px;
+            padding: 14px 16px;
             border-radius: var(--ll-radius);
             margin-bottom: 20px;
             font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .alert svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
         }
         .alert-error {
-            background: var(--ll-error-light);
-            color: var(--ll-error-dark);
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .alert-info {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
         }
     </style>
 </head>
@@ -106,10 +166,36 @@
             <p class="login-subtitle">Sign in to continue to your library</p>
 
             %if 'message' in dir() and message:
-            <div class="alert alert-error">${message}</div>
+                %if 'error' in message.lower() or 'wrong' in message.lower() or 'invalid' in message.lower() or 'failed' in message.lower() or 'too many' in message.lower():
+            <div class="alert alert-error">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>${message}</span>
+            </div>
+                %elif 'success' in message.lower() or 'reset' in message.lower():
+            <div class="alert alert-success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>${message}</span>
+            </div>
+                %else:
+            <div class="alert alert-info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>${message}</span>
+            </div>
+                %endif
             %endif
 
-            <form class="login-form" action="checkLogin" method="post">
+            <form class="login-form" action="user_login" method="post">
                 <div class="ll-form-group">
                     <label class="ll-label" for="username">Username</label>
                     <input type="text" class="ll-input" id="username" name="username"
@@ -120,12 +206,19 @@
                     <input type="password" class="ll-input" id="password" name="password"
                            placeholder="Enter your password" required>
                 </div>
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember" value="1">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="forgotPassword" class="forgot-link">Forgot password?</a>
+                </div>
                 <button type="submit" class="ll-btn ll-btn-primary">
                     Sign In
                 </button>
             </form>
 
-            %if lazylibrarian.CONFIG.get('ALLOW_REGISTER', False):
+            %if bookbagofholding.CONFIG.get('ALLOW_REGISTER', False):
             <div class="login-footer">
                 <p>Don't have an account? <a href="register">Register</a></p>
             </div>

@@ -1,6 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'activedownloads'
@@ -70,7 +70,7 @@
         <p class="ll-page-subtitle">Manage downloads in progress across all clients</p>
     </div>
     <div class="ll-page-header-actions">
-        %if perm&lazylibrarian.perm_status:
+        %if perm&bookbagofholding.perm_status:
         <button id="cancelAllBtn" class="ll-btn ll-btn-danger" style="display: none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <circle cx="12" cy="12" r="10"></circle>

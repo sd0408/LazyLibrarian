@@ -1,6 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'manage'
@@ -17,7 +17,7 @@
             <p class="ll-page-subtitle">Manage your book queue by status</p>
         </div>
         <div class="ll-page-header-actions">
-            %if perm&lazylibrarian.perm_search:
+            %if perm&bookbagofholding.perm_search:
             <div class="ll-search-form">
                 <form action="search" method="get" style="display: flex; gap: 0.5rem;">
                     <input type="text" name="name" class="ll-input" placeholder="Title / Author / ISBN" style="width: 200px;">
@@ -42,12 +42,12 @@
                     %for item in ['Skipped', 'Wanted', 'Open', 'Have', 'Ignored']:
                     <option value="${item}" ${'selected="selected"' if whichStatus == item else ''}>${item}</option>
                     %endfor
-                    %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
+                    %if bookbagofholding.CONFIG.get('USER_ACCOUNTS', False):
                     <option value="Read" ${'selected="selected"' if whichStatus == "Read" else ''}>Read</option>
                     <option value="ToRead" ${'selected="selected"' if whichStatus == "ToRead" else ''}>To Read</option>
                     %endif
                 </select>
-                %if len(types) > 1 and perm&lazylibrarian.perm_audio:
+                %if len(types) > 1 and perm&bookbagofholding.perm_audio:
                 <label class="ll-toolbar-label">Library:</label>
                 <select name="library" id="chooselib" class="ll-select" onchange="updatePage()">
                     %for item in types:
@@ -60,14 +60,14 @@
                    placeholder="Search books..." style="width: 240px;">
         </div>
         <div class="ll-toolbar-right">
-            %if lazylibrarian.CONFIG['TOGGLES']:
+            %if bookbagofholding.CONFIG['TOGGLES']:
             <div class="ll-btn-group">
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="1">Cover</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="2">Author</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="3">Title</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="4">Series</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="5">Released</button>
-                %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
+                %if bookbagofholding.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="6">Delay</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="7">Search</button>
                 %endif
@@ -86,7 +86,7 @@
                     <table class="ll-table" id="book_table">
                         <thead>
                             <tr>
-                                %if perm&lazylibrarian.perm_status:
+                                %if perm&bookbagofholding.perm_status:
                                 <th class="text-center no-sort" style="width: 40px;"><input type="checkbox" onClick="toggleAll(this)" /></th>
                                 %else:
                                 <th class="hidden"></th>
@@ -96,7 +96,7 @@
                                 <th>Title</th>
                                 <th>Series</th>
                                 <th class="text-center" style="width: 100px;">Released</th>
-                                %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
+                                %if bookbagofholding.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
                                 <th class="text-center no-sort" style="width: 80px;">Delay</th>
                                 <th class="text-center no-sort" style="width: 120px;">Last Search</th>
                                 %endif
@@ -106,7 +106,7 @@
                 </form>
             </div>
         </div>
-        %if perm&lazylibrarian.perm_status:
+        %if perm&bookbagofholding.perm_status:
         <div class="ll-card-footer">
             <form action="markBooks" method="get" class="ll-toolbar-form">
                 <input type="hidden" name="redirect" value="manage">
@@ -118,14 +118,14 @@
                         <option value="${item}">${item}</option>
                         %endfor
                     </optgroup>
-                    %if lazylibrarian.CONFIG['USER_ACCOUNTS']:
+                    %if bookbagofholding.CONFIG.get('USER_ACCOUNTS', False):
                     <optgroup label="Reading List">
                         <option value="Unread">Unread</option>
                         <option value="Read">Read</option>
                         <option value="ToRead">To Read</option>
                     </optgroup>
                     %endif
-                    %if lazylibrarian.CONFIG['DELAYSEARCH']:
+                    %if bookbagofholding.CONFIG['DELAYSEARCH']:
                     <optgroup label="Search">
                         <option value="NoDelay">No Delay</option>
                     </optgroup>
@@ -217,7 +217,7 @@
     }
 
     $(document).ready(function() {
-        var show = "" + ${lazylibrarian.CONFIG['BOOK_IMG']};
+        var show = "" + ${bookbagofholding.CONFIG['BOOK_IMG']};
         var showimg = (show === '1');
 
         var table = $('#book_table').DataTable({
@@ -272,7 +272,7 @@
                     }
                 },
                 { targets: [5], 'class': 'text-center' },
-                %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
+                %if bookbagofholding.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
                 { targets: [6],
                     'class': 'text-center',
                     'render': function(data, type, row) { return row[14]; }
@@ -297,10 +297,10 @@
             "bServerSide": true,
             "sAjaxSource": 'getBooks?whichStatus=${whichStatus}&library=${library}&source=Manage',
             "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "iDisplayLength": ${bookbagofholding.CONFIG['DISPLAYLENGTH']},
             "bFilter": true,
             "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                %if perm&lazylibrarian.perm_status == 0:
+                %if perm&bookbagofholding.perm_status == 0:
                 $('td', nRow).eq(0).addClass("hidden");
                 %endif
                 return nRow;

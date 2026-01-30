@@ -1,0 +1,199 @@
+#  This file is part of Bookbag of Holding.
+#  Bookbag of Holding is free software':'you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#  Bookbag of Holding is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#  You should have received a copy of the GNU General Public License
+#  along with Bookbag of Holding.  If not, see <http://www.gnu.org/licenses/>.
+
+
+import requests
+
+import bookbagofholding
+from bookbagofholding import logger
+from bookbagofholding.common import proxyList
+from bookbagofholding.formatter import check_int, unaccented_str
+from urllib.parse import urlencode
+
+
+def checkLink():
+    # connection test, check host/port
+    auth, _ = SABnzbd(nzburl='auth')
+    if not auth:
+        return "Unable to talk to SABnzbd, check HOST/PORT/SUBDIR"
+    # check apikey is valid
+    cats, _ = SABnzbd(nzburl='get_cats')  # type: dict
+    if not cats:
+        return "Unable to talk to SABnzbd, check APIKEY"
+    # check category exists
+    if bookbagofholding.CONFIG['SAB_CAT']:
+        if 'categories' not in cats or not len(cats['categories']):
+            return "SABnzbd seems to have no categories set"
+        if bookbagofholding.CONFIG['SAB_CAT'] not in cats['categories']:
+            return "SABnzbd: Unknown category [%s]\nValid categories:\n%s" % (
+                    bookbagofholding.CONFIG['SAB_CAT'], str(cats['categories']))
+    return "SABnzbd connection successful"
+
+
+def SABnzbd(title=None, nzburl=None, remove_data=False):
+
+    if nzburl in ['delete', 'delhistory'] and title == 'unknown':
+        res = '%s function unavailable in this version of sabnzbd, no nzo_ids' % nzburl
+        logger.debug(res)
+        return False, res
+
+    hostname = bookbagofholding.CONFIG['SAB_HOST']
+    port = check_int(bookbagofholding.CONFIG['SAB_PORT'], 0)
+    if not hostname:
+        res = 'Invalid sabnzbd host, check your config'
+        logger.error(res)
+        return False, res
+
+    if hostname.endswith('/'):
+        hostname = hostname[:-1]
+    if not hostname.startswith("http://") and not hostname.startswith("https://"):
+        hostname = 'http://' + hostname
+
+    # Only append port if specified (non-zero), otherwise use URL as-is
+    if port:
+        HOST = "%s:%s" % (hostname, port)
+    else:
+        HOST = hostname
+
+    if bookbagofholding.CONFIG['SAB_SUBDIR']:
+        HOST = HOST + "/" + bookbagofholding.CONFIG['SAB_SUBDIR']
+
+    params = {}
+    if nzburl == 'auth' or nzburl == 'get_cats':
+        # connection test, check auth mode or get_cats
+        params['mode'] = nzburl
+        params['output'] = 'json'
+        if bookbagofholding.CONFIG['SAB_API']:
+            params['apikey'] = bookbagofholding.CONFIG['SAB_API']
+        title = 'LL.(%s)' % nzburl
+    elif nzburl == 'queue':
+        params['mode'] = 'queue'
+        params['limit'] = '100'
+        params['output'] = 'json'
+        if bookbagofholding.CONFIG['SAB_USER']:
+            params['ma_username'] = bookbagofholding.CONFIG['SAB_USER']
+        if bookbagofholding.CONFIG['SAB_PASS']:
+            params['ma_password'] = bookbagofholding.CONFIG['SAB_PASS']
+        if bookbagofholding.CONFIG['SAB_API']:
+            params['apikey'] = bookbagofholding.CONFIG['SAB_API']
+        title = 'LL.(Queue)'
+    elif nzburl == 'history':
+        params['mode'] = 'history'
+        params['limit'] = '100'
+        params['output'] = 'json'
+        if bookbagofholding.CONFIG['SAB_USER']:
+            params['ma_username'] = bookbagofholding.CONFIG['SAB_USER']
+        if bookbagofholding.CONFIG['SAB_PASS']:
+            params['ma_password'] = bookbagofholding.CONFIG['SAB_PASS']
+        if bookbagofholding.CONFIG['SAB_API']:
+            params['apikey'] = bookbagofholding.CONFIG['SAB_API']
+        title = 'LL.(History)'
+    elif nzburl == 'delete':
+        # only deletes tasks if still in the queue, ie NOT completed tasks
+        params['mode'] = 'queue'
+        params['output'] = 'json'
+        params['name'] = nzburl
+        params['value'] = title
+        if bookbagofholding.CONFIG['SAB_USER']:
+            params['ma_username'] = bookbagofholding.CONFIG['SAB_USER']
+        if bookbagofholding.CONFIG['SAB_PASS']:
+            params['ma_password'] = bookbagofholding.CONFIG['SAB_PASS']
+        if bookbagofholding.CONFIG['SAB_API']:
+            params['apikey'] = bookbagofholding.CONFIG['SAB_API']
+        if remove_data:
+            params['del_files'] = 1
+        title = 'LL.(Delete) ' + title
+    elif nzburl == 'delhistory':
+        params['mode'] = 'history'
+        params['output'] = 'json'
+        params['name'] = 'delete'
+        params['value'] = title
+        if bookbagofholding.CONFIG['SAB_USER']:
+            params['ma_username'] = bookbagofholding.CONFIG['SAB_USER']
+        if bookbagofholding.CONFIG['SAB_PASS']:
+            params['ma_password'] = bookbagofholding.CONFIG['SAB_PASS']
+        if bookbagofholding.CONFIG['SAB_API']:
+            params['apikey'] = bookbagofholding.CONFIG['SAB_API']
+        if remove_data:
+            params['del_files'] = 1
+        title = 'LL.(DelHistory) ' + title
+    else:
+        params['mode'] = 'addurl'
+        params['output'] = 'json'
+        if nzburl:
+            params['name'] = nzburl
+        if title:
+            params['nzbname'] = title
+        if bookbagofholding.CONFIG['SAB_USER']:
+            params['ma_username'] = bookbagofholding.CONFIG['SAB_USER']
+        if bookbagofholding.CONFIG['SAB_PASS']:
+            params['ma_password'] = bookbagofholding.CONFIG['SAB_PASS']
+        if bookbagofholding.CONFIG['SAB_API']:
+            params['apikey'] = bookbagofholding.CONFIG['SAB_API']
+        if bookbagofholding.CONFIG['SAB_CAT']:
+            params['cat'] = bookbagofholding.CONFIG['SAB_CAT']
+        if bookbagofholding.CONFIG['USENET_RETENTION']:
+            params["maxage"] = bookbagofholding.CONFIG['USENET_RETENTION']
+
+# FUTURE-CODE
+#    if bookbagofholding.SAB_PRIO:
+#        params["priority"] = bookbagofholding.SAB_PRIO
+#    if bookbagofholding.SAB_PP:
+#        params["script"] = bookbagofholding.SAB_SCRIPT
+
+    URL = HOST + "/api?" + urlencode(params)
+
+    # to debug because of api
+    if bookbagofholding.LOGLEVEL & bookbagofholding.log_dlcomms:
+        logger.debug('Request url for <a href="%s">SABnzbd</a>' % URL)
+    proxies = proxyList()
+    try:
+        timeout = check_int(bookbagofholding.CONFIG['HTTP_TIMEOUT'], 30)
+        r = requests.get(URL, timeout=timeout, proxies=proxies)
+        result = r.json()
+    except requests.exceptions.Timeout:
+        res = "Timeout connecting to SAB with URL: %s" % URL
+        logger.error(res)
+        return False, res
+    except Exception as e:
+        if hasattr(e, 'reason'):
+            errmsg = e.reason
+        elif hasattr(e, 'strerror'):
+            errmsg = e.strerror
+        else:
+            errmsg = str(e)
+
+        res = "Unable to connect to SAB with URL: %s, %s" % (URL, errmsg)
+        logger.error(res)
+        return False, res
+    if bookbagofholding.LOGLEVEL & bookbagofholding.log_dlcomms:
+        logger.debug("Result text from SAB: " + str(result))
+
+    if title:
+        title = unaccented_str(title)
+        if title.startswith('LL.('):
+            return result, ''
+    if result['status'] is True:
+        logger.info("%s sent to SAB successfully." % title)
+        # sab versions earlier than 0.8.0 don't return nzo_ids
+        if 'nzo_ids' in result:
+            if result['nzo_ids']:  # check its not empty
+                return result['nzo_ids'][0], ''
+        return 'unknown'
+    elif result['status'] is False:
+        res = "SAB returned Error: %s" % result['error']
+        logger.error(res)
+        return False, res
+    else:
+        res = "Unknown error: %s" % str(result)
+        logger.error(res)
+        return False, res

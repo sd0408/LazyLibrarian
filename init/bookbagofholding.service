@@ -1,0 +1,20 @@
+# bookbagofholding.service to run as $USER with config in $HOME/.bookbagofholding
+
+[Unit]
+SourcePath=/etc/init.d/bookbagofholding
+Description=LSB: starts instance of Bookbag of Holding
+After=all.target
+
+[Service]
+Type=forking
+Restart=no
+TimeoutSec=5min
+IgnoreSIGPIPE=no
+KillMode=process
+GuessMainPID=no
+RemainAfterExit=yes
+ExecStart=/etc/init.d/bookbagofholding start
+ExecStop=/etc/init.d/bookbagofholding stop
+
+[Install]
+WantedBy=multi-user.target

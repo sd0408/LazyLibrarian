@@ -9,44 +9,44 @@
 # Add the following lines to /etc/rc.conf.local or /etc/rc.conf
 # to enable this service:
 #
-# lazylibrarian_enable (bool): Set to NO by default.
+# bookbagofholding_enable (bool): Set to NO by default.
 #           Set it to YES to enable it.
-# lazylibrarian_user:  The user account Bookbag of Holding daemon runs as what
+# bookbagofholding_user:  The user account Bookbag of Holding daemon runs as what
 #           you want it to be. It uses '_sabnzbd' user by
 #           default. Do not sets it as empty or it will run
 #           as root.
-# lazylibrarian_dir:   Directory where lazylibrarian lives.
-#           Default: /usr/local/lazylibrarian
-# lazylibrarian_chdir:  Change to this directory before running lazylibrarian.
-#     Default is same as lazylibrarian_dir.
-# lazylibrarian_pid:  The name of the pidfile to create.
-#     Default is lazylibrarian.pid in lazylibrarian_dir.
+# bookbagofholding_dir:   Directory where bookbagofholding lives.
+#           Default: /usr/local/bookbagofholding
+# bookbagofholding_chdir:  Change to this directory before running bookbagofholding.
+#     Default is same as bookbagofholding_dir.
+# bookbagofholding_pid:  The name of the pidfile to create.
+#     Default is bookbagofholding.pid in bookbagofholding_dir.
 
 . /etc/rc.subr
 
-name="lazylibrarian"
+name="bookbagofholding"
 rcvar=${name}_enable
 
 load_rc_config ${name}
 
-: ${lazylibrarian_enable:="NO"}
-: ${lazylibrarian_user:="USERNAME"}
-: ${lazylibrarian_dir:="/usr/local/lazylibrarian"}
-: ${lazylibrarian_chdir:="${lazylibrarian_dir}"}
-: ${lazylibrarian_datadir:="${lazylibrarian_dir}"}
-: ${lazylibrarian_pid:="${lazylibrarian_datadir}/lazylibrarian.pid"}
-: ${lazylibrarian_conf:="${lazylibrarian_datadir}/config.ini"}
-: ${lazylibrarian_flags:=""}
+: ${bookbagofholding_enable:="NO"}
+: ${bookbagofholding_user:="USERNAME"}
+: ${bookbagofholding_dir:="/usr/local/bookbagofholding"}
+: ${bookbagofholding_chdir:="${bookbagofholding_dir}"}
+: ${bookbagofholding_datadir:="${bookbagofholding_dir}"}
+: ${bookbagofholding_pid:="${bookbagofholding_datadir}/bookbagofholding.pid"}
+: ${bookbagofholding_conf:="${bookbagofholding_datadir}/config.ini"}
+: ${bookbagofholding_flags:=""}
 
 PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
 
-WGET="/usr/local/bin/wget"      # You need wget for this script to safely shutdown lazylibrarian.
+WGET="/usr/local/bin/wget"      # You need wget for this script to safely shutdown bookbagofholding.
 LLUSR=""                        # Set Bookbag of Holding username (if you use one) here.
 LLPWD=""                        # Set Bookbag of Holding password (if you use one) here.
 
-if [ -e "${lazylibrarian_conf}" ]; then
-    HOST=`grep -A128 "\[General\]" "${lazylibrarian_conf}"|egrep "^http_host"|perl -wple 's/^http_host = (.*)$/$1/'`
-    PORT=`grep -A128 "\[General\]" "${lazylibrarian_conf}"|egrep "^http_port"|perl -wple 's/^http_port = (.*)$/$1/'`
+if [ -e "${bookbagofholding_conf}" ]; then
+    HOST=`grep -A128 "\[General\]" "${bookbagofholding_conf}"|egrep "^http_host"|perl -wple 's/^http_host = (.*)$/$1/'`
+    PORT=`grep -A128 "\[General\]" "${bookbagofholding_conf}"|egrep "^http_port"|perl -wple 's/^http_port = (.*)$/$1/'`
 else
     HOST="localhost"
     PORT="5299"
@@ -55,12 +55,12 @@ fi
 status_cmd="${name}_status"
 stop_cmd="${name}_stop"
 
-command="${lazylibrarian_dir}/LazyLibrarian.py"
-command_args="--daemon --quiet --pidfile ${lazylibrarian_pid} --datadir ${lazylibrarian_datadir} ${lazylibrarian_flags}"
+command="${bookbagofholding_dir}/Bookbag of Holding.py"
+command_args="--daemon --quiet --pidfile ${bookbagofholding_pid} --datadir ${bookbagofholding_datadir} ${bookbagofholding_flags}"
 
 # Check for wget and refuse to start without it.
 if [ ! -x "${WGET}" ]; then
-    warn "lazylibrarian not started: You need wget to safely shut down lazylibrarian."
+    warn "bookbagofholding not started: You need wget to safely shut down bookbagofholding."
     exit 1
 fi
 
@@ -70,17 +70,17 @@ if [ `id -u` != "0" ]; then
     exit 1
 fi
 
-verify_lazylibrarian_pid() {
-    # Make sure the pid corresponds to the lazylibrarian process.
-    pid=`cat ${lazylibrarian_pid} 2>/dev/null`
-    ps -p ${pid} | grep -q "python ${lazylibrarian_dir}/LazyLibrarian.py"
+verify_bookbagofholding_pid() {
+    # Make sure the pid corresponds to the bookbagofholding process.
+    pid=`cat ${bookbagofholding_pid} 2>/dev/null`
+    ps -p ${pid} | grep -q "python ${bookbagofholding_dir}/Bookbag of Holding.py"
     return $?
 }
 
-# Try to stop lazylibrarian cleanly by calling shutdown over http.
-lazylibrarian_stop() {
+# Try to stop bookbagofholding cleanly by calling shutdown over http.
+bookbagofholding_stop() {
     echo "Stopping $name"
-    verify_lazylibrarian_pid
+    verify_bookbagofholding_pid
     ${WGET} -O - -q --user=${LLUSR} --password=${LLPWD} "http://${HOST}:${PORT}/shutdown/" >/dev/null
     if [ -n "${pid}" ]; then
         wait_for_pids ${pid}
@@ -88,8 +88,8 @@ lazylibrarian_stop() {
     fi
 }
 
-lazylibrarian_status() {
-    verify_lazylibrarian_pid && echo "$name is running as ${pid}" || echo "$name is not running"
+bookbagofholding_status() {
+    verify_bookbagofholding_pid && echo "$name is running as ${pid}" || echo "$name is not running"
 }
 
 run_rc_command "$1"

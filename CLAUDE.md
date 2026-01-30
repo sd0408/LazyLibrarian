@@ -1,12 +1,12 @@
-# LazyLibrarian - System Architecture Documentation
+# Bookbag of Holding - System Architecture Documentation
 
 ## Overview
 
-LazyLibrarian is an open-source book/magazine metadata aggregation and download automation system. It monitors authors and retrieves metadata for digital reading materials (ebooks, audiobooks, magazines, comics) by integrating with multiple book databases and download sources.
+Bookbag of Holding is an open-source book/magazine metadata aggregation and download automation system. It monitors authors and retrieves metadata for digital reading materials (ebooks, audiobooks, magazines, comics) by integrating with multiple book databases and download sources.
 
 **License:** GNU GPL v3
 **Source Repository:** [GitHub](https://github.com/sd0408/BookBagOfHolding)
-**Public Documentation:** https://lazylibrarian.gitlab.io/
+**Public Documentation:** https://bookbagofholding.gitlab.io/
 
 ---
 
@@ -14,34 +14,71 @@ LazyLibrarian is an open-source book/magazine metadata aggregation and download 
 
 | Item | Details |
 |------|---------|
-| **Entry Point** | `LazyLibrarian.py` |
+| **Entry Point** | `BookBagOfHolding.py` |
 | **Config File** | `config.ini` (INI format) |
 | **Database** | SQLite 3 with WAL mode (schema version 44) |
 | **Web Framework** | CherryPy + Mako templates |
 | **Scheduler** | APScheduler |
-| **Python Version** | Python 2.7+ / Python 3.6+ |
+| **Python Version** | Python 3.10+ |
 | **Default Port** | 5299 |
 
 ---
 
 ## Workflow Requirements
 
-**IMPORTANT:** After completing each task that modifies code, you MUST run the unit tests to verify nothing is broken:
+### Testing Requirements
+
+**IMPORTANT:** When adding or modifying code, you MUST:
+
+1. **Write unit tests** for any new functions, classes, or significant code changes
+2. **Update existing tests** if behavior changes
+3. **Run the full test suite** after completing each task:
 
 ```bash
-source .venv/bin/activate && python -m pytest lazylibrarian/unittests/
+source .venv/bin/activate && python -m pytest bookbagofholding/unittests/
 ```
 
-Do not consider a task complete until tests pass. If tests fail, fix the issues before moving on.
+Do not consider a task complete until:
+- New code has corresponding unit tests in `bookbagofholding/unittests/`
+- All tests pass (both new and existing)
+- If tests fail, fix the issues before moving on
+
+### Test File Conventions
+
+- Test files go in `bookbagofholding/unittests/`
+- Name test files `test_<module>.py` matching the module being tested
+- Use pytest fixtures from `conftest.py` for database and config setup
+- Mock external dependencies (cherrypy, database) as needed
+
+### Documentation Requirements
+
+**IMPORTANT:** Keep the README.md updated as the project evolves.
+
+When making changes that affect user-facing functionality, you MUST update `README.md`:
+
+1. **New Features** - Add to the Features section and Usage documentation
+2. **Configuration Changes** - Update the Configuration section with new settings
+3. **API Changes** - Update the REST API documentation
+4. **New Dependencies** - Update installation instructions if needed
+5. **Breaking Changes** - Clearly document in a visible location
+6. **New Download Clients/Providers** - Add to the appropriate tables
+
+The README serves as both user documentation and contributor guide. It should always reflect the current state of the application.
+
+**README Structure:**
+- `README.md` - User-facing documentation (installation, usage, configuration)
+- `CLAUDE.md` - Developer/architecture documentation (this file)
+
+When in doubt, update the README. Outdated documentation is worse than no documentation.
 
 ---
 
 ## Project Structure
 
 ```
-LazyLibrarian/
-├── LazyLibrarian.py              # Main entry point (292 lines)
-├── lazylibrarian/                # Core application package (47 modules)
+BookBagOfHolding/
+├── BookBagOfHolding.py              # Main entry point
+├── bookbagofholding/                # Core application package
 │   ├── __init__.py               # Global config, constants, initialization (68KB)
 │   ├── webStart.py               # CherryPy server initialization
 │   ├── webServe.py               # Web interface routes (226KB, 154+ handlers)
@@ -122,8 +159,8 @@ LazyLibrarian/
 │   └── images/                   # UI images
 │
 ├── init/                         # OS-specific init scripts
-│   ├── lazylibrarian.service     # systemd service file
-│   ├── lazylibrarian.init        # init.d script
+│   ├── bookbagofholding.service     # systemd service file
+│   ├── bookbagofholding.init        # init.d script
 │   └── ...
 │
 └── # Example Files
@@ -147,9 +184,8 @@ LazyLibrarian/
 | HTTP Client | Requests | Bundled in lib/ |
 
 ### Python Compatibility
-- Python 2.7+ and Python 3.6+
-- Uses `lib.six` for compatibility layer
-- Separate `lib/` (Py2) and `lib3/` (Py3) directories
+- Python 3.10+ required
+- Dependencies managed via `pyproject.toml`
 
 ### Key Libraries
 - **FuzzyWuzzy** - Fuzzy string matching for book/author verification
@@ -164,13 +200,13 @@ LazyLibrarian/
 ### Startup Flow
 
 ```
-LazyLibrarian.py
+BookBagOfHolding.py
     │
     ├── Parse command-line arguments (optparse)
     ├── Set paths (PROG_DIR, DATADIR, CONFIGFILE)
     ├── Detect system encoding
     │
-    └── lazylibrarian.initialize()
+    └── bookbagofholding.initialize()
         ├── Create/verify data directories
         ├── Initialize logging system
         ├── Load config.ini → CONFIG dict
@@ -184,7 +220,7 @@ LazyLibrarian.py
                 ├── Register URL routes
                 └── Start CherryPy engine
                     │
-                    └── lazylibrarian.start()
+                    └── bookbagofholding.start()
                         ├── Start APScheduler
                         ├── Schedule background jobs
                         └── Enter main event loop
@@ -391,14 +427,14 @@ LT_DEVKEY =                    # LibraryThing developer key
 
 ### Configuration Access
 ```python
-import lazylibrarian
+import bookbagofholding
 
 # Read config value
-value = lazylibrarian.CONFIG['HTTP_PORT']
+value = bookbagofholding.CONFIG['HTTP_PORT']
 
 # Write config value
-lazylibrarian.CONFIG['HTTP_PORT'] = 8080
-lazylibrarian.config_write('General')
+bookbagofholding.CONFIG['HTTP_PORT'] = 8080
+bookbagofholding.config_write('General')
 ```
 
 ---
@@ -598,7 +634,7 @@ Drop files to filesystem folder (fallback method)
 
 ### Job Management
 ```python
-from lazylibrarian.common import scheduleJob
+from bookbagofholding.common import scheduleJob
 
 # Schedule or restart a job
 scheduleJob(action='Start', target='search_book')
@@ -609,7 +645,7 @@ scheduleJob(action='Restart', target='PostProcessor')
 
 ## Post-Processing Pipeline
 
-Located in [postprocess.py](lazylibrarian/postprocess.py)
+Located in [postprocess.py](bookbagofholding/postprocess.py)
 
 ### Process Flow
 
@@ -660,7 +696,7 @@ $ISBN       → ISBN number
 
 ## OPDS Catalog
 
-Located in [opds.py](lazylibrarian/opds.py)
+Located in [opds.py](bookbagofholding/opds.py)
 
 ### Endpoints
 | Path | Description |
@@ -681,7 +717,7 @@ Located in [opds.py](lazylibrarian/opds.py)
 
 ## Logging System
 
-Located in [logger.py](lazylibrarian/logger.py)
+Located in [logger.py](bookbagofholding/logger.py)
 
 ### Configuration
 ```ini
@@ -711,7 +747,7 @@ log_admin       = 8192     # Admin operations
 
 ## Key Design Patterns
 
-1. **Global Configuration Pattern** - Centralized `lazylibrarian.CONFIG` dictionary
+1. **Global Configuration Pattern** - Centralized `bookbagofholding.CONFIG` dictionary
 2. **Database Abstraction** - `DBConnection` class with thread-safe locking
 3. **Adapter/Provider Pattern** - Pluggable search providers in providers.py
 4. **Factory Pattern** - `NZBDownloadMethod()`, `TORDownloadMethod()` dispatch
@@ -727,21 +763,21 @@ log_admin       = 8192     # Admin operations
 ### Running the Application
 ```bash
 # Standard run
-python LazyLibrarian.py
+python BookBagOfHolding.py
 
 # With debug logging
-python LazyLibrarian.py --debug
+python BookBagOfHolding.py --debug
 
 # As daemon (Linux/Mac)
-python LazyLibrarian.py -d
+python BookBagOfHolding.py -d
 
 # Custom port and data directory
-python LazyLibrarian.py --port 8080 --datadir /custom/path
+python BookBagOfHolding.py --port 8080 --datadir /custom/path
 ```
 
 ### Database Access
 ```python
-from lazylibrarian import database
+from bookbagofholding import database
 
 myDB = database.DBConnection()
 
@@ -765,7 +801,7 @@ myDB.upsert('authors', {'AuthorName': name}, {'AuthorID': id})
 4. Add UI controls in `data/interfaces/bookstrap/config.html`
 
 ### Adding a Notification Service
-1. Create module in `lazylibrarian/notifiers/`
+1. Create module in `bookbagofholding/notifiers/`
 2. Implement `notify_snatch()` and `notify_download()`
 3. Add config parameters to `__init__.py`
 4. Register in `notifiers/__init__.py`
@@ -774,11 +810,11 @@ myDB.upsert('authors', {'AuthorName': name}, {'AuthorID': id})
 
 ## Testing
 
-Unit tests are located in `lazylibrarian/unittests/`
+Unit tests are located in `bookbagofholding/unittests/`
 
 ```bash
 # Run tests (from project root)
-python -m pytest lazylibrarian/unittests/
+python -m pytest bookbagofholding/unittests/
 ```
 
 See [UNITTESTING.md](UNITTESTING.md) for details.
@@ -796,6 +832,6 @@ See [UNITTESTING.md](UNITTESTING.md) for details.
 ## Resources
 
 - **Source Code:** https://github.com/sd0408/BookBagOfHolding
-- **Documentation:** https://lazylibrarian.gitlab.io/
-- **Community:** Reddit r/LazyLibrarian
+- **Documentation:** https://bookbagofholding.gitlab.io/
+- **Community:** Reddit r/Bookbag of Holding
 - **Issues:** GitLab Issues

@@ -1,11 +1,11 @@
 <%inherit file="base.html"/>
 <%!
-    import lazylibrarian
+    import bookbagofholding
     current_page = 'dashboard'
 %>
 
 <%def name="headIncludes()">
-    %if lazylibrarian.AUTHORS_UPDATE == True:
+    %if bookbagofholding.AUTHORS_UPDATE == True:
     <meta http-equiv="refresh" content="30">
     %endif
 </%def>
@@ -62,7 +62,7 @@
 
 <!-- Quick Actions -->
 <div class="ll-quick-actions">
-    %if perm&lazylibrarian.perm_search:
+    %if perm&bookbagofholding.perm_search:
     <a href="searchForAuthor" class="ll-btn ll-btn-primary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -71,7 +71,7 @@
         Add Author
     </a>
     %endif
-    %if perm&lazylibrarian.perm_force:
+    %if perm&bookbagofholding.perm_force:
     <a href="forceSearch?source=books" class="ll-btn ll-btn-secondary">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
@@ -95,7 +95,7 @@
     <div class="ll-card">
         <div class="ll-card-header">
             <h3 class="ll-card-title">Recent Activity</h3>
-            %if perm&lazylibrarian.perm_history:
+            %if perm&bookbagofholding.perm_history:
             <a href="history" style="color: var(--ll-primary); font-size: 14px;">View All</a>
             %endif
         </div>
@@ -183,7 +183,7 @@
 </div>
 
 <!-- Wanted Queue Summary -->
-%if perm&lazylibrarian.perm_managebooks and stats.get('wanted', 0) > 0:
+%if perm&bookbagofholding.perm_managebooks and stats.get('wanted', 0) > 0:
 <div class="ll-card">
     <div class="ll-card-header">
         <h3 class="ll-card-title">Wanted Queue</h3>
@@ -213,7 +213,7 @@
 %endif
 
 <!-- System Status -->
-%if lazylibrarian.AUTHORS_UPDATE or lazylibrarian.EBOOK_UPDATE or lazylibrarian.AUDIO_UPDATE:
+%if bookbagofholding.AUTHORS_UPDATE or bookbagofholding.EBOOK_UPDATE or bookbagofholding.AUDIO_UPDATE:
 <div class="ll-card" style="border-left: 4px solid var(--ll-warning);">
     <div class="ll-card-body">
         <div class="ll-flex ll-items-center ll-gap-3">
@@ -224,13 +224,13 @@
             <div>
                 <strong>Background Tasks Running</strong>
                 <div class="ll-text-muted" style="font-size: 13px;">
-                    %if lazylibrarian.AUTHORS_UPDATE:
+                    %if bookbagofholding.AUTHORS_UPDATE:
                     Author refresh in progress...
                     %endif
-                    %if lazylibrarian.EBOOK_UPDATE:
+                    %if bookbagofholding.EBOOK_UPDATE:
                     eBook library scan in progress...
                     %endif
-                    %if lazylibrarian.AUDIO_UPDATE:
+                    %if bookbagofholding.AUDIO_UPDATE:
                     AudioBook library scan in progress...
                     %endif
                 </div>

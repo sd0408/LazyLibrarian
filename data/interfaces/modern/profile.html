@@ -1,6 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'profile'
@@ -38,28 +38,23 @@
         <div class="ll-card">
             <div class="ll-card-body" style="padding: 2rem;">
                 <div class="ll-profile-avatar">
-                    ${user['UserName'][0].upper() if user['UserName'] else 'U'}
+                    ${profile_user['UserName'][0].upper() if profile_user['UserName'] else 'U'}
                 </div>
 
                 <div class="ll-form-group">
                     <label class="ll-form-label" for="fullname">Full Name</label>
-                    <input type="text" id="fullname" name="fullname" class="ll-input" value="${user['Name']}">
+                    <input type="text" id="fullname" name="fullname" class="ll-input" value="${profile_user['Name']}">
                 </div>
 
                 <div class="ll-form-group">
                     <label class="ll-form-label" for="email">Email</label>
-                    <input type="email" id="email" name="email" class="ll-input" value="${user['Email']}">
-                </div>
-
-                <div class="ll-form-group">
-                    <label class="ll-form-label" for="sendto">Send To (e.g. Kindle email)</label>
-                    <input type="text" id="sendto" name="sendto" class="ll-input" value="${user['SendTo']}">
+                    <input type="email" id="email" name="email" class="ll-input" value="${profile_user['Email']}">
                 </div>
 
                 <div class="ll-form-group">
                     <label class="ll-form-label" for="username">Username</label>
-                    <input type="text" id="username" name="username" class="ll-input" value="${user['UserName']}">
-                    <small class="ll-form-help">User ID: ${user['UserID']}</small>
+                    <input type="text" id="username" name="username" class="ll-input" value="${profile_user['UserName']}">
+                    <small class="ll-form-help">User ID: ${profile_user['UserID']}</small>
                 </div>
 
                 <div class="ll-form-group">
@@ -81,19 +76,124 @@
                     Update Profile
                 </button>
 
-                %if lazylibrarian.LOGIN_MSG:
+                %if bookbagofholding.LOGIN_MSG:
                 <div class="ll-alert ll-alert-info" style="margin-top: 1rem;">
-                    ${lazylibrarian.LOGIN_MSG}
+                    ${bookbagofholding.LOGIN_MSG}
                 </div>
                 %endif
             </div>
         </div>
+
+        <!-- Role and Last Login Info -->
+        %if profile_user['Role'] or profile_user['LastLogin']:
+        <div class="ll-card" style="margin-top: 1.5rem;">
+            <div class="ll-card-header">
+                <h3 class="ll-card-title">Account Info</h3>
+            </div>
+            <div class="ll-card-body">
+                %if profile_user['Role']:
+                <div class="ll-form-group">
+                    <label class="ll-form-label">Role</label>
+                    <span class="ll-badge ll-badge-${profile_user['Role']}">${profile_user['Role'].title()}</span>
+                </div>
+                %endif
+                %if profile_user['LastLogin']:
+                <div class="ll-form-group">
+                    <label class="ll-form-label">Last Login</label>
+                    <span>${profile_user['LastLogin']}</span>
+                </div>
+                %endif
+            </div>
+        </div>
+        %endif
+
+        <!-- API Key Management -->
+        %if bookbagofholding.CONFIG.get('API_ENABLED'):
+        <div class="ll-card" style="margin-top: 1.5rem;">
+            <div class="ll-card-header">
+                <h3 class="ll-card-title">API Key</h3>
+            </div>
+            <div class="ll-card-body">
+                <p class="ll-form-help" style="margin-bottom: 1rem;">
+                    Use your API key to access the REST API. Keep it secret!
+                </p>
+                <div class="ll-form-group">
+                    <label class="ll-form-label">Your API Key</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="password" id="api-key" class="ll-input"
+                               value="${profile_user['ApiKey'] or ''}"
+                               readonly placeholder="No API key generated">
+                        <button type="button" id="toggle-api-key" class="ll-btn ll-btn-secondary" title="Show/Hide">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button type="button" id="generate-api-key" class="ll-btn ll-btn-primary">
+                        Generate New Key
+                    </button>
+                    %if profile_user['ApiKey']:
+                    <button type="button" id="revoke-api-key" class="ll-btn ll-btn-danger">
+                        Revoke Key
+                    </button>
+                    %endif
+                </div>
+            </div>
+        </div>
+        %endif
+
+        <!-- Active Sessions -->
+        %if 'sessions' in dir() and sessions:
+        <div class="ll-card" style="margin-top: 1.5rem;">
+            <div class="ll-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="ll-card-title">Active Sessions (${len(sessions)})</h3>
+                %if len(sessions) > 1:
+                <button type="button" id="revoke-all-sessions" class="ll-btn ll-btn-danger ll-btn-sm">
+                    Revoke All
+                </button>
+                %endif
+            </div>
+            <div class="ll-card-body">
+                <div class="ll-table-container">
+                    <table class="ll-table">
+                        <thead>
+                            <tr>
+                                <th>Created</th>
+                                <th>IP Address</th>
+                                <th>Expires</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            %for session in sessions:
+                            <tr>
+                                <td>${session['CreatedAt']}</td>
+                                <td>${session['IPAddress'] or 'Unknown'}</td>
+                                <td>${session['ExpiresAt']}</td>
+                                <td>
+                                    <button type="button" class="ll-btn ll-btn-danger ll-btn-sm revoke-session"
+                                            data-session-id="${session['SessionID']}">
+                                        Revoke
+                                    </button>
+                                </td>
+                            </tr>
+                            %endfor
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        %endif
     </div>
 </%def>
 <%def name="javascriptIncludes()">
     <script src="js/bootbox.min.js"></script>
     <script>
     $(document).ready(function() {
+        // Profile update
         $('#update').click(function() {
             var username = $.trim($("#username").val());
             var password = $.trim($("#password").val());
@@ -131,6 +231,122 @@
                         }
                     }
                 });
+            });
+        });
+
+        // Toggle API key visibility
+        $('#toggle-api-key').click(function() {
+            var field = $('#api-key');
+            if (field.attr('type') === 'password') {
+                field.attr('type', 'text');
+            } else {
+                field.attr('type', 'password');
+            }
+        });
+
+        // Generate API key
+        $('#generate-api-key').click(function() {
+            bootbox.confirm({
+                title: 'Generate New API Key',
+                message: 'This will replace your existing API key. Any applications using the old key will stop working. Continue?',
+                buttons: {
+                    cancel: { className: 'll-btn ll-btn-secondary' },
+                    confirm: { className: 'll-btn ll-btn-primary' }
+                },
+                callback: function(result) {
+                    if (result) {
+                        $.get("generateUserApiKey", function(data) {
+                            if (data.length === 32) {
+                                $('#api-key').val(data);
+                                bootbox.alert({
+                                    title: 'API Key Generated',
+                                    message: 'Your new API key has been generated. Make sure to save it!',
+                                    buttons: { ok: { className: 'll-btn ll-btn-primary' } }
+                                });
+                                location.reload();
+                            } else {
+                                bootbox.alert({
+                                    title: 'Error',
+                                    message: data,
+                                    buttons: { ok: { className: 'll-btn ll-btn-primary' } }
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+        // Revoke API key
+        $('#revoke-api-key').click(function() {
+            bootbox.confirm({
+                title: 'Revoke API Key',
+                message: 'Are you sure you want to revoke your API key? Any applications using it will stop working.',
+                buttons: {
+                    cancel: { className: 'll-btn ll-btn-secondary' },
+                    confirm: { className: 'll-btn ll-btn-danger' }
+                },
+                callback: function(result) {
+                    if (result) {
+                        $.get("revokeUserApiKey", function(data) {
+                            bootbox.alert({
+                                title: 'API Key',
+                                message: data,
+                                buttons: { ok: { className: 'll-btn ll-btn-primary' } },
+                                callback: function() { location.reload(); }
+                            });
+                        });
+                    }
+                }
+            });
+        });
+
+        // Revoke individual session
+        $('.revoke-session').click(function() {
+            var sessionId = $(this).data('session-id');
+            bootbox.confirm({
+                title: 'Revoke Session',
+                message: 'Are you sure you want to revoke this session?',
+                buttons: {
+                    cancel: { className: 'll-btn ll-btn-secondary' },
+                    confirm: { className: 'll-btn ll-btn-danger' }
+                },
+                callback: function(result) {
+                    if (result) {
+                        $.get("revokeSession", { session_id: sessionId }, function(data) {
+                            bootbox.alert({
+                                title: 'Session',
+                                message: data,
+                                buttons: { ok: { className: 'll-btn ll-btn-primary' } },
+                                callback: function() { location.reload(); }
+                            });
+                        });
+                    }
+                }
+            });
+        });
+
+        // Revoke all sessions
+        $('#revoke-all-sessions').click(function() {
+            bootbox.confirm({
+                title: 'Revoke All Sessions',
+                message: 'This will log you out from all devices. Continue?',
+                buttons: {
+                    cancel: { className: 'll-btn ll-btn-secondary' },
+                    confirm: { className: 'll-btn ll-btn-danger' }
+                },
+                callback: function(result) {
+                    if (result) {
+                        $.get("revokeAllSessions", function(data) {
+                            bootbox.alert({
+                                title: 'Sessions',
+                                message: data,
+                                buttons: { ok: { className: 'll-btn ll-btn-primary' } },
+                                callback: function() { location.reload(); }
+                            });
+                        });
+                    }
+                }
             });
         });
     });

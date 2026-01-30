@@ -1,7 +1,7 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
-    from lazylibrarian import formatter
+    import bookbagofholding
+    from bookbagofholding import formatter
 %>
 <%
     current_page = 'logs'
@@ -39,7 +39,7 @@
                 </svg>
                 Clear Log
             </a>
-            %if lazylibrarian.LOGLEVEL >= 2:
+            %if bookbagofholding.LOGLEVEL >= 2:
             <a href="toggleLog" class="ll-btn ll-btn-secondary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                     <rect x="6" y="4" width="4" height="16"></rect>
@@ -69,12 +69,12 @@
     <!-- Toolbar -->
     <div class="ll-toolbar">
         <div class="ll-toolbar-left">
-            %if lazylibrarian.CONFIG['TOGGLES']:
+            %if bookbagofholding.CONFIG['TOGGLES']:
             <span class="ll-toolbar-label">Toggle:</span>
             <div class="ll-btn-group">
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="0">Timestamp</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="1">Level</button>
-                %if lazylibrarian.LOGLEVEL >= 2:
+                %if bookbagofholding.LOGLEVEL >= 2:
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="2">Thread</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="3">File</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="4">Method</button>
@@ -106,7 +106,7 @@
                         <tr>
                             <th style="width: 160px;">Timestamp</th>
                             <th style="width: 80px;">Level</th>
-                            %if lazylibrarian.LOGLEVEL >= 2:
+                            %if bookbagofholding.LOGLEVEL >= 2:
                             <th style="width: 100px;">Thread</th>
                             <th style="width: 120px;">File</th>
                             <th style="width: 120px;">Method</th>
@@ -145,7 +145,7 @@
         var oTable = $('#log_table').DataTable({
             "bAutoWidth": false,
             "aoColumnDefs": [
-                %if lazylibrarian.LOGLEVEL >= 2:
+                %if bookbagofholding.LOGLEVEL >= 2:
                 { "sWidth": "3%", "aTargets": [0, 1, 2, 3, 4, 5] },
                 { "sWidth": "60%", "aTargets": [6] }
                 %else:
@@ -165,7 +165,7 @@
                 "sInfoFiltered": "(filtered from _MAX_ total)"
             },
             "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "iDisplayLength": ${bookbagofholding.CONFIG['DISPLAYLENGTH']},
             "sPaginationType": "full_numbers",
             "aaSorting": [],
             "bServerSide": true,
@@ -179,7 +179,7 @@
                 } else {
                     $('td', nRow).addClass("log-info");
                 }
-                %if lazylibrarian.LOGLEVEL >= 2:
+                %if bookbagofholding.LOGLEVEL >= 2:
                 // Message column is 6 in debug mode
                 $('td', nRow).eq(6).addClass("log-message");
                 %else:

@@ -1,6 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'register'
@@ -77,9 +77,9 @@
                     Submit Request
                 </button>
 
-                %if lazylibrarian.LOGIN_MSG:
+                %if bookbagofholding.LOGIN_MSG:
                 <div class="ll-alert ll-alert-info" style="margin-top: 1rem;">
-                    ${lazylibrarian.LOGIN_MSG}
+                    ${bookbagofholding.LOGIN_MSG}
                 </div>
                 %endif
             </div>

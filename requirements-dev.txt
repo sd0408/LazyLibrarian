@@ -1,4 +1,4 @@
-# Development dependencies for LazyLibrarian
+# Development dependencies for Bookbag of Holding
 # Install with: pip install -r requirements-dev.txt
 #
 # Or install from pyproject.toml: pip install -e ".[dev]"

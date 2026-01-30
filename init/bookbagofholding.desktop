@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Bookbag of Holding
+Comment=Bookbag of Holding - ebook and audiobook manager
+Exec=/usr/bin/bookbagofholding
+Icon=/opt/bookbagofholding/data/images/ll.png
+Terminal=false
+Type=Application
+Encoding=UTF-8
+Categories=Network;Application;
+Path=

@@ -1,0 +1,8 @@
+#!/command/with-contenv bash
+# shellcheck shell=bash
+
+echo "Starting Bookbag of Holding..."
+
+exec \
+    s6-setuidgid abc /lsiopy/bin/python3 /app/bookbagofholding/Bookbag of Holding.py \
+    --datadir /config --nolaunch

@@ -1,12 +1,12 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'audio'
 %>
 <%def name="headIncludes()">
-    %if lazylibrarian.AUDIO_UPDATE == True or lazylibrarian.POSTPROCESS_UPDATE == True:
+    %if bookbagofholding.AUDIO_UPDATE == True or bookbagofholding.POSTPROCESS_UPDATE == True:
     <meta http-equiv="refresh" content="10">
     %endif
     <link href="css/datatables.bootstrap5.min.css" rel="stylesheet">
@@ -24,7 +24,7 @@
             <p class="ll-page-subtitle">Browse and manage your audiobook library</p>
         </div>
         <div class="ll-page-header-actions">
-            %if perm&lazylibrarian.perm_force:
+            %if perm&bookbagofholding.perm_force:
             <a href="forceSearch?source=audio" class="ll-btn ll-btn-secondary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                     <circle cx="11" cy="11" r="8"></circle>
@@ -60,7 +60,7 @@
         </div>
     </div>
 
-    %if lazylibrarian.AUDIO_UPDATE == True:
+    %if bookbagofholding.AUDIO_UPDATE == True:
     <div class="ll-alert ll-alert-info" style="margin-bottom: 1.5rem;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="animation: spin 1s linear infinite;">
             <line x1="12" y1="2" x2="12" y2="6"></line>
@@ -75,7 +75,7 @@
         Library scan in progress...
     </div>
     %endif
-    %if lazylibrarian.POSTPROCESS_UPDATE == True:
+    %if bookbagofholding.POSTPROCESS_UPDATE == True:
     <div class="ll-alert ll-alert-info" style="margin-bottom: 1.5rem;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="animation: spin 1s linear infinite;">
             <line x1="12" y1="2" x2="12" y2="6"></line>
@@ -92,7 +92,7 @@
     %endif
 
     <!-- Bulk Actions (shown when items selected) -->
-    %if perm&lazylibrarian.perm_status:
+    %if perm&bookbagofholding.perm_status:
     <form id="markBooks" action="markBooks" method="get" style="display: none;" class="ll-mb-3" onsubmit="return false;">
         <input type="hidden" name="booklang" value="${booklang}">
         <input type="hidden" name="redirect" value="audio">
@@ -169,7 +169,7 @@
                 <table class="ll-table" id="book_table">
                     <thead>
                         <tr>
-                            %if perm&lazylibrarian.perm_status:
+                            %if perm&bookbagofholding.perm_status:
                             <th class="text-center no-sort" style="width: 40px;"><input type="checkbox" onClick="toggleAll(this)" /></th>
                             %else:
                             <th class="hidden"></th>
@@ -264,7 +264,7 @@
         });
         $('#chooselanguage').val(getUrlVars()['BookLang']);
 
-        var show = "" + ${lazylibrarian.CONFIG['BOOK_IMG']};
+        var show = "" + ${bookbagofholding.CONFIG['BOOK_IMG']};
         var showimg = (show === '1');
 
         // Clear any old DataTables state
@@ -287,7 +287,7 @@
                 },
                 { "data": 2,
                     "render": function(data, type, row) {
-                        %if perm&lazylibrarian.perm_authorbooks:
+                        %if perm&bookbagofholding.perm_authorbooks:
                         return '<a href="authorPage?AuthorID=' + row[8] + '" class="ll-link">' + data + '</a>';
                         %else:
                         return data;
@@ -326,7 +326,7 @@
                             return '<a class="ll-badge ll-badge-success" href="openBook?bookid=' + row[9] + '&library=AudioBook"><i class="fa fa-headphones"></i> ' + btn + '</a>';
                         }
                         else if (btn.indexOf('Wanted') >= 0) {
-                            %if perm&lazylibrarian.perm_force:
+                            %if perm&bookbagofholding.perm_force:
                             return '<span class="ll-badge ll-badge-warning">' + btn + '</span><br><a class="ll-badge ll-badge-primary" href="searchForBook?bookid=' + row[9] + '&library=AudioBook" style="margin-top: 4px;"><i class="fa fa-search"></i> Search</a> <a class="ll-badge ll-badge-info" href="interactiveSearch?bookid=' + row[9] + '&library=AudioBook" style="margin-top: 4px;" title="Interactive search - pick from all results"><i class="fa fa-list"></i> Pick</a>';
                             %else:
                             return '<span class="ll-badge ll-badge-secondary">' + btn + '</span>';
@@ -354,13 +354,13 @@
                 "sInfoFiltered": "(filtered from _MAX_ total)"
             },
             "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "iDisplayLength": ${bookbagofholding.CONFIG['DISPLAYLENGTH']},
             "sPaginationType": "full_numbers",
             "bServerSide": true,
             "sAjaxSource": 'getBooks?source=Audio&library=AudioBook&booklang=${booklang}',
             "bFilter": true,
             "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
-                %if perm&lazylibrarian.perm_status == 0:
+                %if perm&bookbagofholding.perm_status == 0:
                 $('td', nRow).eq(0).addClass("hidden");
                 %endif
                 return nRow;
@@ -450,7 +450,7 @@
                     else if (status.indexOf('Snatched') >= 0) statusClass = 'info';
 
                     gridHtml += '<div class="ll-media-card" data-book-id="' + bookId + '">' +
-                        %if perm&lazylibrarian.perm_status:
+                        %if perm&bookbagofholding.perm_status:
                         '<label class="ll-card-checkbox" onclick="event.stopPropagation();"><input type="checkbox" name="' + bookId + '" class="checkbox" onchange="updateBulkActions()"><span class="ll-checkbox-mark"></span></label>' +
                         %endif
                         '<div class="ll-media-card-cover audiobook" style="background-image: url(\'' + cover + '\'); background-size: cover; background-position: center;">' +

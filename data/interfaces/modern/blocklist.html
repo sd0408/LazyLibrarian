@@ -1,6 +1,6 @@
 <%inherit file="base.html" />
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'blocklist'
@@ -17,7 +17,7 @@
             <p class="ll-page-subtitle">Manage blocked downloads - items here will not be re-downloaded</p>
         </div>
         <div class="ll-page-header-actions">
-            %if perm&lazylibrarian.perm_status:
+            %if perm&bookbagofholding.perm_status:
             <a href="clearBlocklist?reason=all" class="ll-btn ll-btn-secondary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -46,7 +46,7 @@
     <!-- Toolbar -->
     <div class="ll-toolbar">
         <div class="ll-toolbar-left">
-            %if lazylibrarian.CONFIG['TOGGLES']:
+            %if bookbagofholding.CONFIG['TOGGLES']:
             <span class="ll-toolbar-label">Toggle:</span>
             <div class="ll-btn-group">
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="0">Title</button>
@@ -147,7 +147,7 @@
                     'class': 'text-center',
                     'orderable': false,
                     'render': function(data, type, row) {
-                        %if perm&lazylibrarian.perm_status:
+                        %if perm&bookbagofholding.perm_status:
                         var rowid = row[7];
                         var title = row[0] ? row[0].replace(/'/g, "\\'") : '';
                         return '<button onclick="deleteItem(\'' + rowid + '\', \'' + title + '\')" class="ll-btn ll-btn-danger ll-btn-sm" title="Remove from blocklist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>';
@@ -171,7 +171,7 @@
             "bFilter": true,
             "sPaginationType": "full_numbers",
             "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "iDisplayLength": ${bookbagofholding.CONFIG['DISPLAYLENGTH']},
             "fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
                 return nRow;
             },

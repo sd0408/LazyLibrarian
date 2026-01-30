@@ -1,6 +1,6 @@
 <%inherit file="base.html"/>
 <%!
-    import lazylibrarian
+    import bookbagofholding
 %>
 <%
     current_page = 'config'
@@ -378,8 +378,8 @@ mark {
       <button class="button btn btn-sm btn-primary" type="button" value="Show Jobs" id="show_Jobs"><i class="fa fa-list-ul"></i> Job Status</button>
       <button class="button btn btn-sm btn-primary" type="button" value="Show Stats" id="show_Stats"><i class="fa fa-list-ul"></i> DB Stats</button>
       <button class="button btn btn-sm btn-primary" type="button" value="checkforupdates" id="checkforupdates"><i class="fa fa-list-alt"></i> Check Version</button>
-      %if lazylibrarian.CONFIG['USER_ACCOUNTS'] == True:
-      <a class="button btn btn-sm btn-primary" href="userAdmin"><i class="fa fa-user"></i> User Admin</a>
+      %if bookbagofholding.CONFIG.get('AUTH_METHOD', 'None') != 'None':
+      <a class="button btn btn-sm btn-primary" href="profile"><i class="fa fa-user"></i> Profile</a>
       %endif
      <button class="hidden" onclick="" id="myAlert" title=""><i class="fa fa-circle-notch fa-spin"></i> Checking, please wait...</button>
     </div>
@@ -423,22 +423,22 @@ mark {
                 <div class="col-md-6">
                   <fieldset>
                     <legend>Server Details</legend>
-                    <input type="text" id="current_tab" name="current_tab" value="${lazylibrarian.CURRENT_TAB}" class="hidden">
+                    <input type="text" id="current_tab" name="current_tab" value="${bookbagofholding.CURRENT_TAB}" class="hidden">
                     <div class="input-group">
                       <span class="input-group-addon">Host</span>
-                      <input type="text" id="http_host" name="http_host" value="${lazylibrarian.CONFIG['HTTP_HOST']}" class="form-control" placeholder="Hostname">
+                      <input type="text" id="http_host" name="http_host" value="${bookbagofholding.CONFIG['HTTP_HOST']}" class="form-control" placeholder="Hostname">
                       <span class="input-group-addon">Port</span>
-                      <input type="number" id="http_port" name="http_port" value="${lazylibrarian.CONFIG['HTTP_PORT']}" class="form-control" placeholder="Port Number (Default 5299)">
+                      <input type="number" id="http_port" name="http_port" value="${bookbagofholding.CONFIG['HTTP_PORT']}" class="form-control" placeholder="Port Number (Default 5299)">
                     </div>
                     <div class="input-group">
                       <span class="input-group-addon">Web Root</span>
-                      <input type="text" id="http_root" name="http_root" value="${lazylibrarian.CONFIG['HTTP_ROOT']}" class="form-control" placeholder="Web Root">
+                      <input type="text" id="http_root" name="http_root" value="${bookbagofholding.CONFIG['HTTP_ROOT']}" class="form-control" placeholder="Web Root">
                     </div>
                     <fieldset>
                     <div class="row checkbox">
                     <div class="col-md-6">
                       <%
-                        if lazylibrarian.CONFIG['HTTP_PROXY'] == True:
+                        if bookbagofholding.CONFIG['HTTP_PROXY'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -449,44 +449,44 @@ mark {
                     </div>
                     <div class="col-md-6">
                       <%
-                        if lazylibrarian.CONFIG['HTTPS_ENABLED'] == True:
+                        if bookbagofholding.CONFIG['HTTPS_ENABLED'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
                       %>
                       <label for="https_enabled" class="control-label">
                         <input type="checkbox" id="https_enabled" name="https_enabled" value="1" ${checked} />
-                        HTTPS access to lazylibrarian</label>
+                        HTTPS access to bookbagofholding</label>
                     </div>
                     </div>
                     </fieldset>
                     <fieldset id="https_options">
                       <div class="form-group">
                         <label for="https_cert" class="control-label">Https Certificate:</label>
-                        <input type="text" id="https_cert" name="https_cert" value="${lazylibrarian.CONFIG['HTTPS_CERT']}" class="form-control" placeholder="https certificate">
+                        <input type="text" id="https_cert" name="https_cert" value="${bookbagofholding.CONFIG['HTTPS_CERT']}" class="form-control" placeholder="https certificate">
                       </div>
                       <div class="form-group">
                         <label for="https_key" class="control-label">Https Key:</label>
-                        <input type="text" id="https_key" name="https_key" value="${lazylibrarian.CONFIG['HTTPS_KEY']}" class="form-control" placeholder="https key">
+                        <input type="text" id="https_key" name="https_key" value="${bookbagofholding.CONFIG['HTTPS_KEY']}" class="form-control" placeholder="https key">
                       </div>
                     </fieldset>
                     <fieldset>
                       <legend>Logs</legend>
                       <div class="input-group">
                         <span class="input-group-addon">Logdir</span>
-                        <input type="text" id="logdir" name="logdir" value="${lazylibrarian.CONFIG['LOGDIR']}" class="form-control" placeholder="Log Dir">
+                        <input type="text" id="logdir" name="logdir" value="${bookbagofholding.CONFIG['LOGDIR']}" class="form-control" placeholder="Log Dir">
                       </div>
                       <div class="input-group">
                         <span class="input-group-addon">Log Files</span>
-                        <input type="number" id="logfiles" name="logfiles" value="${lazylibrarian.CONFIG['LOGFILES']}" class="form-control"             placeholder="Number of files">
+                        <input type="number" id="logfiles" name="logfiles" value="${bookbagofholding.CONFIG['LOGFILES']}" class="form-control"             placeholder="Number of files">
                         <span class="input-group-addon">Log Lines</span>
-                        <input type="number" id="loglimit" name="loglimit" value="${lazylibrarian.CONFIG['LOGLIMIT']}" class="form-control"             placeholder="Number of lines">
+                        <input type="number" id="loglimit" name="loglimit" value="${bookbagofholding.CONFIG['LOGLIMIT']}" class="form-control"             placeholder="Number of lines">
                       </div>
                       <div class="input-group">
                         <span class="input-group-addon">Log Size</span>
-                        <input type="number" id="logsize" name="logsize" value="${lazylibrarian.CONFIG['LOGSIZE']}" class="form-control"             placeholder="Log File Size">
+                        <input type="number" id="logsize" name="logsize" value="${bookbagofholding.CONFIG['LOGSIZE']}" class="form-control"             placeholder="Log File Size">
                         <span class="input-group-addon">Log Level</span>
-                        <input type="number" id="loglevel" name="loglevel" value="${lazylibrarian.LOGLEVEL}" class="form-control" placeholder="0=quiet,1=Normal,2=Debug">
+                        <input type="number" id="loglevel" name="loglevel" value="${bookbagofholding.LOGLEVEL}" class="form-control" placeholder="0=quiet,1=Normal,2=Debug">
                       </div>
                     </fieldset>
                   </fieldset>
@@ -495,11 +495,11 @@ mark {
                     <legend>Proxy Details</legend>
                     <div class="form-group">
                       <label for="proxy_host" class="control-label">Proxy Host:</label>
-                      <input type="text" id="proxy_host" name="proxy_host" value="${lazylibrarian.CONFIG['PROXY_HOST']}" class="form-control" placeholder="Proxy Host">
+                      <input type="text" id="proxy_host" name="proxy_host" value="${bookbagofholding.CONFIG['PROXY_HOST']}" class="form-control" placeholder="Proxy Host">
                     </div>
                     <div class="form-group">
                       <label for="proxy_type" class="control-label">Proxy Type:</label>
-                      <input type="text" id="proxy_type" name="proxy_type" value="${lazylibrarian.CONFIG['PROXY_TYPE']}" class="form-control" placeholder="Proxy Types">
+                      <input type="text" id="proxy_type" name="proxy_type" value="${bookbagofholding.CONFIG['PROXY_TYPE']}" class="form-control" placeholder="Proxy Types">
                       <span class="help-block">Comma separated list http, https, etc</span>
                     </div>
                   </fieldset>
@@ -507,7 +507,7 @@ mark {
                     <legend>OPDS Server</legend>
                         <div class="checkbox">
                           <%
-                            if lazylibrarian.CONFIG['OPDS_ENABLED'] == True:
+                            if bookbagofholding.CONFIG['OPDS_ENABLED'] == True:
                                 checked = 'checked="checked"'
                             else:
                                 checked = ''
@@ -520,7 +520,7 @@ mark {
                         <fieldset id="opdsoptions">
                             <div class="checkbox">
                               <%
-                                if lazylibrarian.CONFIG['OPDS_AUTHENTICATION'] == True:
+                                if bookbagofholding.CONFIG['OPDS_AUTHENTICATION'] == True:
                                     checked = 'checked="checked"'
                                 else:
                                     checked = ''
@@ -533,15 +533,15 @@ mark {
                               <small>If the user/pass below are blank the webserver user/pass will be used</small>
                               <div class="input-group">
                                 <span class="input-group-addon">User</span>
-                                <input type="text" id="opds_username" name="opds_username" value="${lazylibrarian.CONFIG['OPDS_USERNAME']}" class="form-control" placeholder="Username">
+                                <input type="text" id="opds_username" name="opds_username" value="${bookbagofholding.CONFIG['OPDS_USERNAME']}" class="form-control" placeholder="Username">
                                 <span class="input-group-addon">Pass</span>
-                                <input type="password" id="opds_password" name="opds_password" value="${lazylibrarian.CONFIG['OPDS_PASSWORD']}" class="form-control" placeholder="Password">
+                                <input type="password" id="opds_password" name="opds_password" value="${bookbagofholding.CONFIG['OPDS_PASSWORD']}" class="form-control" placeholder="Password">
                               </div>
                               <small>NOTE - some OPDS readers do not send authentication for cover images or searches, so we don't send them. If you are getting lists with no images try disabling authentication or upgrading your reader</small>
                             </div>
                             <div class="checkbox">
                               <%
-                                if lazylibrarian.CONFIG['OPDS_METAINFO'] == True:
+                                if bookbagofholding.CONFIG['OPDS_METAINFO'] == True:
                                     checked = 'checked="checked"'
                                 else:
                                     checked = ''
@@ -552,63 +552,61 @@ mark {
                             </div>
                             <div class="input-group col-md-6">
                             <span class="input-group-addon">Page Size</span>
-                            <input type="number" id="opds_page" name="opds_page" value="${lazylibrarian.CONFIG['OPDS_PAGE']}" class="form-control" placeholder="Page Size">
+                            <input type="number" id="opds_page" name="opds_page" value="${bookbagofholding.CONFIG['OPDS_PAGE']}" class="form-control" placeholder="Page Size">
                             </div>
                         </fieldset>
                     </fieldset>
                 </div>
                 <div>
                   <fieldset>
-                    <legend>Access Control</legend>
-                    <div class="row checkbox">
-                    <div class="col-md-6">
-                      <%
-                        if lazylibrarian.CONFIG['USER_ACCOUNTS'] == True:
-                            checked = 'checked="checked"'
-                        else:
-                            checked = ''
-                      %>
-                      <label for="user_accounts" title="User accounts">
-                      <input type="checkbox" id="user_accounts" name="user_accounts" value="1" ${checked} />
-                      Enable user accounts</label>
+                    <legend>Authentication</legend>
+                    <div class="form-group">
+                      <label for="auth_method" class="control-label">Authentication Method:</label>
+                      <select id="auth_method" name="auth_method" class="form-control">
+                        <option value="None" ${'selected' if bookbagofholding.CONFIG.get('AUTH_METHOD', 'None') == 'None' else ''}>None (No authentication)</option>
+                        <option value="Forms" ${'selected' if bookbagofholding.CONFIG.get('AUTH_METHOD', 'None') == 'Forms' else ''}>Forms (Login page)</option>
+                        <option value="Basic" ${'selected' if bookbagofholding.CONFIG.get('AUTH_METHOD', 'None') == 'Basic' else ''}>Basic (HTTP Basic Auth)</option>
+                        <option value="External" ${'selected' if bookbagofholding.CONFIG.get('AUTH_METHOD', 'None') == 'External' else ''}>External (Reverse proxy)</option>
+                      </select>
+                      <small class="form-text text-muted">Forms uses database users. External delegates to reverse proxy (Authentik, Authelia).</small>
                     </div>
-                    <div class="col-md-6">
-                      <%
-                        if lazylibrarian.CONFIG['SINGLE_USER'] == True:
-                            checked = 'checked="checked"'
-                        else:
-                            checked = ''
-                      %>
-                      <label for="single_user" title="Bypass login">
-                      <input type="checkbox" id="single_user" name="single_user" value="1" ${checked} />
-                      Single user bypass login</label>
+                    <div class="form-group" id="auth_user_management">
+                      <a href="userAdmin" class="btn btn-secondary">
+                        <i class="fa fa-users"></i> Manage Users
+                      </a>
+                      <small class="form-text text-muted">Add, edit, or remove users and their roles</small>
                     </div>
+                    <div class="form-group" id="auth_credentials">
+                      <label class="control-label">HTTP Basic Auth Credentials:</label>
+                      <div class="input-group">
+                        <span class="input-group-addon">Username</span>
+                        <input type="text" id="auth_username" name="auth_username" value="${bookbagofholding.CONFIG.get('AUTH_USERNAME', '')}" class="form-control" placeholder="admin">
+                        <span class="input-group-addon">Password</span>
+                        <input type="password" id="auth_password" name="auth_password" value="" class="form-control" placeholder="Leave blank to keep current">
+                      </div>
+                      <small class="form-text text-muted">Only used for Basic authentication. Forms uses database users (Manage Users above).</small>
+                    </div>
+                    <div class="form-group" id="auth_external_options">
+                      <label for="auth_header" class="control-label">External Auth Header:</label>
+                      <input type="text" id="auth_header" name="auth_header" value="${bookbagofholding.CONFIG.get('AUTH_HEADER', 'X-Forwarded-User')}" class="form-control" placeholder="X-Forwarded-User">
+                      <small class="form-text text-muted">Header name sent by reverse proxy (Authentik, Authelia, etc.)</small>
                     </div>
                   </fieldset>
                   <fieldset>
                     <fieldset id="admin_options">
                     <div class="form-group">
                       <label for="admin_email" class="control-label">Contact Email:</label>
-                      <input type="text" id="admin_email" name="admin_email" value="${lazylibrarian.CONFIG['ADMIN_EMAIL']}" class="form-control" placeholder="Contact email for requests/registration">
+                      <input type="text" id="admin_email" name="admin_email" value="${bookbagofholding.CONFIG.get('ADMIN_EMAIL', '')}" class="form-control" placeholder="Contact email for admin notifications">
                     </div>
                     </fieldset>
-                    <fieldset id="webserver_options">
-                    WebServer Options:
-                    <div class="input-group">
-                      <span class="input-group-addon">User</span>
-                      <input type="text" id="http_user" name="http_user" value="${lazylibrarian.CONFIG['HTTP_USER']}" class="form-control" placeholder="Username">
-                      <span class="input-group-addon">Pass</span>
-                      <input type="password" id="http_pass" name="http_pass" value="${lazylibrarian.CONFIG['HTTP_PASS']}" class="form-control" placeholder="Password">
-                    </div>
-                    </fieldset>
-                    <small>Enabling/Disabling user accounts or changing webserver user/pass requires restart<br></small>
+                    <small>Changing authentication settings requires restart<br></small>
                   </fieldset>
                   <fieldset>
                     <legend>Startup</legend>
                     <div class="row checkbox">
                     <div class="col-md-6">
                       <%
-                        if lazylibrarian.CONFIG['LAUNCH_BROWSER'] == True:
+                        if bookbagofholding.CONFIG['LAUNCH_BROWSER'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -619,7 +617,7 @@ mark {
                     </div>
                     <div class="col-md-6">
                       <%
-                        if lazylibrarian.CONFIG['API_ENABLED'] == True:
+                        if bookbagofholding.CONFIG['API_ENABLED'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -634,10 +632,10 @@ mark {
                     <fieldset id="api_options">
                       <div class="form-group">
                         <label>API key</label>
-                        <input type="text" name="api_key" id="api_key" value="${lazylibrarian.CONFIG['API_KEY']}" size="36">
+                        <input type="text" name="api_key" id="api_key" value="${bookbagofholding.CONFIG['API_KEY']}" size="36">
                         <input class="button btn btn-sm btn-primary" type="button" value="Generate" id="generateAPI" onClick="window.location.href='generateAPI'">
                         <br>
-                        <small>Current API key: <strong>${lazylibrarian.CONFIG['API_KEY']}</strong></small>
+                        <small>Current API key: <strong>${bookbagofholding.CONFIG['API_KEY']}</strong></small>
                       </div>
                     </fieldset>
                   </fieldset>
@@ -647,7 +645,7 @@ mark {
                     <div class="row checkbox">
                       <div class="col-md-6">
                         <%
-                          if lazylibrarian.CONFIG['AUTHOR_IMG'] == True:
+                          if bookbagofholding.CONFIG['AUTHOR_IMG'] == True:
                               checked = 'checked="checked"'
                           else:
                               checked = ''
@@ -658,7 +656,7 @@ mark {
                       </div>
                       <div class="col-md-6">
                         <%
-                          if lazylibrarian.CONFIG['BOOK_IMG'] == True:
+                          if bookbagofholding.CONFIG['BOOK_IMG'] == True:
                               checked = 'checked="checked"'
                           else:
                               checked = ''
@@ -682,7 +680,7 @@ mark {
                     <div class="row checkbox">
                       <div class="col-md-6">
                         <%
-                          if lazylibrarian.CONFIG['AUDIO_TAB'] == True:
+                          if bookbagofholding.CONFIG['AUDIO_TAB'] == True:
                               checked = 'checked="checked"'
                           else:
                               checked = ''
@@ -695,7 +693,7 @@ mark {
                     <div class="row checkbox">
                       <div class="col-md-6">
                         <%
-                          if lazylibrarian.CONFIG['TOGGLES'] == True:
+                          if bookbagofholding.CONFIG['TOGGLES'] == True:
                               checked = 'checked="checked"'
                           else:
                               checked = ''
@@ -706,7 +704,7 @@ mark {
                       </div>
                       <div class="col-md-6">
                         <%
-                          if lazylibrarian.CONFIG['SORT_SURNAME'] == True:
+                          if bookbagofholding.CONFIG['SORT_SURNAME'] == True:
                               checked = 'checked="checked"'
                           else:
                               checked = ''
@@ -719,7 +717,7 @@ mark {
                     <div class="row checkbox">
                       <div class="col-md-12">
                       <%
-                        if lazylibrarian.CONFIG['SORT_DEFINITE'] == True:
+                        if bookbagofholding.CONFIG['SORT_DEFINITE'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -746,16 +744,16 @@ mark {
                   </div>
                   <div class="form-group">
                     <label for="gb_api" class="control-label">GoogleBooks API:</label>
-                    <input type="text" id="gb_api" name="gb_api" value="${lazylibrarian.CONFIG['GB_API']}" class="form-control">
+                    <input type="text" id="gb_api" name="gb_api" value="${bookbagofholding.CONFIG['GB_API']}" class="form-control">
                   </div>
                   <div class="form-group">
                     <label for="gb_country" class="control-label">GoogleBooks Country:</label>
-                    <input type="text" id="gb_country" name="gb_country" value="${lazylibrarian.CONFIG['GB_COUNTRY']}" class="form-control">
+                    <input type="text" id="gb_country" name="gb_country" value="${bookbagofholding.CONFIG['GB_COUNTRY']}" class="form-control">
                     <span class="help-block">Two letter country code for geographically restricted content e.g: US GB ES</span>
                   </div>
                   <div class="form-group">
                     <label for="lt_devkey" class="control-label">LibraryThing Developer Key:</label>
-                    <input type="text" id="lt_devkey" name="lt_devkey" value="${lazylibrarian.CONFIG['LT_DEVKEY']}" class="form-control" placeholder="optional">
+                    <input type="text" id="lt_devkey" name="lt_devkey" value="${bookbagofholding.CONFIG['LT_DEVKEY']}" class="form-control" placeholder="optional">
                   </div>
                 </fieldset>
               </div>
@@ -764,17 +762,17 @@ mark {
                   <legend>File Formats</legend>
                   <div class="form-group">
                     <label for="ebook_type" class="control-label">eBooks:</label>
-                    <input type="text" id="ebook_type" name="ebook_type" value="${lazylibrarian.CONFIG['EBOOK_TYPE']}" class="form-control" placeholder="eBook file formats">
+                    <input type="text" id="ebook_type" name="ebook_type" value="${bookbagofholding.CONFIG['EBOOK_TYPE']}" class="form-control" placeholder="eBook file formats">
                     <span class="help-block">Comma separated file extensions</span>
                   </div>
                   <div class="form-group">
                     <label for="audiobook_type" class="control-label">AudioBooks:</label>
-                    <input type="text" id="audiobook_type" name="audiobook_type" value="${lazylibrarian.CONFIG['AUDIOBOOK_TYPE']}" class="form-control" placeholder="AudioBook file formats">
+                    <input type="text" id="audiobook_type" name="audiobook_type" value="${bookbagofholding.CONFIG['AUDIOBOOK_TYPE']}" class="form-control" placeholder="AudioBook file formats">
                     <span class="help-block">Comma separated file extensions</span>
                   </div>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['NO_FUTURE'] == True:
+                    if bookbagofholding.CONFIG['NO_FUTURE'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -785,7 +783,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['NO_PUBDATE'] == True:
+                    if bookbagofholding.CONFIG['NO_PUBDATE'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -796,7 +794,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['NO_ISBN'] == True:
+                    if bookbagofholding.CONFIG['NO_ISBN'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -807,7 +805,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['NO_SETS'] == True:
+                    if bookbagofholding.CONFIG['NO_SETS'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -818,7 +816,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['NO_LANG'] == True:
+                    if bookbagofholding.CONFIG['NO_LANG'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -829,7 +827,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['IMP_IGNORE'] == True:
+                    if bookbagofholding.CONFIG['IMP_IGNORE'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -840,7 +838,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['IMP_GOOGLEIMAGE'] == True:
+                    if bookbagofholding.CONFIG['IMP_GOOGLEIMAGE'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -851,7 +849,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['DELETE_CSV'] == True:
+                        if bookbagofholding.CONFIG['DELETE_CSV'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -862,7 +860,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['BLACKLIST_FAILED'] == True:
+                        if bookbagofholding.CONFIG['BLACKLIST_FAILED'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -873,7 +871,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['BLACKLIST_PROCESSED'] == True:
+                        if bookbagofholding.CONFIG['BLACKLIST_PROCESSED'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -884,7 +882,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['DELAYSEARCH'] == True:
+                        if bookbagofholding.CONFIG['DELAYSEARCH'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -900,7 +898,7 @@ mark {
                   <legend>Language</legend>
                   <div class="form-group">
                     <label for="imp_preflang" class="control-label">Import languages:</label>
-                    <input type="text" id="imp_preflang" name="imp_preflang" value="${lazylibrarian.CONFIG['IMP_PREFLANG']}" class="form-control" placeholder="Import Languages">
+                    <input type="text" id="imp_preflang" name="imp_preflang" value="${bookbagofholding.CONFIG['IMP_PREFLANG']}" class="form-control" placeholder="Import Languages">
                     <span class="help-block">Comma separated country shortcodes:<br/>
                       GoogleBooks e.g: en, es, it<br/>
                       Default: en, eng, en-US<br/>
@@ -908,7 +906,7 @@ mark {
                   </div>
                   <div class="form-group">
                     <label for="imp_monthlang" class="control=label">Languages for month names:</label>
-                    <input type="text" id="imp_monthlang" name="imp_monthlang" value="${lazylibrarian.CONFIG['IMP_MONTHLANG']}" class="form-control" placeholder="Languages for month names">
+                    <input type="text" id="imp_monthlang" name="imp_monthlang" value="${bookbagofholding.CONFIG['IMP_MONTHLANG']}" class="form-control" placeholder="Languages for month names">
                     <span class="help-block">Comma separated language codes for month names:<br/>
                       e.g: fr_FR.utf8, es_ES.utf8<br/>
                       English month names are preloaded<br/>Changes to this setting require a restart</span>
@@ -916,7 +914,7 @@ mark {
                   <legend>Date Formats</legend>
                   <div class="form-group">
                     <label for="date_format" class="control=label">Added Dates:</label>
-                    <input type="text" id="date_format" name="date_format" value="${lazylibrarian.CONFIG['DATE_FORMAT']}" class="form-control" placeholder="Format for column dates">
+                    <input type="text" id="date_format" name="date_format" value="${bookbagofholding.CONFIG['DATE_FORMAT']}" class="form-control" placeholder="Format for column dates">
                     <span class="help-block">$d Day of the month as a number<br>$b Month as abbreviated name<br>$B Month as full name<br>$m Month as a number<br>$y Year without century<br>$Y Year with century<br>eg $Y-$m-$d</span>
                   </div>
                 </fieldset>
@@ -933,7 +931,7 @@ mark {
                   <fieldset class="usenet_options">
                     <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['NZB_DOWNLOADER_SABNZBD'] == True:
+                        if bookbagofholding.CONFIG['NZB_DOWNLOADER_SABNZBD'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -947,35 +945,35 @@ mark {
                       <div class="row">
                         <div class="form-group col-md-8">
                           <label for="sab_host" class="control-label">SABnzbd Host:</label>
-                          <input type="text" id="sab_host" name="sab_host" value="${lazylibrarian.CONFIG['SAB_HOST']}" class="form-control" placeholder="SABnzbd Host">
+                          <input type="text" id="sab_host" name="sab_host" value="${bookbagofholding.CONFIG['SAB_HOST']}" class="form-control" placeholder="SABnzbd Host">
                         </div>
                         <div class="form-group col-md-4">
                           <label for="sab_port" class="control-label">SABnzbd Port:</label>
-                          <input type="number" id="sab_port" name="sab_port" value="${lazylibrarian.CONFIG['SAB_PORT']}" class="form-control"     placeholder="SABnzbd Port">
+                          <input type="number" id="sab_port" name="sab_port" value="${bookbagofholding.CONFIG['SAB_PORT']}" class="form-control"     placeholder="SABnzbd Port">
                         </div>
                       </div>
                       <div class="row">
                         <div class="form-group col-md-6">
                           <label for="sab_user">SABnzbd Username</label>
-                          <input type="text" id="sab_user" name="sab_user" value="${lazylibrarian.CONFIG['SAB_USER']}" class="form-control" placeholder="SABnzbd Username">
+                          <input type="text" id="sab_user" name="sab_user" value="${bookbagofholding.CONFIG['SAB_USER']}" class="form-control" placeholder="SABnzbd Username">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="sab_pass" class="control-label">SABnzbd Password:</label>
-                          <input type="password" id="sab_pass" name="sab_pass" value="${lazylibrarian.CONFIG['SAB_PASS']}" class="form-control"     placeholder="SABnzbd Password">
+                          <input type="password" id="sab_pass" name="sab_pass" value="${bookbagofholding.CONFIG['SAB_PASS']}" class="form-control"     placeholder="SABnzbd Password">
                         </div>
                       </div>
                       <div class="form-group">
                         <label for="sab_api" class="control-label">SABnzbd API Key:</label>
-                        <input type="text" id="sab_api" name="sab_api" value="${lazylibrarian.CONFIG['SAB_API']}" class="form-control"      placeholder="SABnzbd API Key">
+                        <input type="text" id="sab_api" name="sab_api" value="${bookbagofholding.CONFIG['SAB_API']}" class="form-control"      placeholder="SABnzbd API Key">
                       </div>
                       <div class="row">
                         <div class="form-group col-md-6">
                           <label for="sab_cat">SABnzbd Category:</label>
-                          <input type="text" id="sab_cat" name="sab_cat" value="${lazylibrarian.CONFIG['SAB_CAT']}" class="form-control"      placeholder="SABnzbd Category">
+                          <input type="text" id="sab_cat" name="sab_cat" value="${bookbagofholding.CONFIG['SAB_CAT']}" class="form-control"      placeholder="SABnzbd Category">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="sab_subdir" class="control-label">SABnzbd URL Base:</label>
-                          <input type="text" id="sab_subdir" name="sab_subdir" value="${lazylibrarian.CONFIG['SAB_SUBDIR']}" class="form-control"     placeholder="Sabnzbd URL Base">
+                          <input type="text" id="sab_subdir" name="sab_subdir" value="${bookbagofholding.CONFIG['SAB_SUBDIR']}" class="form-control"     placeholder="Sabnzbd URL Base">
                         </div>
                       </div>
                       <div class="row">
@@ -988,7 +986,7 @@ mark {
                     </fieldset>
                     <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['NZB_DOWNLOADER_NZBGET'] == True:
+                        if bookbagofholding.CONFIG['NZB_DOWNLOADER_NZBGET'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1002,31 +1000,31 @@ mark {
                       <div class="row">
                         <div class="form-group col-md-8">
                           <label for="nzbget_host" class="control-label">NZBGet Host:</label>
-                          <input type="text" id="nzbget_host" name="nzbget_host" value="${lazylibrarian.CONFIG['NZBGET_HOST']}" class="form-control" placeholder="NZBGet Host">
+                          <input type="text" id="nzbget_host" name="nzbget_host" value="${bookbagofholding.CONFIG['NZBGET_HOST']}" class="form-control" placeholder="NZBGet Host">
                         </div>
                         <div class="form-group col-md-4">
                           <label for="nzbget_port" class="control-label">Port</label>
-                          <input type="number" id="nzbget_port" name="nzbget_port" value="${lazylibrarian.CONFIG['NZBGET_PORT']}" class="form-control" placeholder="NZBGet Port">
+                          <input type="number" id="nzbget_port" name="nzbget_port" value="${bookbagofholding.CONFIG['NZBGET_PORT']}" class="form-control" placeholder="NZBGet Port">
                         </div>
                       </div>
                       <div class="row">
                         <div class="form-group col-md-6">
                           <label for="nzbget_user" class="control-label">Username</label>
-                          <input type="text" id="nzbget_user" name="nzbget_user" value="${lazylibrarian.CONFIG['NZBGET_USER']}" class="form-control" placeholder="NZBGet Username">
+                          <input type="text" id="nzbget_user" name="nzbget_user" value="${bookbagofholding.CONFIG['NZBGET_USER']}" class="form-control" placeholder="NZBGet Username">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="nzbget_pass">Password:</label>
-                          <input type="password" id="nzbget_pass" name="nzbget_pass" value="${lazylibrarian.CONFIG['NZBGET_PASS']}" class="form-control" placeholder="NZBGet Password">
+                          <input type="password" id="nzbget_pass" name="nzbget_pass" value="${bookbagofholding.CONFIG['NZBGET_PASS']}" class="form-control" placeholder="NZBGet Password">
                         </div>
                       </div>
                       <div class="row">
                         <div class="form-group col-md-6">
                           <label for="nzbget_category" class="control-label">Category:</label>
-                          <input type="text" id="nzbget_category" name="nzbget_category" value="${lazylibrarian.CONFIG['NZBGET_CATEGORY']}" class="form-control" placeholder="NZBGet Category">
+                          <input type="text" id="nzbget_category" name="nzbget_category" value="${bookbagofholding.CONFIG['NZBGET_CATEGORY']}" class="form-control" placeholder="NZBGet Category">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="nzbget_priority">Priority:</label>
-                          <input type="text" id="nzbget_priority" name="nzbget_priority" value="${lazylibrarian.CONFIG['NZBGET_PRIORITY']}" class="form-control" placeholder="NZBGet Priority">
+                          <input type="text" id="nzbget_priority" name="nzbget_priority" value="${bookbagofholding.CONFIG['NZBGET_PRIORITY']}" class="form-control" placeholder="NZBGet Priority">
                         </div>
                       </div>
                       <div class="row">
@@ -1039,7 +1037,7 @@ mark {
                     </fieldset>
                     <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['USE_SYNOLOGY'] == True:
+                        if bookbagofholding.CONFIG['USE_SYNOLOGY'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1053,29 +1051,29 @@ mark {
                       <div class="row">
                         <div class="form-group col-md-8">
                           <label for="synology_host" class="control-label">Synology Host:</label>
-                          <input type="text" id="synology_host" name="synology_host" value="${lazylibrarian.CONFIG['SYNOLOGY_HOST']}" class="form-control" placeholder="Synology Host">
+                          <input type="text" id="synology_host" name="synology_host" value="${bookbagofholding.CONFIG['SYNOLOGY_HOST']}" class="form-control" placeholder="Synology Host">
                         </div>
                         <div class="form-group col-md-4">
                           <label for="synology_port" class="control-label">Port</label>
-                          <input type="number" id="synology_port" name="synology_port" value="${lazylibrarian.CONFIG['SYNOLOGY_PORT']}" class="form-control" placeholder="Synology Port">
+                          <input type="number" id="synology_port" name="synology_port" value="${bookbagofholding.CONFIG['SYNOLOGY_PORT']}" class="form-control" placeholder="Synology Port">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="synology_user" class="control-label">Username</label>
-                          <input type="text" id="synology_user" name="synology_user" value="${lazylibrarian.CONFIG['SYNOLOGY_USER']}" class="form-control" placeholder="Synology Username">
+                          <input type="text" id="synology_user" name="synology_user" value="${bookbagofholding.CONFIG['SYNOLOGY_USER']}" class="form-control" placeholder="Synology Username">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="synology_pass">Password:</label>
-                          <input type="password" id="synology_pass" name="synology_pass" value="${lazylibrarian.CONFIG['SYNOLOGY_PASS']}" class="form-control" placeholder="Synology Password">
+                          <input type="password" id="synology_pass" name="synology_pass" value="${bookbagofholding.CONFIG['SYNOLOGY_PASS']}" class="form-control" placeholder="Synology Password">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="synology_dir">Directory:</label>
-                          <input type="text" id="synology_dir" name="synology_dir" value="${lazylibrarian.CONFIG['SYNOLOGY_DIR']}" class="form-control" placeholder="Synology Directory">
+                          <input type="text" id="synology_dir" name="synology_dir" value="${bookbagofholding.CONFIG['SYNOLOGY_DIR']}" class="form-control" placeholder="Synology Directory">
                         </div>
                       </div>
                       <div class="row checkbox">
                       <div class="col-md-6">
                         <%
-                        if lazylibrarian.CONFIG['NZB_DOWNLOADER_SYNOLOGY'] == True:
+                        if bookbagofholding.CONFIG['NZB_DOWNLOADER_SYNOLOGY'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1086,7 +1084,7 @@ mark {
                       </div>
                       <div class="col-md-6">
                         <%
-                        if lazylibrarian.CONFIG['TOR_DOWNLOADER_SYNOLOGY'] == True:
+                        if bookbagofholding.CONFIG['TOR_DOWNLOADER_SYNOLOGY'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1106,7 +1104,7 @@ mark {
                     </fieldset>
                     <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['NZB_DOWNLOADER_BLACKHOLE'] == True:
+                        if bookbagofholding.CONFIG['NZB_DOWNLOADER_BLACKHOLE'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1119,12 +1117,12 @@ mark {
                       <legend>NZB Blackhole</legend>
                       <div class="form-group">
                         <label for="nzb_blackholedir" class="control-label">NZB Blackhole Directory:</label>
-                        <input type="text" id="nzb_blackholedir" name="nzb_blackholedir" value="${lazylibrarian.CONFIG['NZB_BLACKHOLEDIR']}" class="form-control" placeholder="NZB Blackhole Directory">
+                        <input type="text" id="nzb_blackholedir" name="nzb_blackholedir" value="${bookbagofholding.CONFIG['NZB_BLACKHOLEDIR']}" class="form-control" placeholder="NZB Blackhole Directory">
                       </div>
                     </fieldset>
                     <div class="input-group col-md-6">
                       <span class="input-group-addon">Usenet Retention</span>
-                      <input type="number" id="usenet_retention" name="usenet_retention" value="${lazylibrarian.CONFIG['USENET_RETENTION']}" class="form-control" placeholder="Retention Maximum Age">
+                      <input type="number" id="usenet_retention" name="usenet_retention" value="${bookbagofholding.CONFIG['USENET_RETENTION']}" class="form-control" placeholder="Retention Maximum Age">
                       <span class="input-group-addon">Days</span>
                     </div>
                   </fieldset>
@@ -1136,7 +1134,7 @@ mark {
               <fieldset id="torrent_options">
                 <div class="checkbox">
                   <%
-                    if lazylibrarian.CONFIG['TOR_DOWNLOADER_DELUGE'] == True:
+                    if bookbagofholding.CONFIG['TOR_DOWNLOADER_DELUGE'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -1150,39 +1148,39 @@ mark {
                     <div class="row">
                       <div class="form-group col-md-8">
                         <label for="deluge_host">Deluge Host:</label>
-                        <input type="text" id="deluge_host" name="deluge_host" value="${lazylibrarian.CONFIG['DELUGE_HOST']}" class="form-control" placeholder="Deluge Host">
+                        <input type="text" id="deluge_host" name="deluge_host" value="${bookbagofholding.CONFIG['DELUGE_HOST']}" class="form-control" placeholder="Deluge Host">
                       </div>
                       <div class="form-group col-md-4">
                         <label for="deluge_port" class="control-label">Daemon or webUI Port:</label>
-                        <input type="number" id="deluge_port" name="deluge_port" value="${lazylibrarian.CONFIG['DELUGE_PORT']}" class="form-control" placeholder="Deluge Port">
+                        <input type="number" id="deluge_port" name="deluge_port" value="${bookbagofholding.CONFIG['DELUGE_PORT']}" class="form-control" placeholder="Deluge Port">
                       </div>
                     </div>
                     <div class="row">
                       <div class="form-group col-md-8">
                         <label for="deluge_cert">Deluge Certificate:</label>
-                        <input type="text" id="deluge_cert" name="deluge_cert" value="${lazylibrarian.CONFIG['DELUGE_CERT']}" class="form-control" placeholder="webUI only">
+                        <input type="text" id="deluge_cert" name="deluge_cert" value="${bookbagofholding.CONFIG['DELUGE_CERT']}" class="form-control" placeholder="webUI only">
                       </div>
                       <div class="form-group col-md-4">
                         <label for="deluge_base">Deluge URL Base:</label>
-                        <input type="text" id="deluge_base" name="deluge_base" value="${lazylibrarian.CONFIG['DELUGE_BASE']}" class="form-control" placeholder="URL Base">
+                        <input type="text" id="deluge_base" name="deluge_base" value="${bookbagofholding.CONFIG['DELUGE_BASE']}" class="form-control" placeholder="URL Base">
                       </div>
                     </div>
                     <div class="row">
                       <div class="form-group col-md-6">
                         <label for="deluge_user" class="controllabel">Username:</label>
-                        <input type="text" id="deluge_user" name="deluge_user" value="${lazylibrarian.CONFIG['DELUGE_USER']}" class="form-control" placeholder="daemon only">
+                        <input type="text" id="deluge_user" name="deluge_user" value="${bookbagofholding.CONFIG['DELUGE_USER']}" class="form-control" placeholder="daemon only">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="deluge_pass" class="control-label">Password:</label>
-                        <input type="password" id="deluge_pass" name="deluge_pass" value="${lazylibrarian.CONFIG['DELUGE_PASS']}" class="form-control" placeholder="Deluge Password">
+                        <input type="password" id="deluge_pass" name="deluge_pass" value="${bookbagofholding.CONFIG['DELUGE_PASS']}" class="form-control" placeholder="Deluge Password">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="deluge_label" class="control-label">Deluge Label:</label>
-                        <input type="text" id="deluge_label" name="deluge_label" value="${lazylibrarian.CONFIG['DELUGE_LABEL']}" class="form-control" placeholder="Deluge Label">
+                        <input type="text" id="deluge_label" name="deluge_label" value="${bookbagofholding.CONFIG['DELUGE_LABEL']}" class="form-control" placeholder="Deluge Label">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="deluge_dir" class="control-label">Download directory :</label>
-                        <input type="text" id="deluge_dir" name="deluge_dir" value="${lazylibrarian.CONFIG['DELUGE_DIR']}" class="form-control" placeholder="use deluge default">
+                        <input type="text" id="deluge_dir" name="deluge_dir" value="${bookbagofholding.CONFIG['DELUGE_DIR']}" class="form-control" placeholder="use deluge default">
                       </div>
                       <div class="col-md-6">
                         <button class="button btn btn-sm btn-primary" type="button" value="Test Deluge" id="testDeluge"><i class="fa fa-list-ul"></i> Test Deluge</button>
@@ -1193,7 +1191,7 @@ mark {
                   </fieldset>
                   <div class="checkbox">
                     <%
-                      if lazylibrarian.CONFIG['TOR_DOWNLOADER_TRANSMISSION'] == True:
+                      if bookbagofholding.CONFIG['TOR_DOWNLOADER_TRANSMISSION'] == True:
                           checked = 'checked="checked"'
                       else:
                           checked = ''
@@ -1207,27 +1205,27 @@ mark {
                     <div class="row">
                       <div class="form-group col-md-8">
                         <label for="transmission_host" class="control-label">Transmission Host:</label>
-                        <input type="text" id="transmission_host" name="transmission_host" value="${lazylibrarian.CONFIG['TRANSMISSION_HOST']}" class="form-control" placeholder="Transmission host">
+                        <input type="text" id="transmission_host" name="transmission_host" value="${bookbagofholding.CONFIG['TRANSMISSION_HOST']}" class="form-control" placeholder="Transmission host">
                       </div>
                       <div class="form-group col-md-4">
                         <label for="transmission_port" class="control-label">Transmission Port :</label>
-                        <input type="number" id="transmission_port" name="transmission_port" value="${lazylibrarian.CONFIG['TRANSMISSION_PORT']}" class="form-control" placeholder="Transmission port">
+                        <input type="number" id="transmission_port" name="transmission_port" value="${bookbagofholding.CONFIG['TRANSMISSION_PORT']}" class="form-control" placeholder="Transmission port">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="transmission_user" class="control-label">Username :</label>
-                        <input type="text" id="transmission_user" name="transmission_user" value="${lazylibrarian.CONFIG['TRANSMISSION_USER']}" class="form-control" placeholder="Transmission Username">
+                        <input type="text" id="transmission_user" name="transmission_user" value="${bookbagofholding.CONFIG['TRANSMISSION_USER']}" class="form-control" placeholder="Transmission Username">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="transmission_pass" class="control-label">Password :</label>
-                        <input type="password" id="transmission_pass" name="transmission_pass" value="${lazylibrarian.CONFIG['TRANSMISSION_PASS']}" class="form-control" placeholder="Transmission Password">
+                        <input type="password" id="transmission_pass" name="transmission_pass" value="${bookbagofholding.CONFIG['TRANSMISSION_PASS']}" class="form-control" placeholder="Transmission Password">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="transmission_dir" class="control-label">Download directory :</label>
-                        <input type="text" id="transmission_dir" name="transmission_dir" value="${lazylibrarian.CONFIG['TRANSMISSION_DIR']}" class="form-control" placeholder="use transmission default">
+                        <input type="text" id="transmission_dir" name="transmission_dir" value="${bookbagofholding.CONFIG['TRANSMISSION_DIR']}" class="form-control" placeholder="use transmission default">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="transmission_base" class="control-label">Transmission URL Base:</label>
-                        <input type="text" id="transmission_base" name="transmission_base" value="${lazylibrarian.CONFIG['TRANSMISSION_BASE']}" class="form-control" placeholder="/transmission">
+                        <input type="text" id="transmission_base" name="transmission_base" value="${bookbagofholding.CONFIG['TRANSMISSION_BASE']}" class="form-control" placeholder="/transmission">
                       </div>
                     </div>
                     <div class="row">
@@ -1240,7 +1238,7 @@ mark {
                   </fieldset>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['TOR_DOWNLOADER_RTORRENT'] == True:
+                    if bookbagofholding.CONFIG['TOR_DOWNLOADER_RTORRENT'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -1254,23 +1252,23 @@ mark {
                     <div class="row">
                       <div class="form-group col-md-8">
                         <label for="rtorrent_host" class="control-label">rTorrent Host:</label>
-                        <input type="text" id="rtorrent_host" name="rtorrent_host" value="${lazylibrarian.CONFIG['RTORRENT_HOST']}" class="form-control" placeholder="rTorrent Host">
+                        <input type="text" id="rtorrent_host" name="rtorrent_host" value="${bookbagofholding.CONFIG['RTORRENT_HOST']}" class="form-control" placeholder="rTorrent Host">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="rtorrent_user" class="control-label">rTorrent User:</label>
-                        <input type="text" id="rtorrent_user" name="rtorrent_user" value="${lazylibrarian.CONFIG['RTORRENT_USER']}" class="form-control" placeholder="rTorrent User">
+                        <input type="text" id="rtorrent_user" name="rtorrent_user" value="${bookbagofholding.CONFIG['RTORRENT_USER']}" class="form-control" placeholder="rTorrent User">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="rtorrent_pass" class="control-label">rTorrent Password:</label>
-                        <input type="password" id="rtorrent_pass" name="rtorrent_pass" value="${lazylibrarian.CONFIG['RTORRENT_PASS']}" class="form-control" placeholder="rTorrent Password">
+                        <input type="password" id="rtorrent_pass" name="rtorrent_pass" value="${bookbagofholding.CONFIG['RTORRENT_PASS']}" class="form-control" placeholder="rTorrent Password">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="rtorrent_label" class="control-label">rTorrent Label:</label>
-                        <input type="text" id="rtorrent_label" name="rtorrent_label" value="${lazylibrarian.CONFIG['RTORRENT_LABEL']}" class="form-control" placeholder="rTorrent Label">
+                        <input type="text" id="rtorrent_label" name="rtorrent_label" value="${bookbagofholding.CONFIG['RTORRENT_LABEL']}" class="form-control" placeholder="rTorrent Label">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="rtorrent_dir" class="control-label">rTorrent Directory:</label>
-                        <input type="text" id="rtorrent_dir" name="rtorrent_dir" value="${lazylibrarian.CONFIG['RTORRENT_DIR']}" class="form-control" placeholder="use rtorrent default">
+                        <input type="text" id="rtorrent_dir" name="rtorrent_dir" value="${bookbagofholding.CONFIG['RTORRENT_DIR']}" class="form-control" placeholder="use rtorrent default">
                       </div>
                       <div>
                         <div class="col-md-6">
@@ -1283,7 +1281,7 @@ mark {
                   </fieldset>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['TOR_DOWNLOADER_UTORRENT'] == True:
+                    if bookbagofholding.CONFIG['TOR_DOWNLOADER_UTORRENT'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -1297,23 +1295,23 @@ mark {
                     <div class="row">
                       <div class="form-group col-md-8">
                         <label for="utorrent_host" class="control-label">uTorrent Host:</label>
-                        <input type="text" id="utorrent_host" name="utorrent_host" value="${lazylibrarian.CONFIG['UTORRENT_HOST']}" class="form-control" placeholder="uTorrent Host">
+                        <input type="text" id="utorrent_host" name="utorrent_host" value="${bookbagofholding.CONFIG['UTORRENT_HOST']}" class="form-control" placeholder="uTorrent Host">
                       </div>
                       <div class="form-group col-md-4">
                         <label for="utorrent_port" class="control-label">uTorrent Port:</label>
-                        <input type="number" id="utorrent_port" name="utorrent_port" value="${lazylibrarian.CONFIG['UTORRENT_PORT']}" class="form-control" placeholder="uTorrent Port">
+                        <input type="number" id="utorrent_port" name="utorrent_port" value="${bookbagofholding.CONFIG['UTORRENT_PORT']}" class="form-control" placeholder="uTorrent Port">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="utorrent_user" class="control-label">Username:</label>
-                        <input type="text" id="utorrent_user" name="utorrent_user" value="${lazylibrarian.CONFIG['UTORRENT_USER']}" class="form-control" placeholder="uTorrent Username">
+                        <input type="text" id="utorrent_user" name="utorrent_user" value="${bookbagofholding.CONFIG['UTORRENT_USER']}" class="form-control" placeholder="uTorrent Username">
                       </div>
                       <div class="form-group col-md-6">
                         <label>Password:</label>
-                        <input type="password" id="utorrent_pass" name="utorrent_pass" value="${lazylibrarian.CONFIG['UTORRENT_PASS']}" class="form-control" placeholder="uTorrent Password">
+                        <input type="password" id="utorrent_pass" name="utorrent_pass" value="${bookbagofholding.CONFIG['UTORRENT_PASS']}" class="form-control" placeholder="uTorrent Password">
                       </div>
                       <div class="form-group col-md-6">
                         <label for="utorrent_label" class="control-label">uTorrent Label:</label>
-                        <input type="text" id="utorrent_label" name="utorrent_label" value="${lazylibrarian.CONFIG['UTORRENT_LABEL']}" class="form-control" placeholder="uTorrent Label">
+                        <input type="text" id="utorrent_label" name="utorrent_label" value="${bookbagofholding.CONFIG['UTORRENT_LABEL']}" class="form-control" placeholder="uTorrent Label">
                       </div>
                     </div>
                     <div class="row">
@@ -1326,7 +1324,7 @@ mark {
                   </fieldset>
                   <div class="checkbox">
                     <%
-                    if lazylibrarian.CONFIG['TOR_DOWNLOADER_QBITTORRENT'] == True:
+                    if bookbagofholding.CONFIG['TOR_DOWNLOADER_QBITTORRENT'] == True:
                         checked = 'checked="checked"'
                     else:
                         checked = ''
@@ -1340,27 +1338,27 @@ mark {
                       <div class="row">
                         <div class="form-group col-md-8">
                           <label for="qbittorrent_host" class="control-label">qBitTorrent Host:</label>
-                          <input type="text" id="qbittorrent_host" name="qbittorrent_host" value="${lazylibrarian.CONFIG['QBITTORRENT_HOST']}" class="form-control" placeholder="qBitTorrent Host">
+                          <input type="text" id="qbittorrent_host" name="qbittorrent_host" value="${bookbagofholding.CONFIG['QBITTORRENT_HOST']}" class="form-control" placeholder="qBitTorrent Host">
                         </div>
                         <div class="form-group col-md-4">
                           <label for="qbittorrent_port" class="control-label">qBitTorrent Port:</label>
-                          <input type="number" id="qbittorrent_port" name="qbittorrent_port" value="${lazylibrarian.CONFIG['QBITTORRENT_PORT']}" class="form-control" placeholder="qBitTorrent Port">
+                          <input type="number" id="qbittorrent_port" name="qbittorrent_port" value="${bookbagofholding.CONFIG['QBITTORRENT_PORT']}" class="form-control" placeholder="qBitTorrent Port">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="qbittorrent_user" class="control-label">Username:</label>
-                          <input type="text" id="qbittorrent_user" name="qbittorrent_user" value="${lazylibrarian.CONFIG['QBITTORRENT_USER']}" class="form-control" placeholder="qBitTorrent Username">
+                          <input type="text" id="qbittorrent_user" name="qbittorrent_user" value="${bookbagofholding.CONFIG['QBITTORRENT_USER']}" class="form-control" placeholder="qBitTorrent Username">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="qbittorrent_pass" class="control-label">Password:</label>
-                          <input type="password" id="qbittorrent_pass" name="qbittorrent_pass" value="${lazylibrarian.CONFIG['QBITTORRENT_PASS']}" class="form-control" placeholder="qBitTorrent Password">
+                          <input type="password" id="qbittorrent_pass" name="qbittorrent_pass" value="${bookbagofholding.CONFIG['QBITTORRENT_PASS']}" class="form-control" placeholder="qBitTorrent Password">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="qbittorrent_label" class="control-label">qBitTorrent Label/Category:</label>
-                          <input type="text" id="qbittorrent_label" name="qbittorrent_label" value="${lazylibrarian.CONFIG['QBITTORRENT_LABEL']}" class="form-control" placeholder="qBitTorrent Label/Category">
+                          <input type="text" id="qbittorrent_label" name="qbittorrent_label" value="${bookbagofholding.CONFIG['QBITTORRENT_LABEL']}" class="form-control" placeholder="qBitTorrent Label/Category">
                         </div>
                         <div class="form-group col-md-6">
                           <label for="qbittorrent_dir" class="control-label">Download directory :</label>
-                          <input type="text" id="qbittorrent_dir" name="qbittorrent_dir" value="${lazylibrarian.CONFIG['QBITTORRENT_DIR']}" class="form-control" placeholder="use qbittorrent default">
+                          <input type="text" id="qbittorrent_dir" name="qbittorrent_dir" value="${bookbagofholding.CONFIG['QBITTORRENT_DIR']}" class="form-control" placeholder="use qbittorrent default">
                         </div>
                         <div class="col-md-6">
                           <button class="button btn btn-sm btn-primary" type="button" value="Test qBittorrent" id="testqBittorrent"><i class="fa fa-list-ul"></i> Test qBittorrent</button>
@@ -1371,7 +1369,7 @@ mark {
                     </fieldset>
                     <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['TOR_DOWNLOADER_BLACKHOLE'] == True:
+                        if bookbagofholding.CONFIG['TOR_DOWNLOADER_BLACKHOLE'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1384,11 +1382,11 @@ mark {
                       <legend>Torrent Blackhole</legend>
                       <div class="form-group">
                         <label for="torrent_dir" class="control-label">Torrent Blackhole Directory:</label>
-                        <input type="text" id="torrent_dir" name="torrent_dir" value="${lazylibrarian.CONFIG['TORRENT_DIR']}" class="form-control" placeholder="Torrent Blackhole Directory">
+                        <input type="text" id="torrent_dir" name="torrent_dir" value="${bookbagofholding.CONFIG['TORRENT_DIR']}" class="form-control" placeholder="Torrent Blackhole Directory">
                       </div>
                       <div class="checkbox">
                         <%
-                          if lazylibrarian.CONFIG['TOR_CONVERT_MAGNET'] == True:
+                          if bookbagofholding.CONFIG['TOR_CONVERT_MAGNET'] == True:
                               checked = 'checked="checked"'
                           else:
                               checked = ''
@@ -1400,7 +1398,7 @@ mark {
                     </fieldset>
                     <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['PREFER_MAGNET'] == True:
+                        if bookbagofholding.CONFIG['PREFER_MAGNET'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1411,7 +1409,7 @@ mark {
                     </div>
                     <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['KEEP_SEEDING'] == True:
+                        if bookbagofholding.CONFIG['KEEP_SEEDING'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1422,7 +1420,7 @@ mark {
                     </div>
                     <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['SEED_WAIT'] == True:
+                        if bookbagofholding.CONFIG['SEED_WAIT'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1433,7 +1431,7 @@ mark {
                     </div>
                     <div class="input-group col-md-6">
                       <span class="input-group-addon">Minimum Seeders</span>
-                      <input type="number" id="numberofseeders" name="numberofseeders" value="${lazylibrarian.CONFIG['NUMBEROFSEEDERS']}" class="form-control" placeholder="0 to disable">
+                      <input type="number" id="numberofseeders" name="numberofseeders" value="${bookbagofholding.CONFIG['NUMBEROFSEEDERS']}" class="form-control" placeholder="0 to disable">
                     </div>
                   </fieldset>
                 </fieldset>
@@ -1449,7 +1447,7 @@ mark {
                   <div class="col-md-12">
                   <legend>Newznab Providers</legend>
                   </div>
-                  %for provider in lazylibrarian.NEWZNAB_PROV:
+                  %for provider in bookbagofholding.NEWZNAB_PROV:
                   <%
                       checked = ''
                       if provider['ENABLED'] == True:
@@ -1494,7 +1492,7 @@ mark {
                   <div class="col-md-12">
                   <legend>Torznab Providers</legend>
                   </div>
-                  %for provider in lazylibrarian.TORZNAB_PROV:
+                  %for provider in bookbagofholding.TORZNAB_PROV:
                   <%
                       checked = ''
                       if provider['ENABLED'] == True:
@@ -1539,7 +1537,7 @@ mark {
                   <div class="col-md-12">
                   <legend>RSS/Wishlist Providers</legend>
                   </div>
-                  %for provider in lazylibrarian.RSS_PROV:
+                  %for provider in bookbagofholding.RSS_PROV:
                   <%
                    checked = ''
                    if provider['ENABLED'] == True:
@@ -1584,7 +1582,7 @@ mark {
                     <legend>Torrent Providers</legend>
                     </div>
                     <%
-                      if lazylibrarian.CONFIG['KAT'] == True:
+                      if bookbagofholding.CONFIG['KAT'] == True:
                         checked = 'checked="checked"'
                       else:
                         checked = ''
@@ -1592,23 +1590,23 @@ mark {
                     <div class="col-md-4 form-group">
                       <label for="kat_host" class="visually-hidden">KAT Host</label>
                       <div class="input-group">
-                        <input type="text" placeholder="KAT Host" id="kat_host" name="kat_host" value="${lazylibrarian.CONFIG['KAT_HOST']}" class="form-control">
+                        <input type="text" placeholder="KAT Host" id="kat_host" name="kat_host" value="${bookbagofholding.CONFIG['KAT_HOST']}" class="form-control">
                         <span class="input-group-addon">
                         <input type="checkbox" id="kat" name="kat" value="1" ${checked} />
                         </span>
                       </div>
                       <div class="input-group">
                         <span class="input-group-addon">Priority</span>
-                        <input type="number" id="kat_dlpriority" name="kat_dlpriority" value="${lazylibrarian.CONFIG['KAT_DLPRIORITY']}" class="form-control" placeholder="0">
+                        <input type="number" id="kat_dlpriority" name="kat_dlpriority" value="${bookbagofholding.CONFIG['KAT_DLPRIORITY']}" class="form-control" placeholder="0">
                         <span class="input-group-addon">Types</span>
-                        <input type="text" id="kat_dltypes" name="kat_dltypes" value="${lazylibrarian.CONFIG['KAT_DLTYPES']}" class="form-control" placeholder="">
+                        <input type="text" id="kat_dltypes" name="kat_dltypes" value="${bookbagofholding.CONFIG['KAT_DLTYPES']}" class="form-control" placeholder="">
                         <span class="input-group-addon">
                         <button role="testprov" class="button btn btn-xs btn-warning btn-primary" type="button" value="KAT"> Test</button>
                         </span>
                       </div>
                     </div>
                     <%
-                      if lazylibrarian.CONFIG['TPB'] == True:
+                      if bookbagofholding.CONFIG['TPB'] == True:
                         checked = 'checked="checked"'
                       else:
                         checked = ''
@@ -1616,23 +1614,23 @@ mark {
                     <div class="col-md-4 form-group">
                       <label for="tpb_host" class="visually-hidden">TPB Host</label>
                       <div class="input-group">
-                        <input type="text" placeholder="TPB Host" id="tpb_host" name="tpb_host" value="${lazylibrarian.CONFIG['TPB_HOST']}" class="form-control">
+                        <input type="text" placeholder="TPB Host" id="tpb_host" name="tpb_host" value="${bookbagofholding.CONFIG['TPB_HOST']}" class="form-control">
                         <span class="input-group-addon">
                           <input type="checkbox" id="tpb" name="tpb" value="1" ${checked} />
                         </span>
                       </div>
                       <div class="input-group">
                       <span class="input-group-addon">Priority</span>
-                        <input type="number" id="tpb_dlpriority" name="tpb_dlpriority" value="${lazylibrarian.CONFIG['TPB_DLPRIORITY']}" class="form-control" placeholder="0">
+                        <input type="number" id="tpb_dlpriority" name="tpb_dlpriority" value="${bookbagofholding.CONFIG['TPB_DLPRIORITY']}" class="form-control" placeholder="0">
                         <span class="input-group-addon">Types</span>
-                        <input type="text" id="tpb_dltypes" name="tpb_dltypes" value="${lazylibrarian.CONFIG['TPB_DLTYPES']}" class="form-control" placeholder="">
+                        <input type="text" id="tpb_dltypes" name="tpb_dltypes" value="${bookbagofholding.CONFIG['TPB_DLTYPES']}" class="form-control" placeholder="">
                         <span class="input-group-addon">
                         <button role="testprov" class="button btn btn-xs btn-warning btn-primary" type="button" value="TPB"> Test</button>
                         </span>
                       </div>
                     </div>
                    <%
-                      if lazylibrarian.CONFIG['WWT'] == True:
+                      if bookbagofholding.CONFIG['WWT'] == True:
                         checked = 'checked="checked"'
                       else:
                         checked = ''
@@ -1640,23 +1638,23 @@ mark {
                     <div class="col-md-4 form-group">
                       <label for="wwt_host" class="visually-hidden">WWT Host</label>
                       <div class="input-group">
-                        <input type="text" placeholder="WWT Host" id="wwt_host" name="wwt_host" value="${lazylibrarian.CONFIG['WWT_HOST']}" class="form-control">
+                        <input type="text" placeholder="WWT Host" id="wwt_host" name="wwt_host" value="${bookbagofholding.CONFIG['WWT_HOST']}" class="form-control">
                         <span class="input-group-addon">
                           <input type="checkbox" id="wwt" name="wwt" value="1" ${checked} />
                         </span>
                       </div>
                       <div class="input-group">
                       <span class="input-group-addon">Priority</span>
-                        <input type="number" id="wwt_dlpriority" name="wwt_dlpriority" value="${lazylibrarian.CONFIG['WWT_DLPRIORITY']}" class="form-control" placeholder="0">
+                        <input type="number" id="wwt_dlpriority" name="wwt_dlpriority" value="${bookbagofholding.CONFIG['WWT_DLPRIORITY']}" class="form-control" placeholder="0">
                         <span class="input-group-addon">Types</span>
-                        <input type="text" id="wwt_dltypes" name="wwt_dltypes" value="${lazylibrarian.CONFIG['WWT_DLTYPES']}" class="form-control" placeholder="">
+                        <input type="text" id="wwt_dltypes" name="wwt_dltypes" value="${bookbagofholding.CONFIG['WWT_DLTYPES']}" class="form-control" placeholder="">
                         <span class="input-group-addon">
                         <button role="testprov" class="button btn btn-xs btn-warning btn-primary" type="button" value="WWT"> Test</button>
                         </span>
                       </div>
                     </div>
                     <%
-                      if lazylibrarian.CONFIG['ZOO'] == True:
+                      if bookbagofholding.CONFIG['ZOO'] == True:
                         checked = 'checked="checked"'
                       else:
                         checked = ''
@@ -1664,23 +1662,23 @@ mark {
                     <div class="col-md-4 form-group">
                       <label for="zoo_host" class="visually-hidden">zooqle host</label>
                       <div class="input-group">
-                        <input type="text" placeholder="zooqle host" id="zoo_host" name="zoo_host" value="${lazylibrarian.CONFIG['ZOO_HOST']}" class="form-control">
+                        <input type="text" placeholder="zooqle host" id="zoo_host" name="zoo_host" value="${bookbagofholding.CONFIG['ZOO_HOST']}" class="form-control">
                         <span class="input-group-addon">
                         <input type="checkbox" id="zoo" name="zoo" value="1" ${checked} />
                         </span>
                       </div>
                       <div class="input-group">
                         <span class="input-group-addon">Priority</span>
-                        <input type="number" id="zoo_dlpriority" name="zoo_dlpriority" value="${lazylibrarian.CONFIG['ZOO_DLPRIORITY']}" class="form-control" placeholder="0">
+                        <input type="number" id="zoo_dlpriority" name="zoo_dlpriority" value="${bookbagofholding.CONFIG['ZOO_DLPRIORITY']}" class="form-control" placeholder="0">
                         <span class="input-group-addon">Types</span>
-                        <input type="text" id="zoo_dltypes" name="zoo_dltypes" value="${lazylibrarian.CONFIG['ZOO_DLTYPES']}" class="form-control" placeholder="">
+                        <input type="text" id="zoo_dltypes" name="zoo_dltypes" value="${bookbagofholding.CONFIG['ZOO_DLTYPES']}" class="form-control" placeholder="">
                         <span class="input-group-addon">
                         <button role="testprov" class="button btn btn-xs btn-warning btn-primary" type="button" value="ZOO"> Test</button>
                         </span>
                       </div>
                     </div>
                     <%
-                      if lazylibrarian.CONFIG['TDL'] == True:
+                      if bookbagofholding.CONFIG['TDL'] == True:
                         checked = 'checked="checked"'
                       else:
                         checked = ''
@@ -1688,23 +1686,23 @@ mark {
                     <div class="col-md-4 form-group">
                       <label for="tdl_host" class="visually-hidden">torrentdownload host</label>
                       <div class="input-group">
-                        <input type="text" placeholder="torrentdownload host" id="tdl_host" name="tdl_host" value="${lazylibrarian.CONFIG['TDL_HOST']}" class="form-control">
+                        <input type="text" placeholder="torrentdownload host" id="tdl_host" name="tdl_host" value="${bookbagofholding.CONFIG['TDL_HOST']}" class="form-control">
                         <span class="input-group-addon">
                         <input type="checkbox" id="tdl" name="tdl" value="1" ${checked} />
                         </span>
                       </div>
                       <div class="input-group">
                         <span class="input-group-addon">Priority</span>
-                        <input type="number" id="tdl_dlpriority" name="tdl_dlpriority" value="${lazylibrarian.CONFIG['TDL_DLPRIORITY']}" class="form-control" placeholder="0">
+                        <input type="number" id="tdl_dlpriority" name="tdl_dlpriority" value="${bookbagofholding.CONFIG['TDL_DLPRIORITY']}" class="form-control" placeholder="0">
                         <span class="input-group-addon">Types</span>
-                        <input type="text" id="tdl_dltypes" name="tdl_dltypes" value="${lazylibrarian.CONFIG['TDL_DLTYPES']}" class="form-control" placeholder="">
+                        <input type="text" id="tdl_dltypes" name="tdl_dltypes" value="${bookbagofholding.CONFIG['TDL_DLTYPES']}" class="form-control" placeholder="">
                         <span class="input-group-addon">
                         <button role="testprov" class="button btn btn-xs btn-warning btn-primary" type="button" value="TDL"> Test</button>
                         </span>
                       </div>
                     </div>
                     <%
-                      if lazylibrarian.CONFIG['LIME'] == True:
+                      if bookbagofholding.CONFIG['LIME'] == True:
                         checked = 'checked="checked"'
                       else:
                         checked = ''
@@ -1712,16 +1710,16 @@ mark {
                     <div class="col-md-4 form-group">
                       <label for="lime_host" class="visually-hidden">limetorrent host</label>
                       <div class="input-group">
-                        <input type="text" placeholder="limetorrent host" id="lime_host" name="lime_host" value="${lazylibrarian.CONFIG['LIME_HOST']}" class="form-control">
+                        <input type="text" placeholder="limetorrent host" id="lime_host" name="lime_host" value="${bookbagofholding.CONFIG['LIME_HOST']}" class="form-control">
                         <span class="input-group-addon">
                         <input type="checkbox" id="lime" name="lime" value="1" ${checked} />
                         </span>
                       </div>
                       <div class="input-group">
                         <span class="input-group-addon">Priority</span>
-                        <input type="number" id="lime_dlpriority" name="lime_dlpriority" value="${lazylibrarian.CONFIG['LIME_DLPRIORITY']}" class="form-control" placeholder="0">
+                        <input type="number" id="lime_dlpriority" name="lime_dlpriority" value="${bookbagofholding.CONFIG['LIME_DLPRIORITY']}" class="form-control" placeholder="0">
                         <span class="input-group-addon">Types</span>
-                        <input type="text" id="lime_dltypes" name="lime_dltypes" value="${lazylibrarian.CONFIG['LIME_DLTYPES']}" class="form-control" placeholder="">
+                        <input type="text" id="lime_dltypes" name="lime_dltypes" value="${bookbagofholding.CONFIG['LIME_DLTYPES']}" class="form-control" placeholder="">
                         <span class="input-group-addon">
                         <button role="testprov" class="button btn btn-xs btn-warning btn-primary" type="button" value="LIME"> Test</button>
                         </span>
@@ -1735,7 +1733,7 @@ mark {
                     <legend>Direct Download Providers</legend>
                     </div>
                     <%
-                      if lazylibrarian.CONFIG['GEN'] == True:
+                      if bookbagofholding.CONFIG['GEN'] == True:
                         checked = 'checked="checked"'
                       else:
                         checked = ''
@@ -1743,7 +1741,7 @@ mark {
                     <div class="col-md-4 form-group">
                       <label for="gen_host" class="visually-hidden">libgen host</label>
                       <div class="input-group">
-                        <input type="text" placeholder="libgen host" id="gen_host" name="gen_host" value="${lazylibrarian.CONFIG['GEN_HOST']}" class="form-control">
+                        <input type="text" placeholder="libgen host" id="gen_host" name="gen_host" value="${bookbagofholding.CONFIG['GEN_HOST']}" class="form-control">
                         <span class="input-group-addon">
                         <input type="checkbox" id="gen" name="gen" value="1" ${checked} />
                         </span>
@@ -1751,13 +1749,13 @@ mark {
                       <label for="gen_search" class="visually-hidden">libgen search</label>
                       <div class="input-group">
                         <span class="input-group-addon">Search</span>
-                        <input type="text" placeholder="libgen search" id="gen_search" name="gen_search" value="${lazylibrarian.CONFIG['GEN_SEARCH']}" class="form-control">
+                        <input type="text" placeholder="libgen search" id="gen_search" name="gen_search" value="${bookbagofholding.CONFIG['GEN_SEARCH']}" class="form-control">
                       </div>
                       <div class="input-group">
                         <span class="input-group-addon">Priority</span>
-                        <input type="number" id="gen_dlpriority" name="gen_dlpriority" value="${lazylibrarian.CONFIG['GEN_DLPRIORITY']}" class="form-control" placeholder="0">
+                        <input type="number" id="gen_dlpriority" name="gen_dlpriority" value="${bookbagofholding.CONFIG['GEN_DLPRIORITY']}" class="form-control" placeholder="0">
                         <span class="input-group-addon">Types</span>
-                        <input type="text" id="gen_dltypes" name="gen_dltypes" value="${lazylibrarian.CONFIG['GEN_DLTYPES']}" class="form-control" placeholder="">
+                        <input type="text" id="gen_dltypes" name="gen_dltypes" value="${bookbagofholding.CONFIG['GEN_DLTYPES']}" class="form-control" placeholder="">
                         <span class="input-group-addon">
                         <button role="testprov" class="button btn btn-xs btn-warning btn-primary" type="button" value="GEN"> Test</button>
                         </span>
@@ -1765,7 +1763,7 @@ mark {
                       <span class="help-block">Search Examples: search.php or foreignfiction/index.php</span>
                     </div>
                     <%
-                      if lazylibrarian.CONFIG['GEN2'] == True:
+                      if bookbagofholding.CONFIG['GEN2'] == True:
                         checked = 'checked="checked"'
                       else:
                         checked = ''
@@ -1773,7 +1771,7 @@ mark {
                     <div class="col-md-4 form-group">
                       <label for="gen2_host" class="visually-hidden">libgen host</label>
                       <div class="input-group">
-                        <input type="text" placeholder="libgen host" id="gen2_host" name="gen2_host" value="${lazylibrarian.CONFIG['GEN2_HOST']}" class="form-control">
+                        <input type="text" placeholder="libgen host" id="gen2_host" name="gen2_host" value="${bookbagofholding.CONFIG['GEN2_HOST']}" class="form-control">
                         <span class="input-group-addon">
                         <input type="checkbox" id="gen2" name="gen2" value="1" ${checked} />
                         </span>
@@ -1781,13 +1779,13 @@ mark {
                       <label for="gen2_search" class="visually-hidden">libgen search</label>
                       <div class="input-group">
                         <span class="input-group-addon">Search</span>
-                        <input type="text" placeholder="libgen search" id="gen2_search" name="gen2_search" value="${lazylibrarian.CONFIG['GEN2_SEARCH']}" class="form-control">
+                        <input type="text" placeholder="libgen search" id="gen2_search" name="gen2_search" value="${bookbagofholding.CONFIG['GEN2_SEARCH']}" class="form-control">
                       </div>
                       <div class="input-group">
                         <span class="input-group-addon">Priority</span>
-                        <input type="number" id="gen2_dlpriority" name="gen2_dlpriority" value="${lazylibrarian.CONFIG['GEN2_DLPRIORITY']}" class="form-control" placeholder="0">
+                        <input type="number" id="gen2_dlpriority" name="gen2_dlpriority" value="${bookbagofholding.CONFIG['GEN2_DLPRIORITY']}" class="form-control" placeholder="0">
                         <span class="input-group-addon">Types</span>
-                        <input type="text" id="gen2_dltypes" name="gen2_dltypes" value="${lazylibrarian.CONFIG['GEN2_DLTYPES']}" class="form-control" placeholder="">
+                        <input type="text" id="gen2_dltypes" name="gen2_dltypes" value="${bookbagofholding.CONFIG['GEN2_DLTYPES']}" class="form-control" placeholder="">
                         <span class="input-group-addon">
                         <button role="testprov" class="button btn btn-xs btn-warning btn-primary" type="button" value="GEN2"> Test</button>
                         </span>
@@ -1811,28 +1809,28 @@ mark {
                   <div class="form-group">
                     <label for="search_bookinterval" class="control-label">Book Search Interval:</label>
                     <div class="input-group">
-                      <input type="number" id="search_bookinterval" name="search_bookinterval" value="${lazylibrarian.CONFIG['SEARCH_BOOKINTERVAL']}" class="form-control" placeholder="0 to disable">
+                      <input type="number" id="search_bookinterval" name="search_bookinterval" value="${bookbagofholding.CONFIG['SEARCH_BOOKINTERVAL']}" class="form-control" placeholder="0 to disable">
                       <span class="input-group-addon">Minutes</span>
                     </div>
                   </div>
                   <div class="form-group">
                     <label for="searchrss_interval" class="control-label">RSS Search Interval:</label>
                     <div class="input-group">
-                      <input type="number" id="searchrss_interval" name="searchrss_interval" value="${lazylibrarian.CONFIG['SEARCHRSS_INTERVAL']}" class="form-control" placeholder="0 to disable">
+                      <input type="number" id="searchrss_interval" name="searchrss_interval" value="${bookbagofholding.CONFIG['SEARCHRSS_INTERVAL']}" class="form-control" placeholder="0 to disable">
                       <span class="input-group-addon">Minutes</span>
                     </div>
                   </div>
                   <div class="form-group">
                     <label for="wishlist_interval" class="control-label">Wishlist Search Interval:</label>
                     <div class="input-group">
-                      <input type="number" id="wishlist_interval" name="wishlist_interval" value="${lazylibrarian.CONFIG['WISHLIST_INTERVAL']}" class="form-control" placeholder="0 to disable">
+                      <input type="number" id="wishlist_interval" name="wishlist_interval" value="${bookbagofholding.CONFIG['WISHLIST_INTERVAL']}" class="form-control" placeholder="0 to disable">
                       <span class="input-group-addon">Hours</span>
                     </div>
                   </div>
                   <div class="form-group">
                     <label class="control-label">Post-Processing Interval:</label>
                     <div class="input-group">
-                      <input type="number" id="scan_interval" name="scan_interval" value="${lazylibrarian.CONFIG['SCAN_INTERVAL']}" class="form-control" placeholder="0 to disable">
+                      <input type="number" id="scan_interval" name="scan_interval" value="${bookbagofholding.CONFIG['SCAN_INTERVAL']}" class="form-control" placeholder="0 to disable">
                       <span class="input-group-addon">Minutes</span>
                     </div>
                   </div>
@@ -1845,7 +1843,7 @@ mark {
                       %for nf_status in config['status_list']:
                       <%
                             selected = ''
-                            if nf_status == lazylibrarian.CONFIG['NOTFOUND_STATUS']:
+                            if nf_status == bookbagofholding.CONFIG['NOTFOUND_STATUS']:
                                     selected = 'selected="selected"'
                         %>
                       <option value="${nf_status}" ${selected}>${nf_status}</option>
@@ -1859,7 +1857,7 @@ mark {
                       %for nb_status in config['status_list']:
                       <%
                             selected = ''
-                            if nb_status == lazylibrarian.CONFIG['NEWBOOK_STATUS']:
+                            if nb_status == bookbagofholding.CONFIG['NEWBOOK_STATUS']:
                                     selected = 'selected="selected"'
                         %>
                       <option value="${nb_status}" ${selected}>${nb_status}</option>
@@ -1873,7 +1871,7 @@ mark {
                       %for nb_status in config['status_list']:
                       <%
                             selected = ''
-                            if nb_status == lazylibrarian.CONFIG['NEWAUDIO_STATUS']:
+                            if nb_status == bookbagofholding.CONFIG['NEWAUDIO_STATUS']:
                                 selected = 'selected="selected"'
                         %>
                       <option value="${nb_status}" ${selected}>${nb_status}</option>
@@ -1887,7 +1885,7 @@ mark {
                       %for na_status in config['status_list']:
                       <%
                         selected = ''
-                        if na_status == lazylibrarian.CONFIG['NEWAUTHOR_STATUS']:
+                        if na_status == bookbagofholding.CONFIG['NEWAUTHOR_STATUS']:
                             selected = 'selected="selected"'
                       %>
                       <option value="${na_status}" ${selected}>${na_status}</option>
@@ -1901,7 +1899,7 @@ mark {
                       %for na_status in config['status_list']:
                       <%
                         selected = ''
-                        if na_status == lazylibrarian.CONFIG['NEWAUTHOR_AUDIO']:
+                        if na_status == bookbagofholding.CONFIG['NEWAUTHOR_AUDIO']:
                             selected = 'selected="selected"'
                       %>
                       <option value="${na_status}" ${selected}>${na_status}</option>
@@ -1915,7 +1913,7 @@ mark {
                       %for na_status in ['Open', 'Have']:
                       <%
                         selected = ''
-                        if na_status == lazylibrarian.CONFIG['FOUND_STATUS']:
+                        if na_status == bookbagofholding.CONFIG['FOUND_STATUS']:
                             selected = 'selected="selected"'
                       %>
                       <option value="${na_status}" ${selected}>${na_status}</option>
@@ -1925,7 +1923,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['NEWAUTHOR_BOOKS'] == True:
+                        if bookbagofholding.CONFIG['NEWAUTHOR_BOOKS'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1938,7 +1936,7 @@ mark {
                   </div>
                   <div class="form-group">
                     <label for="imp_preprocess">PreProcessor program:</label>
-                    <input type="text" id="imp_preprocess" name="imp_preprocess" value="${lazylibrarian.CONFIG['IMP_PREPROCESS']}" class="form-control">
+                    <input type="text" id="imp_preprocess" name="imp_preprocess" value="${bookbagofholding.CONFIG['IMP_PREPROCESS']}" class="form-control">
                     <span class="help-block">Path to preprocessor to run before importing books into the library</span>
                     <input type="button" value="Test preprocessor" id="testpreprocessor" class="btn btn-secondary" />
                   </div>
@@ -1946,13 +1944,13 @@ mark {
                   <fieldset>
                   <div class="form-group">
                     <label for="imp_calibredb">Calibredb import program:</label>
-                    <input type="text" id="imp_calibredb" name="imp_calibredb" value="${lazylibrarian.CONFIG['IMP_CALIBREDB']}" class="form-control" placeholder="calibredb program">
+                    <input type="text" id="imp_calibredb" name="imp_calibredb" value="${bookbagofholding.CONFIG['IMP_CALIBREDB']}" class="form-control" placeholder="calibredb program">
                     <span class="help-block">Path to "calibredb" to import books into the library</span>
                     <input type="button" value="Test calibredb" id="testCalibredb" class="btn btn-secondary" />
                   </div>
                   <div class="checkbox">
                       <%
-                        if lazylibrarian.CONFIG['CALIBRE_USE_SERVER'] == True:
+                        if bookbagofholding.CONFIG['CALIBRE_USE_SERVER'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1965,27 +1963,27 @@ mark {
                   <fieldset id="calibre_options">
                   <div class="form-group">
                     <label for="calibre_server">Calibre Server:</label>
-                    <input type="text" id="calibre_server" name="calibre_server" value="${lazylibrarian.CONFIG['CALIBRE_SERVER']}" class="form-control">
+                    <input type="text" id="calibre_server" name="calibre_server" value="${bookbagofholding.CONFIG['CALIBRE_SERVER']}" class="form-control">
                     <span class="help-block">eg http://my_calibre_server:9000</span>
                   </div>
                   <div class="form-group">
                     <label for="calibre_user">Calibre Username:</label>
-                    <input type="text" id="calibre_user" name="calibre_user" value="${lazylibrarian.CONFIG['CALIBRE_USER']}" class="form-control">
+                    <input type="text" id="calibre_user" name="calibre_user" value="${bookbagofholding.CONFIG['CALIBRE_USER']}" class="form-control">
                   </div>
                   <div class="form-group">
                     <label for="calibre_pass">Calibre Password:</label>
-                    <input type="password" id="calibre_pass" name="calibre_pass" value="${lazylibrarian.CONFIG['CALIBRE_PASS']}" class="form-control">
+                    <input type="password" id="calibre_pass" name="calibre_pass" value="${bookbagofholding.CONFIG['CALIBRE_PASS']}" class="form-control">
                   </div>
                   </fieldset>
                   <fieldset>
                   <div class="form-group">
                     <label for="imp_autoadd">Calibre Books Auto Add Directory:</label>
-                    <input type="text" id="imp_autoadd" name="imp_autoadd" value="${lazylibrarian.CONFIG['IMP_AUTOADD']}" class="form-control">
+                    <input type="text" id="imp_autoadd" name="imp_autoadd" value="${bookbagofholding.CONFIG['IMP_AUTOADD']}" class="form-control">
                     <span class="help-block">Directory for a copy to be placed for auto add process</span>
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['IMP_AUTOADD_COPY'] == True:
+                        if bookbagofholding.CONFIG['IMP_AUTOADD_COPY'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -1996,7 +1994,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['IMP_AUTOADD_BOOKONLY'] == True:
+                        if bookbagofholding.CONFIG['IMP_AUTOADD_BOOKONLY'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2007,7 +2005,7 @@ mark {
                   </div>
 				  <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['OPF_TAGS'] == True:
+                        if bookbagofholding.CONFIG['OPF_TAGS'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2018,7 +2016,7 @@ mark {
                   </div>
 				  <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['WISHLIST_TAGS'] == True:
+                        if bookbagofholding.CONFIG['WISHLIST_TAGS'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2035,28 +2033,28 @@ mark {
                     <span class="help-block">Note: Calibre may override ebook folder and filename patterns</span>
                   <div class="form-group">
                     <label for="ebook_dest_folder">eBook/AudioBook Foldername Pattern:</label>
-                    <input type="text" id="ebook_dest_folder" name="ebook_dest_folder" value="${lazylibrarian.CONFIG['EBOOK_DEST_FOLDER']}" class="form-control" placeholder="eBook Destination Folder">
+                    <input type="text" id="ebook_dest_folder" name="ebook_dest_folder" value="${bookbagofholding.CONFIG['EBOOK_DEST_FOLDER']}" class="form-control" placeholder="eBook Destination Folder">
                     <span class="help-block">Options: $Author, $Title, $PubYear, $Abridged, $$, any string.<br/>
                       <strong>Current limitation: Each title has to be in unique subfolder</strong></span>
                     <small>Example:  <mark>${config['namevars']['FolderName']}</mark></small>
                   </div>
                   <div class="form-group">
                     <label for="ebook_dest_file">eBook Filename Pattern:</label>
-                    <input type="text" id="ebook_dest_file" name="ebook_dest_file" value="${lazylibrarian.CONFIG['EBOOK_DEST_FILE']}" class="form-control" placeholder="eBook Destination File">
+                    <input type="text" id="ebook_dest_file" name="ebook_dest_file" value="${bookbagofholding.CONFIG['EBOOK_DEST_FILE']}" class="form-control" placeholder="eBook Destination File">
                     <span class="help-block">Options: $Author, $Title, $PubYear, $Abridged, $$, any string.<br/>
                       <strong>Current limitation: Each title has to be in unique subfolder</strong></span>
                       <small>Example:  <mark>${config['namevars']['BookFile']}</mark></small>
                   </div>
                   <div class="form-group">
                     <label for="audiobook_dest_file">AudioBook Filename Pattern:</label>
-                    <input type="text" id="audiobook_dest_file" name="audiobook_dest_file" value="${lazylibrarian.CONFIG['AUDIOBOOK_DEST_FILE']}" class="form-control" placeholder="audioBook Destination File">
+                    <input type="text" id="audiobook_dest_file" name="audiobook_dest_file" value="${bookbagofholding.CONFIG['AUDIOBOOK_DEST_FILE']}" class="form-control" placeholder="audioBook Destination File">
                     <span class="help-block">Options: $Author, $Title, $PubYear, $Abridged, $Part, $Total, $$, any string.<br/>
                       <strong>Current limitation: Has to include $Title and $Part</strong></span>
                       <small>Example:  <mark>${config['namevars']['AudioFile']}</mark></small>
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['DESTINATION_COPY'] == True:
+                        if bookbagofholding.CONFIG['DESTINATION_COPY'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2067,7 +2065,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['ONE_FORMAT'] == True:
+                        if bookbagofholding.CONFIG['ONE_FORMAT'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2083,20 +2081,20 @@ mark {
                   <legend>Folders</legend>
                   <div class="form-group">
                     <label for="download_dir" class="control-label">Download Directories:</label>
-                    <input type="text" id="download_dir" name="download_dir" value="${lazylibrarian.CONFIG['DOWNLOAD_DIR']}" class="form-control" placeholder="Download Directory">
+                    <input type="text" id="download_dir" name="download_dir" value="${bookbagofholding.CONFIG['DOWNLOAD_DIR']}" class="form-control" placeholder="Download Directory">
                     <span class="help-block">Comma separated list of folders where downloaders place books</span>
                   </div>
                   <div class="form-group">
                     <label for="ebook_dir" class="control-label">eBook Library Folder:</label>
-                    <input type="text" id="ebook_dir" name="ebook_dir" value="${lazylibrarian.CONFIG['EBOOK_DIR']}" class="form-control" placeholder="eBook Library Folder">
+                    <input type="text" id="ebook_dir" name="ebook_dir" value="${bookbagofholding.CONFIG['EBOOK_DIR']}" class="form-control" placeholder="eBook Library Folder">
                   </div>
                   <div class="form-group">
                     <label for="audio_dir" class="control-label">AudioBook Library Folder:</label>
-                    <input type="text" id="audio_dir" name="audio_dir" value="${lazylibrarian.CONFIG['AUDIO_DIR']}" class="form-control" placeholder="AudioBook Library Folder">
+                    <input type="text" id="audio_dir" name="audio_dir" value="${bookbagofholding.CONFIG['AUDIO_DIR']}" class="form-control" placeholder="AudioBook Library Folder">
                   </div>
                   <div class="form-group">
                     <label for="alternate_dir" class="control-label">Alternate Import/Export Folder:</label>
-                    <input type="text" id="alternate_dir" name="alternate_dir" value="${lazylibrarian.CONFIG['ALTERNATE_DIR']}" class="form-control" placeholder="Alternate Directory">
+                    <input type="text" id="alternate_dir" name="alternate_dir" value="${bookbagofholding.CONFIG['ALTERNATE_DIR']}" class="form-control" placeholder="Alternate Directory">
                     <span class="help-block">Directory for wishlists and manually importing books<br>
                       <strong>If "keep original files" is not set, Bookbag of Holding can delete this folder after import</strong></span>
                   </div>
@@ -2104,48 +2102,48 @@ mark {
                   <div class="form-group">
                     <label for="cache_age" class="control-label">Cache expire after:</label>
                     <div class="input-group">
-                      <input type="number" id="cache_age" name="cache_age" value="${lazylibrarian.CONFIG['CACHE_AGE']}" class="form-control" placeholder="0 to disable">
+                      <input type="number" id="cache_age" name="cache_age" value="${bookbagofholding.CONFIG['CACHE_AGE']}" class="form-control" placeholder="0 to disable">
                       <span class="input-group-addon">Days</span>
                     </div>
                   </div>
                   <div class="form-group">
                     <label for="task_age" class="control-label">Remove failed tasks after:</label>
                     <div class="input-group">
-                      <input type="number" id="task_age" name="task_age" value="${lazylibrarian.CONFIG['TASK_AGE']}" class="form-control" placeholder="0 to disable">
+                      <input type="number" id="task_age" name="task_age" value="${bookbagofholding.CONFIG['TASK_AGE']}" class="form-control" placeholder="0 to disable">
                       <span class="input-group-addon">Hours</span>
                     </div>
                   </div>
                   <div class="form-group">
                     <label for="match_ratio">Search Match Ratio:</label>
                     <div class="input-group">
-                      <input type="number" id="match_ratio" name="match_ratio" value="${lazylibrarian.CONFIG['MATCH_RATIO']}" class="form-control" placeholder="Search Match Ratio (percent)">
+                      <input type="number" id="match_ratio" name="match_ratio" value="${bookbagofholding.CONFIG['MATCH_RATIO']}" class="form-control" placeholder="Search Match Ratio (percent)">
                       <span class="input-group-addon">%</span>
                     </div>
                   </div>
                   <div class="form-group">
                     <label for="dload_ratio">Download Match Ratio:</label>
                     <div class="input-group">
-                      <input type="number" id="dload_ratio" name="dload_ratio" value="${lazylibrarian.CONFIG['DLOAD_RATIO']}" class="form-control" placeholder="Download Match Ratio (percent)">
+                      <input type="number" id="dload_ratio" name="dload_ratio" value="${bookbagofholding.CONFIG['DLOAD_RATIO']}" class="form-control" placeholder="Download Match Ratio (percent)">
                       <span class="input-group-addon">%</span>
                     </div>
                   </div>
                   <div class="form-group">
                     <label for="max_pages">Maximum Search Pages:</label>
-                    <input type="number" id="max_pages" name="max_pages" value="${lazylibrarian.CONFIG['MAX_PAGES']}" class="form-control" placeholder="0 for no limit">
+                    <input type="number" id="max_pages" name="max_pages" value="${bookbagofholding.CONFIG['MAX_PAGES']}" class="form-control" placeholder="0 for no limit">
                   </div>
                   <div class="form-group">
                     <label for="max_bookpages">Maximum Author Pages:</label>
-                    <input type="number" id="max_bookpages" name="max_bookpages" value="${lazylibrarian.CONFIG['MAX_BOOKPAGES']}" class="form-control" placeholder="0 for no limit">
+                    <input type="number" id="max_bookpages" name="max_bookpages" value="${bookbagofholding.CONFIG['MAX_BOOKPAGES']}" class="form-control" placeholder="0 for no limit">
                   </div>
                   <div class="form-group">
                     <label for="dload_ratio">Maximum Coverwall Images:</label>
-                    <input type="number" id="max_wall" name="max_wall" value="${lazylibrarian.CONFIG['MAX_WALL']}" class="form-control" placeholder="0 for no limit">
+                    <input type="number" id="max_wall" name="max_wall" value="${bookbagofholding.CONFIG['MAX_WALL']}" class="form-control" placeholder="0 for no limit">
                   </div>
                 </fieldset>
                 <fieldset>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['FULL_SCAN'] == True:
+                        if bookbagofholding.CONFIG['FULL_SCAN'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2157,7 +2155,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['IMP_SINGLEBOOK'] == True:
+                        if bookbagofholding.CONFIG['IMP_SINGLEBOOK'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2169,7 +2167,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['IMP_RENAME'] == True:
+                        if bookbagofholding.CONFIG['IMP_RENAME'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2180,7 +2178,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['ADD_AUTHOR'] == True:
+                        if bookbagofholding.CONFIG['ADD_AUTHOR'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2191,7 +2189,7 @@ mark {
                   </div>
                   <div class="checkbox">
                     <%
-                        if lazylibrarian.CONFIG['IMP_AUTOSEARCH'] == True:
+                        if bookbagofholding.CONFIG['IMP_AUTOSEARCH'] == True:
                             checked = 'checked="checked"'
                         else:
                             checked = ''
@@ -2212,7 +2210,7 @@ mark {
               You only need to alter category settings if auto-detection fails or returns incorrect values. If you make any alterations, tick the lock button to prevent reloading values from the provider. API limit is not read from the provider and is not affected by lock.
               </div>
             <div class="row">
-                %for provider in lazylibrarian.NEWZNAB_PROV:
+                %for provider in bookbagofholding.NEWZNAB_PROV:
                 <%
                   if provider['HOST'] == "":
                     hidden = 'hidden="hidden"'
@@ -2280,7 +2278,7 @@ mark {
                 %endfor
             </div>
             <div class="row">
-                %for provider in lazylibrarian.TORZNAB_PROV:
+                %for provider in bookbagofholding.TORZNAB_PROV:
                 <%
                     if provider['HOST'] == "":
                         hidden = 'hidden="hidden"'
@@ -2349,7 +2347,7 @@ mark {
                 <div class="col-md-6">
                 <legend>Book Reject List</legend>
                 <div class="form-group">
-                  <input type="text" id="reject_words" name="reject_words" value="${lazylibrarian.CONFIG['REJECT_WORDS']}" class="form-control" placeholder="Reject word list">
+                  <input type="text" id="reject_words" name="reject_words" value="${bookbagofholding.CONFIG['REJECT_WORDS']}" class="form-control" placeholder="Reject word list">
                   <span class="help-block">Comma separated list of words to reject:<br/>
                     Search results with any of these words in the title or filenames<br>
                     (where available) will be ignored<br/>
@@ -2359,7 +2357,7 @@ mark {
                 <div class="col-md-6">
                 <legend>AudioBook Reject List</legend>
                 <div class="form-group">
-                  <input type="text" id="reject_audio" name="reject_audio" value="${lazylibrarian.CONFIG['REJECT_AUDIO']}" class="form-control" placeholder="Reject word list">
+                  <input type="text" id="reject_audio" name="reject_audio" value="${bookbagofholding.CONFIG['REJECT_AUDIO']}" class="form-control" placeholder="Reject word list">
                   <span class="help-block">Comma separated list of words to reject:<br/>
                     Search results with any of these words in the title or filenames<br>
                     (where available) will be ignored<br/>
@@ -2369,7 +2367,7 @@ mark {
                 <div class="col-md-6">
                 <legend>Extension Reject List (all types)</legend>
                 <div class="form-group">
-                  <input type="text" id="banned_ext" name="banned_ext" value="${lazylibrarian.CONFIG['BANNED_EXT']}" class="form-control" placeholder="Reject extensions list">
+                  <input type="text" id="banned_ext" name="banned_ext" value="${bookbagofholding.CONFIG['BANNED_EXT']}" class="form-control" placeholder="Reject extensions list">
                   <span class="help-block">Comma separated list of extensions to reject:<br/>
                     Results with any of these extensions in the filenames will be rejected<br/>
                     (where info is available)<br/>
@@ -2380,9 +2378,9 @@ mark {
                 <legend>eBook Size Limits</legend>
                   <div class="input-group">
                     <span class="input-group-addon">Max size</span>
-                    <input type="number" id="reject_maxsize" name="reject_maxsize" value="${lazylibrarian.CONFIG['REJECT_MAXSIZE']}" class="form-control" placeholder="Reject maximum size">
+                    <input type="number" id="reject_maxsize" name="reject_maxsize" value="${bookbagofholding.CONFIG['REJECT_MAXSIZE']}" class="form-control" placeholder="Reject maximum size">
                     <span class="input-group-addon">Min size</span>
-                    <input type="number" id="reject_minsize" name="reject_minsize" value="${lazylibrarian.CONFIG['REJECT_MINSIZE']}" class="form-control" placeholder="Reject minimum size">
+                    <input type="number" id="reject_minsize" name="reject_minsize" value="${bookbagofholding.CONFIG['REJECT_MINSIZE']}" class="form-control" placeholder="Reject minimum size">
                     <span class="input-group-addon">Mb</span>
                   </div>
                 </div>
@@ -2390,9 +2388,9 @@ mark {
                 <legend>AudioBook Size Limits</legend>
                  <div class="input-group">
                     <span class="input-group-addon">Max size</span>
-                    <input type="number" id="reject_maxaudio" name="reject_maxaudio" value="${lazylibrarian.CONFIG['REJECT_MAXAUDIO']}" class="form-control" placeholder="Reject maximum size">
+                    <input type="number" id="reject_maxaudio" name="reject_maxaudio" value="${bookbagofholding.CONFIG['REJECT_MAXAUDIO']}" class="form-control" placeholder="Reject maximum size">
                     <span class="input-group-addon">Min size</span>
-                    <input type="number" id="reject_minaudio" name="reject_minaudio" value="${lazylibrarian.CONFIG['REJECT_MINAUDIO']}" class="form-control" placeholder="Reject minimum size">
+                    <input type="number" id="reject_minaudio" name="reject_minaudio" value="${bookbagofholding.CONFIG['REJECT_MINAUDIO']}" class="form-control" placeholder="Reject minimum size">
                     <span class="input-group-addon">Mb</span>
                   </div>
                 </div>
@@ -3369,7 +3367,7 @@ mark {
         $('#getAuthorImages').click(function () {
             var btn = $(this);
             btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Fetching...');
-            $.get("api", { 'apikey': '${lazylibrarian.CONFIG["API_KEY"]}', 'cmd': 'getAuthorImages' },
+            $.get("api", { 'apikey': '${bookbagofholding.CONFIG["API_KEY"]}', 'cmd': 'getAuthorImages' },
                 function (data) {
                     btn.prop('disabled', false).html('<i class="fa fa-user"></i> Get Author Images');
                     bootbox.dialog({
@@ -3388,7 +3386,7 @@ mark {
         $('#getBookCovers').click(function () {
             var btn = $(this);
             btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Fetching...');
-            $.get("api", { 'apikey': '${lazylibrarian.CONFIG["API_KEY"]}', 'cmd': 'getBookCovers' },
+            $.get("api", { 'apikey': '${bookbagofholding.CONFIG["API_KEY"]}', 'cmd': 'getBookCovers' },
                 function (data) {
                     btn.prop('disabled', false).html('<i class="fa fa-book"></i> Get Book Covers');
                     bootbox.dialog({
