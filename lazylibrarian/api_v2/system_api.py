@@ -11,7 +11,7 @@
 #  along with Lazylibrarian.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-System API endpoints for LazyLibrarian.
+System API endpoints for Bookbag of Holding.
 
 This module contains API methods for system operations:
 - Get logs
@@ -392,9 +392,9 @@ class SystemApi(ApiBase):
 
         return self.success(message="Message logged")
 
-    @api_endpoint("Stop lazylibrarian")
+    @api_endpoint("Stop Bookbag of Holding")
     def shutdown(self, **kwargs) -> Dict[str, Any]:
-        """Shutdown LazyLibrarian.
+        """Shutdown Bookbag of Holding.
 
         Returns:
             Success message
@@ -402,9 +402,9 @@ class SystemApi(ApiBase):
         lazylibrarian.SIGNAL = 'shutdown'
         return self.success(message="Shutting down")
 
-    @api_endpoint("Restart lazylibrarian")
+    @api_endpoint("Restart Bookbag of Holding")
     def restart(self, **kwargs) -> Dict[str, Any]:
-        """Restart LazyLibrarian.
+        """Restart Bookbag of Holding.
 
         Returns:
             Success message

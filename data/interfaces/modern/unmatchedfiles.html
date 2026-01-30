@@ -1,0 +1,430 @@
+<%inherit file="base.html" />
+<%!
+    import lazylibrarian
+%>
+<%
+    current_page = 'manage'
+%>
+<%def name="headIncludes()">
+    <link href="css/datatables.bootstrap5.min.css" rel="stylesheet">
+</%def>
+<%def name="styleIncludes()">
+.ll-match-results {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 1rem;
+}
+.ll-match-result {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.ll-match-result:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+.ll-match-result.selected {
+    background: #e7f1ff;
+    border-color: #007bff;
+}
+.ll-file-info {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+</%def>
+<%def name="body()">
+    <div class="ll-page-header">
+        <div class="ll-page-header-content">
+            <h1 class="ll-page-title">${title}</h1>
+            <p class="ll-page-subtitle">Files that could not be automatically matched during library scans</p>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="ll-toolbar">
+        <div class="ll-toolbar-left">
+            <form action="unmatchedFiles" method="get" class="ll-toolbar-form">
+                <label class="ll-toolbar-label">Status:</label>
+                <select name="whichStatus" id="whichStatus" class="ll-select" onchange="this.form.submit()">
+                    %for item in ['Unmatched', 'Ignored', 'Matched']:
+                    <option value="${item}" ${'selected="selected"' if whichStatus == item else ''}>${item}</option>
+                    %endfor
+                </select>
+                %if len(types) > 1:
+                <label class="ll-toolbar-label">Library:</label>
+                <select name="library" id="chooselib" class="ll-select" onchange="this.form.submit()">
+                    %for item in types:
+                    <option value="${item}" ${'selected="selected"' if library == item else ''}>${item}</option>
+                    %endfor
+                </select>
+                %endif
+            </form>
+            <input type="text" class="ll-input ll-input-sm ll-search-input" id="fileSearchInput"
+                   placeholder="Search files..." style="width: 240px;">
+        </div>
+    </div>
+
+    <!-- File List -->
+    <div class="ll-card">
+        <div class="ll-card-body ll-card-body-flush">
+            <div class="table-responsive">
+                <form id="markFilesForm" action="markUnmatchedFiles" method="get">
+                    <input type="hidden" name="library" value="${library}">
+                    <input type="hidden" name="whichStatus" value="${whichStatus}">
+                    <table class="ll-table" id="file_table">
+                        <thead>
+                            <tr>
+                                %if perm&lazylibrarian.perm_status:
+                                <th class="text-center no-sort" style="width: 40px;">
+                                    <input type="checkbox" onClick="toggleAll(this)" />
+                                </th>
+                                %endif
+                                <th>Author</th>
+                                <th>Title</th>
+                                <th>Filename</th>
+                                <th class="text-center" style="width: 80px;">Size</th>
+                                <th class="text-center" style="width: 100px;">Added</th>
+                                <th class="text-center" style="width: 60px;">Scans</th>
+                                <th class="text-center no-sort" style="width: 180px;">Actions</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </form>
+            </div>
+        </div>
+        %if perm&lazylibrarian.perm_status:
+        <div class="ll-card-footer">
+            <form action="markUnmatchedFiles" method="get" class="ll-toolbar-form">
+                <input type="hidden" name="library" value="${library}">
+                <input type="hidden" name="whichStatus" value="${whichStatus}">
+                <label class="ll-toolbar-label">With selected:</label>
+                <select id="markAction" name="action" class="ll-select">
+                    <option value="Ignore">Ignore</option>
+                    <option value="Remove">Remove Entry</option>
+                    %if whichStatus == 'Ignored':
+                    <option value="Retry">Retry Match</option>
+                    %endif
+                </select>
+                <button type="button" class="ll-btn ll-btn-primary ll-btn-sm" onclick="submitMarked()">Go</button>
+            </form>
+        </div>
+        %endif
+    </div>
+
+</%def>
+<%def name="javascriptIncludes()">
+    <script src="js/jquery.dataTables.min.js"></script>
+    <script src="js/datatables.bootstrap5.min.js"></script>
+    <script src="js/natural.js"></script>
+    <script src="js/bootbox.min.js"></script>
+    <script>
+    var currentFileId = null;
+    var selectedBookId = null;
+    var library = '${library}';
+
+    function toggleAll(source) {
+        var checkboxes = document.querySelectorAll('input[class="checkbox"]');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = source.checked;
+        }
+    }
+
+    function submitMarked() {
+        var checkboxes = document.querySelectorAll('input[class="checkbox"]:checked');
+        if (checkboxes.length === 0) {
+            bootbox.alert('Please select at least one file');
+            return;
+        }
+        var form = document.createElement('form');
+        form.method = 'get';
+        form.action = 'markUnmatchedFiles';
+
+        var libraryInput = document.createElement('input');
+        libraryInput.type = 'hidden';
+        libraryInput.name = 'library';
+        libraryInput.value = '${library}';
+        form.appendChild(libraryInput);
+
+        var statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'whichStatus';
+        statusInput.value = '${whichStatus}';
+        form.appendChild(statusInput);
+
+        var actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = document.getElementById('markAction').value;
+        form.appendChild(actionInput);
+
+        checkboxes.forEach(function(cb) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = cb.name;
+            input.value = 'on';
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    var matchDialog = null;
+
+    function openMatchModal(fileId, fileName, author, title) {
+        currentFileId = fileId;
+        selectedBookId = null;
+
+        var initialQuery = ((author || '') + ' ' + (title || '')).trim();
+
+        var $content = $('<div></div>');
+        $content.append('<div class="ll-file-info">' +
+            '<strong>File:</strong> ' + escapeHtml(fileName) + '<br>' +
+            '<strong>Extracted Author:</strong> ' + escapeHtml(author || 'Unknown') + '<br>' +
+            '<strong>Extracted Title:</strong> ' + escapeHtml(title || 'Unknown') +
+            '</div>');
+        $content.append('<div style="margin-bottom: 1rem;">' +
+            '<input type="text" id="bookSearchInput" class="form-control" ' +
+            'placeholder="Search for book by title or author..." value="' + escapeHtml(initialQuery) + '">' +
+            '</div>');
+        $content.append('<div id="searchResults" class="ll-match-results">' +
+            '<p class="text-muted text-center">Enter a search term to find books</p>' +
+            '</div>');
+
+        matchDialog = bootbox.dialog({
+            title: 'Match File to Book',
+            message: $content,
+            size: 'large',
+            onEscape: true,
+            buttons: {
+                cancel: {
+                    label: 'Cancel',
+                    className: 'btn-secondary'
+                },
+                confirm: {
+                    label: 'Match Selected',
+                    className: 'btn-primary',
+                    callback: function() {
+                        if (!selectedBookId) {
+                            bootbox.alert('Please select a book first');
+                            return false;
+                        }
+                        doMatch();
+                        return false; // Don't close, doMatch will handle it
+                    }
+                }
+            }
+        });
+
+        // Set up search input handler after dialog is shown
+        matchDialog.on('shown.bs.modal', function() {
+            var searchTimeout;
+            $('#bookSearchInput').on('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(doSearch, 300);
+            }).focus();
+
+            // Trigger initial search if we have a query
+            if (initialQuery) {
+                doSearch();
+            }
+        });
+
+        // Handle click on search results
+        $(document).on('click', '.ll-match-result', function() {
+            $('.ll-match-result').removeClass('selected');
+            $(this).addClass('selected');
+            selectedBookId = $(this).data('bookid');
+        });
+    }
+
+    function doSearch() {
+        var query = $('#bookSearchInput').val();
+        if (query.length < 2) {
+            $('#searchResults').html('<p class="text-muted text-center">Enter at least 2 characters</p>');
+            return;
+        }
+
+        $('#searchResults').html('<p class="text-muted text-center">Searching...</p>');
+
+        $.ajax({
+            url: 'searchBooksForMatch',
+            data: { query: query },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success && response.results.length > 0) {
+                    var html = '';
+                    response.results.forEach(function(book) {
+                        html += '<div class="ll-match-result" data-bookid="' + book.bookid + '">';
+                        html += '<strong>' + escapeHtml(book.title) + '</strong>';
+                        if (book.subtitle) html += ' <small>(' + escapeHtml(book.subtitle) + ')</small>';
+                        html += '<br><span class="text-muted">by ' + escapeHtml(book.author) + '</span>';
+                        if (book.date) html += ' <small>(' + book.date + ')</small>';
+                        html += '<br><small class="badge bg-secondary">' + book.status + '</small>';
+                        html += '</div>';
+                    });
+                    $('#searchResults').html(html);
+                } else if (response.success) {
+                    $('#searchResults').html('<p class="text-muted text-center">No books found</p>');
+                } else {
+                    $('#searchResults').html('<p class="text-danger text-center">Error: ' + (response.error || 'Unknown error') + '</p>');
+                }
+            },
+            error: function() {
+                $('#searchResults').html('<p class="text-danger text-center">Search failed</p>');
+            }
+        });
+    }
+
+    function doMatch() {
+        if (!currentFileId || !selectedBookId) return;
+
+        $.ajax({
+            url: 'matchUnmatchedFile',
+            data: { fileid: currentFileId, bookid: selectedBookId, library: library },
+            dataType: 'json',
+            success: function(response) {
+                if (matchDialog) matchDialog.modal('hide');
+                if (response.success) {
+                    bootbox.alert('File matched successfully');
+                    $('#file_table').DataTable().ajax.reload();
+                } else {
+                    bootbox.alert('Error: ' + (response.error || 'Unknown error'));
+                }
+            },
+            error: function() {
+                bootbox.alert('Failed to match file');
+            }
+        });
+    }
+
+    function retryMatch(fileId) {
+        $.ajax({
+            url: 'retryMatchUnmatchedFile',
+            data: { fileid: fileId, library: library },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    if (response.matched) {
+                        if (window.llToast) {
+                            window.llToast.show(response.message, 'success');
+                        } else {
+                            bootbox.alert(response.message);
+                        }
+                    } else {
+                        if (window.llToast) {
+                            window.llToast.show(response.message, 'warning');
+                        } else {
+                            bootbox.alert(response.message);
+                        }
+                    }
+                    $('#file_table').DataTable().ajax.reload();
+                } else {
+                    if (window.llToast) {
+                        window.llToast.show('Error: ' + (response.error || 'Unknown error'), 'error');
+                    } else {
+                        bootbox.alert('Error: ' + (response.error || 'Unknown error'));
+                    }
+                }
+            },
+            error: function() {
+                if (window.llToast) {
+                    window.llToast.show('Failed to retry match', 'error');
+                } else {
+                    bootbox.alert('Failed to retry match');
+                }
+            }
+        });
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+
+    function escapeAttr(text) {
+        // Escape for use in HTML attributes (handles quotes and special chars)
+        if (!text) return '';
+        return String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    $(document).ready(function() {
+        var table = $('#file_table').DataTable({
+            "bAutoWidth": false,
+            "stateSave": true,
+            "order": [[ 5, 'desc' ]],
+            "columnDefs": [
+                { targets: 'no-sort', orderable: false },
+                %if perm&lazylibrarian.perm_status:
+                { targets: [0],
+                    'class': 'text-center',
+                    'render': function(data, type, row) {
+                        return '<input type="checkbox" name="' + data + '" class="checkbox" />';
+                    }
+                },
+                %endif
+                { targets: [4], 'class': 'text-center' },
+                { targets: [5], 'class': 'text-center' },
+                { targets: [6], 'class': 'text-center' },
+                { targets: [7],
+                    'class': 'text-center',
+                    'render': function(data, type, row) {
+                        var html = '';
+                        %if perm&lazylibrarian.perm_status:
+                        html += '<button class="ll-btn ll-btn-primary ll-btn-sm match-btn" data-fileid="' + escapeAttr(row[0]) + '" data-filename="' + escapeAttr(row[3]) + '" data-author="' + escapeAttr(row[1]) + '" data-title="' + escapeAttr(row[2]) + '">Match</button> ';
+                        html += '<button class="ll-btn ll-btn-secondary ll-btn-sm retry-btn" data-fileid="' + escapeAttr(row[0]) + '">Retry</button>';
+                        %endif
+                        return html;
+                    }
+                }
+            ],
+            "oLanguage": {
+                "sSearch": "",
+                "sSearchPlaceholder": "Search files...",
+                "sLengthMenu": "_MENU_ per page",
+                "sEmptyTable": "No unmatched files found",
+                "sInfo": "Showing _START_ to _END_ of _TOTAL_ files"
+            },
+            "sPaginationType": "full_numbers",
+            "bServerSide": true,
+            "sAjaxSource": 'getUnmatchedFiles?library=${library}&whichStatus=${whichStatus}',
+            "aLengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "iDisplayLength": ${lazylibrarian.CONFIG['DISPLAYLENGTH']},
+            "bFilter": true
+        });
+
+        $('.dataTables_filter').hide();
+        $('.dataTables_length select').addClass('ll-select');
+
+        var searchTimeout;
+        $('#fileSearchInput').on('keyup', function() {
+            var searchTerm = this.value;
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                table.search(searchTerm).draw();
+            }, 300);
+        });
+
+        // Event delegation for Match and Retry buttons
+        $('#file_table').on('click', '.match-btn', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var btn = $(this);
+            openMatchModal(btn.data('fileid'), btn.data('filename'), btn.data('author'), btn.data('title'));
+        });
+
+        $('#file_table').on('click', '.retry-btn', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var btn = $(this);
+            retryMatch(btn.data('fileid'));
+        });
+    });
+    </script>
+</%def>

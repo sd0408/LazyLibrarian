@@ -20,6 +20,7 @@ from urllib.parse import quote_plus, urlencode
 
 import lazylibrarian
 from lazylibrarian import logger, database
+from lazylibrarian.database import add_unmatched_file, cleanup_unmatched_files, dedupe_unmatched_files
 from lazylibrarian.bookwork import setWorkPages
 from lazylibrarian.bookrename import bookRename, audioProcess, id3read
 from lazylibrarian.cache import cache_img
@@ -907,12 +908,25 @@ def LibraryScan(startdir=None, library='eBook', authid=None, remove=True):
                                             if coverimg:
                                                 shutil.copyfile(coverimg, cacheimg)
                                 else:
+                                    # Track unmatched file for manual review
+                                    file_path = os.path.join(rootdir, files)
+                                    add_unmatched_file(
+                                        filepath=file_path,
+                                        library_type=library,
+                                        author=author,
+                                        title=book,
+                                        isbn=isbn,
+                                        language=language,
+                                        gr_id=gr_id,
+                                        gb_id=gb_id,
+                                        extension=extn
+                                    )
                                     if library == 'eBook':
                                         logger.warn(
-                                            "Failed to match book [%s] by [%s] in database" % (book, author))
+                                            "Failed to match book [%s] by [%s] in database - added to unmatched files" % (book, author))
                                     else:
                                         logger.warn(
-                                            "Failed to match audiobook [%s] by [%s] in database" % (book, author))
+                                            "Failed to match audiobook [%s] by [%s] in database - added to unmatched files" % (book, author))
                             else:
                                 if not warned_no_new_authors and not lazylibrarian.CONFIG['ADD_AUTHOR']:
                                     logger.warn("Add authors to database is disabled")
@@ -928,6 +942,16 @@ def LibraryScan(startdir=None, library='eBook', authid=None, remove=True):
         if startdir == destdir:
             # On full library scans, check for missing workpages
             setWorkPages()
+            # Clean up unmatched files that no longer exist
+            removed = cleanup_unmatched_files()
+            if removed:
+                logger.info("Removed %s unmatched file entr%s for missing files" %
+                            (removed, 'y' if removed == 1 else 'ies'))
+            # Remove duplicate entries (same file with different path representations)
+            deduped = dedupe_unmatched_files()
+            if deduped:
+                logger.info("Removed %s duplicate unmatched file entr%s" %
+                            (deduped, 'y' if deduped == 1 else 'ies'))
             # and books with unknown language
             nolang = myDB.match(
                 "select count(*) as counter from Books where status='Open' and BookLang='Unknown'")

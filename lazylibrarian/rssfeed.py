@@ -83,7 +83,7 @@ def genFeed(ftype, limit=10, user=0, baseurl=''):
     feed = Feed(
         title=title,
         link=baselink,
-        description="LazyLibrarian %s" % title,
+        description="Bookbag of Holding %s" % title,
         language="en-US",
         lastBuildDate=datetime.datetime.now(),
         items=items)

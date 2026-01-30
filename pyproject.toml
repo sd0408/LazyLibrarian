@@ -1,7 +1,7 @@
 [project]
-name = "lazylibrarian"
+name = "bookbag-of-holding"
 version = "1.0.0"
-description = "Automated ebook and audiobook downloading"
+description = "Bookbag of Holding - Automated ebook and audiobook downloading"
 requires-python = ">=3.10"
 license = {text = "GPL-3.0-or-later"}
 

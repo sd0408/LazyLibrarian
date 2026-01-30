@@ -372,7 +372,7 @@ mark {
 <%def name="headerIncludes()">
 <div id="subhead_container">
     <div id="subhead_menu">
-      <a onclick="self.shutdownQA(this)" class="button btn btn-sm btn-danger" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terminate the LazyLibrarian process - Be careful if you're doing this remotely"><i class="fa fa-power-off"></i> Shutdown</a>
+      <a onclick="self.shutdownQA(this)" class="button btn btn-sm btn-danger" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terminate the Bookbag of Holding process - Be careful if you're doing this remotely"><i class="fa fa-power-off"></i> Shutdown</a>
       <a class="button btn btn-sm btn-warning" onclick="self.restartQA(this, '', '')"><i class="fa fa-sync"></i> Restart</a>
       <button class="button btn btn-sm btn-primary" type="button" value="System Info" id="sysinfo"><i class="fa fa-cogs"></i> System Info</button>
       <button class="button btn btn-sm btn-primary" type="button" value="Show Jobs" id="show_Jobs"><i class="fa fa-list-ul"></i> Job Status</button>
@@ -512,7 +512,7 @@ mark {
                             else:
                                 checked = ''
                           %>
-                          <label for="opds_enabled" title="Allow remote applications to interface with LazyLibrarian">
+                          <label for="opds_enabled" title="Allow remote applications to interface with Bookbag of Holding">
                           <input type="checkbox" id="opds_enabled" name="opds_enabled" value="1" ${checked} />
                           Enable OPDS</label>
                         </div>
@@ -624,7 +624,7 @@ mark {
                         else:
                             checked = ''
                       %>
-                      <label for="api_enabled" title="Allow remote applications to interface with LazyLibrarian">
+                      <label for="api_enabled" title="Allow remote applications to interface with Bookbag of Holding">
                       <input type="checkbox" id="api_enabled" name="api_enabled" value="1" ${checked} />
                       Enable API</label>
                     </div>
@@ -2098,7 +2098,7 @@ mark {
                     <label for="alternate_dir" class="control-label">Alternate Import/Export Folder:</label>
                     <input type="text" id="alternate_dir" name="alternate_dir" value="${lazylibrarian.CONFIG['ALTERNATE_DIR']}" class="form-control" placeholder="Alternate Directory">
                     <span class="help-block">Directory for wishlists and manually importing books<br>
-                      <strong>If "keep original files" is not set, LazyLibrarian can delete this folder after import</strong></span>
+                      <strong>If "keep original files" is not set, Bookbag of Holding can delete this folder after import</strong></span>
                   </div>
                   <legend>Miscellaneous</legend>
                   <div class="form-group">

@@ -56,6 +56,8 @@
                 </select>
                 %endif
             </form>
+            <input type="text" class="ll-input ll-input-sm ll-search-input" id="bookSearchInput"
+                   placeholder="Search books..." style="width: 240px;">
         </div>
         <div class="ll-toolbar-right">
             %if lazylibrarian.CONFIG['TOGGLES']:
@@ -64,11 +66,10 @@
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="2">Author</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="3">Title</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="4">Series</button>
-                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="5">Rating</button>
-                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="6">Released</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="5">Released</button>
                 %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
-                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="7">Delay</button>
-                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="8">Search</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="6">Delay</button>
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="7">Search</button>
                 %endif
             </div>
             %endif
@@ -94,7 +95,6 @@
                                 <th>Author</th>
                                 <th>Title</th>
                                 <th>Series</th>
-                                <th class="text-center" style="width: 80px;">Rating</th>
                                 <th class="text-center" style="width: 100px;">Released</th>
                                 %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
                                 <th class="text-center no-sort" style="width: 80px;">Delay</th>
@@ -271,19 +271,13 @@
                         return output.join('<br>');
                     }
                 },
-                { targets: [5],
-                    'class': 'text-center',
-                    'render': function(data, type, row) {
-                        return '<img src="images/' + data + '-stars.png" alt="Rating">';
-                    }
-                },
-                { targets: [6], 'class': 'text-center' },
+                { targets: [5], 'class': 'text-center' },
                 %if lazylibrarian.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
-                { targets: [7],
+                { targets: [6],
                     'class': 'text-center',
                     'render': function(data, type, row) { return row[14]; }
                 },
-                { targets: [8],
+                { targets: [7],
                     'class': 'text-center',
                     'render': function(data, type, row) { return row[15]; }
                 }
@@ -313,9 +307,19 @@
             }
         });
 
-        // Style DataTables elements
-        $('.dataTables_filter input').addClass('ll-input').attr('placeholder', 'Search books...');
+        // Hide the default DataTables search box (we use our own)
+        $('.dataTables_filter').hide();
         $('.dataTables_length select').addClass('ll-select');
+
+        // Interactive search input - filter table as user types
+        var searchTimeout;
+        $('#bookSearchInput').on('keyup', function() {
+            var searchTerm = this.value;
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                table.search(searchTerm).draw();
+            }, 300);
+        });
 
         // Toggle column visibility
         $('button.toggle-vis').click(function(e) {

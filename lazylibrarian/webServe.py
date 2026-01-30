@@ -29,7 +29,7 @@ import lazylibrarian
 from cherrypy.lib.static import serve_file
 from lazylibrarian import logger, database, \
     qbittorrent, utorrent, rtorrent, transmission, sabnzbd, nzbget, deluge, synology
-from lazylibrarian.database import add_to_blacklist
+from lazylibrarian.database import add_to_blacklist, mark_unmatched_file_matched, mark_unmatched_file_ignored
 from lazylibrarian.cache import cache_img
 from lazylibrarian.calibre import calibreTest, syncCalibreList, calibredb
 from lazylibrarian.common import showJobs, showStats, restartJobs, clearLog, scheduleJob, checkRunningJobs, setperm, \
@@ -1133,25 +1133,43 @@ class WebInterface(object):
         raise cherrypy.HTTPRedirect("home")
 
     @cherrypy.expose
-    def refreshAuthor(self, AuthorID):
+    @cherrypy.tools.json_out()
+    def refreshAuthor(self, AuthorID, ajax=None, **kwargs):
         myDB = database.DBConnection()
-        authorsearch = myDB.match('SELECT AuthorName from authors WHERE AuthorID=?', (AuthorID,))
-        if authorsearch:  # to stop error if try to refresh an author while they are still loading
+        authorsearch = myDB.match('SELECT AuthorName, Status from authors WHERE AuthorID=?', (AuthorID,))
+        if authorsearch:
+            # Set status to Loading immediately so the UI shows feedback
+            if authorsearch['Status'] != 'Loading':
+                myDB.action('UPDATE authors SET Status="Loading" WHERE AuthorID=?', (AuthorID,))
+
+            # Start background thread to refresh author
             threading.Thread(target=addAuthorToDB, name='REFRESHAUTHOR', args=[None, True, AuthorID]).start()
+
+            # If AJAX request, return JSON response
+            if ajax or cherrypy.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return {
+                    'success': True,
+                    'message': 'Refreshing author: %s' % authorsearch['AuthorName'],
+                    'authorid': AuthorID
+                }
+            # Otherwise redirect back to author page
             raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s" % AuthorID)
         else:
             logger.debug('refreshAuthor Invalid authorid [%s]' % AuthorID)
+            if ajax or cherrypy.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return {'success': False, 'error': 'Author not found'}
             raise cherrypy.HTTPRedirect("home")
 
     @cherrypy.expose
-    def libraryScanAuthor(self, AuthorID, **kwargs):
+    @cherrypy.tools.json_out()
+    def libraryScanAuthor(self, AuthorID, ajax=None, **kwargs):
         myDB = database.DBConnection()
         authorsearch = myDB.match('SELECT AuthorName from authors WHERE AuthorID=?', (AuthorID,))
+        is_ajax = ajax or cherrypy.request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        library = kwargs.get('library', 'eBook')
+
         if authorsearch:  # to stop error if try to refresh an author while they are still loading
             AuthorName = authorsearch['AuthorName']
-            library = 'eBook'
-            if 'library' in kwargs:
-                library = kwargs['library']
 
             if library == 'AudioBook':
                 authordir = safe_unicode(os.path.join(lazylibrarian.DIRECTORY('AudioBook'), AuthorName))
@@ -1184,15 +1202,31 @@ class WebInterface(object):
                 try:
                     threading.Thread(target=LibraryScan, name='AUTHOR_SCAN',
                                      args=[authordir, library, AuthorID, remove]).start()
+                    if is_ajax:
+                        return {
+                            'success': True,
+                            'message': 'Started %s scan for %s' % (library, authorsearch['AuthorName']),
+                            'library': library,
+                            'authorid': AuthorID
+                        }
                 except Exception as e:
                     logger.error('Unable to complete the scan: %s %s' % (type(e).__name__, str(e)))
+                    if is_ajax:
+                        return {'success': False, 'error': str(e)}
             else:
                 # maybe we don't have any of their books
                 logger.warn('Unable to find author directory: %s' % authordir)
+                if is_ajax:
+                    return {
+                        'success': False,
+                        'error': 'Unable to find author directory for %s' % authorsearch['AuthorName']
+                    }
 
             raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s&library=%s" % (AuthorID, library))
         else:
             logger.debug('ScanAuthor Invalid authorid [%s]' % AuthorID)
+            if is_ajax:
+                return {'success': False, 'error': 'Author not found'}
             raise cherrypy.HTTPRedirect("home")
 
     @cherrypy.expose
@@ -2526,30 +2560,63 @@ class WebInterface(object):
             raise cherrypy.HTTPRedirect('home')
 
     @cherrypy.expose
-    def forceUpdate(self):
+    @cherrypy.tools.json_out()
+    def forceUpdate(self, ajax=None, **kwargs):
         """Force update of author metadata (not application update)."""
-        if 'AAUPDATE' not in [n.name for n in [t for t in threading.enumerate()]]:
+        already_running = 'AAUPDATE' in [n.name for n in [t for t in threading.enumerate()]]
+
+        if not already_running:
             threading.Thread(target=aaUpdate, name='AAUPDATE', args=[False]).start()
+            message = 'Author refresh started'
         else:
             logger.debug('AAUPDATE already running')
-        raise cherrypy.HTTPRedirect("home")
+            message = 'Author refresh already in progress'
+
+        # If AJAX request, return JSON response
+        if ajax or cherrypy.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return {
+                'success': True,
+                'message': message,
+                'already_running': already_running
+            }
+        # Otherwise redirect back to authors page
+        raise cherrypy.HTTPRedirect("authors")
 
     # IMPORT/EXPORT #####################################################
 
     @cherrypy.expose
-    def libraryScan(self, **kwargs):
+    @cherrypy.tools.json_out()
+    def libraryScan(self, ajax=None, **kwargs):
         library = 'eBook'
         if 'library' in kwargs:
             library = kwargs['library']
         remove = bool(lazylibrarian.CONFIG['FULL_SCAN'])
         threadname = "%s_SCAN" % library.upper()
+        is_ajax = ajax or cherrypy.request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
         if threadname not in [n.name for n in [t for t in threading.enumerate()]]:
             try:
                 threading.Thread(target=LibraryScan, name=threadname, args=[None, library, None, remove]).start()
+                if is_ajax:
+                    return {
+                        'success': True,
+                        'message': 'Started %s library scan' % library,
+                        'library': library
+                    }
             except Exception as e:
                 logger.error('Unable to complete the scan: %s %s' % (type(e).__name__, str(e)))
+                if is_ajax:
+                    return {'success': False, 'error': str(e)}
         else:
             logger.debug('%s already running' % threadname)
+            if is_ajax:
+                return {
+                    'success': True,
+                    'message': '%s scan already running' % library,
+                    'library': library,
+                    'already_running': True
+                }
+
         if library == 'AudioBook':
             raise cherrypy.HTTPRedirect("audio")
         raise cherrypy.HTTPRedirect("books")
@@ -2619,7 +2686,7 @@ class WebInterface(object):
         if not remote_ip:
             remote_ip = cherrypy.request.remote.ip
 
-        filename = 'LazyLibrarian_RSS_' + ftype + '.xml'
+        filename = 'BookbagOfHolding_RSS_' + ftype + '.xml'
         path = path.replace('rssFeed', '').rstrip('/')
         baseurl = urlunsplit((scheme, netloc, path, qs, anchor))
         logger.debug("RSS Feed request %s %s%s: %s %s" % (limit, ftype, plural(limit), remote_ip, userid))
@@ -2663,7 +2730,7 @@ class WebInterface(object):
         # lazylibrarian.config_write()
         lazylibrarian.SIGNAL = 'shutdown'
         message = 'closing ...'
-        return serve_template(templatename="shutdown.html", prefix='LazyLibrarian is ', title="Close library",
+        return serve_template(templatename="shutdown.html", prefix='Bookbag of Holding is ', title="Close library",
                               message=message, timer=15)
 
     @cherrypy.expose
@@ -2671,7 +2738,7 @@ class WebInterface(object):
         self.label_thread('RESTART')
         lazylibrarian.SIGNAL = 'restart'
         message = 'reopening ...'
-        return serve_template(templatename="shutdown.html", prefix='LazyLibrarian is ', title="Reopen library",
+        return serve_template(templatename="shutdown.html", prefix='Bookbag of Holding is ', title="Reopen library",
                               message=message, timer=30)
 
     @cherrypy.expose
@@ -3454,6 +3521,367 @@ class WebInterface(object):
             types.append('AudioBook')
         return serve_template(templatename="managebooks.html", title="%ss by Status" % library,
                               books=[], types=types, library=library, whichStatus=whichStatus)
+
+    @cherrypy.expose
+    def unmatchedFiles(self, whichStatus=None, library=None, **kwargs):
+        """Display the unmatched files page."""
+        threading.currentThread().name = "WEBSERVER"
+
+        if not whichStatus:
+            whichStatus = 'Unmatched'
+        if not library:
+            library = 'eBook'
+
+        types = ['eBook']
+        if lazylibrarian.SHOW_AUDIO:
+            types.append('AudioBook')
+
+        return serve_template(templatename="unmatchedfiles.html",
+                              title="Unmatched Files",
+                              library=library,
+                              whichStatus=whichStatus,
+                              types=types)
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def getUnmatchedFiles(self, iDisplayStart=0, iDisplayLength=100, iSortCol_0=0,
+                          sSortDir_0="desc", sSearch="", **kwargs):
+        """Server-side DataTables handler for unmatched files."""
+        rows = []
+        filtered = []
+        rowlist = []
+
+        try:
+            iDisplayStart = int(iDisplayStart)
+            iDisplayLength = int(iDisplayLength)
+
+            myDB = database.DBConnection()
+
+            library = kwargs.get('library', 'eBook')
+            status = kwargs.get('whichStatus', 'Unmatched')
+
+            # Check if table exists (handles case before migration)
+            table_check = myDB.match("SELECT name FROM sqlite_master WHERE type='table' AND name='unmatchedfiles'")
+            if not table_check:
+                # Table doesn't exist yet - return empty result
+                return {
+                    'iTotalRecords': 0,
+                    'iTotalDisplayRecords': 0,
+                    'aaData': []
+                }
+
+            # Build query
+            cmd = 'SELECT * FROM unmatchedfiles WHERE LibraryType=? AND Status=?'
+            args = [library, status]
+
+            db_rows = myDB.select(cmd, tuple(args))
+
+            # Build rowlist with formatted data
+            for row in db_rows:
+                # Format file size
+                size_str = ''
+                if row['FileSize']:
+                    size_mb = row['FileSize'] / (1024 * 1024)
+                    if size_mb >= 1:
+                        size_str = '%.1f MB' % size_mb
+                    else:
+                        size_str = '%.0f KB' % (row['FileSize'] / 1024)
+
+                rowlist.append([
+                    row['FileID'],                              # 0: checkbox/ID
+                    row['ExtractedAuthor'] or 'Unknown',        # 1: Author
+                    row['ExtractedTitle'] or 'Unknown',         # 2: Title
+                    row['FileName'],                            # 3: Filename
+                    size_str,                                   # 4: Size
+                    row['DateAdded'],                           # 5: Date Added
+                    row['ScanCount'],                           # 6: Scan Count
+                    row['FileExtension'] or '',                 # 7: Extension
+                    row['ExtractedISBN'] or '',                 # 8: ISBN
+                    row['FilePath']                             # 9: Full path (hidden)
+                ])
+
+            # Filter by search
+            if sSearch:
+                sSearch_lower = sSearch.lower()
+                for item in rowlist:
+                    if (sSearch_lower in (item[1] or '').lower() or
+                            sSearch_lower in (item[2] or '').lower() or
+                            sSearch_lower in (item[3] or '').lower()):
+                        filtered.append(item)
+            else:
+                filtered = rowlist[:]
+
+            # Sort
+            sort_col = int(iSortCol_0)
+            if sort_col < 7:
+                reverse = sSortDir_0 == 'desc'
+                filtered = sorted(filtered, key=lambda x: x[sort_col] or '', reverse=reverse)
+
+            # Paginate
+            if iDisplayLength < 0:
+                rows = filtered[:]
+            else:
+                rows = filtered[iDisplayStart:iDisplayStart + iDisplayLength]
+
+            if lazylibrarian.LOGLEVEL & lazylibrarian.log_serverside:
+                logger.debug("getUnmatchedFiles returning %s to %s" % (iDisplayStart, iDisplayStart + iDisplayLength))
+                logger.debug("getUnmatchedFiles filtered %s from %s:%s" % (len(filtered), len(rowlist), len(rows)))
+
+        except Exception:
+            logger.error('Unhandled exception in getUnmatchedFiles: %s' % traceback.format_exc())
+            rows = []
+            rowlist = []
+            filtered = []
+        finally:
+            mydict = {'iTotalDisplayRecords': len(filtered),
+                      'iTotalRecords': len(rowlist),
+                      'aaData': rows,
+                      }
+            return mydict
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def searchBooksForMatch(self, query=None, **kwargs):
+        """Search books database for potential matches."""
+        if not query or len(query) < 2:
+            return {'success': False, 'error': 'Query too short'}
+
+        try:
+            myDB = database.DBConnection()
+
+            # Search by title or author
+            query_like = '%' + query + '%'
+            cmd = '''SELECT books.BookID, books.BookName, books.BookSub,
+                            authors.AuthorName, books.BookDate, books.Status, books.AudioStatus
+                     FROM books, authors
+                     WHERE books.AuthorID = authors.AuthorID
+                     AND (BookName LIKE ? OR AuthorName LIKE ? OR BookIsbn LIKE ?)
+                     ORDER BY AuthorName, BookName
+                     LIMIT 50'''
+
+            results = myDB.select(cmd, (query_like, query_like, query_like))
+
+            books = []
+            for row in results:
+                books.append({
+                    'bookid': row['BookID'],
+                    'title': row['BookName'],
+                    'subtitle': row['BookSub'] or '',
+                    'author': row['AuthorName'],
+                    'date': row['BookDate'] or '',
+                    'status': row['Status'],
+                    'audiostatus': row['AudioStatus']
+                })
+
+            return {'success': True, 'results': books}
+
+        except Exception as e:
+            logger.error('searchBooksForMatch error: %s' % str(e))
+            return {'success': False, 'error': str(e)}
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def searchGoogleBooksForAuthor(self, query=None, authorid=None, **kwargs):
+        """Search Google Books for books to add to author."""
+        if not query or len(query) < 2:
+            return {'success': False, 'error': 'Query too short'}
+
+        try:
+            # Search Google Books
+            results = search_for(query)
+
+            if not results:
+                return {'success': True, 'results': []}
+
+            myDB = database.DBConnection()
+
+            # Get existing book IDs for this author to check if already exists
+            existing_books = myDB.select('SELECT BookID FROM books WHERE AuthorID=?', (authorid,))
+            existing_ids = set(row['BookID'] for row in existing_books)
+
+            # Also get all book IDs in the database to show if book exists elsewhere
+            all_books = myDB.select('SELECT BookID FROM books')
+            all_ids = set(row['BookID'] for row in all_books)
+
+            books = []
+            for item in results[:20]:  # Limit to first 20 results
+                book_id = item.get('bookid', '')
+                exists_for_author = book_id in existing_ids
+                exists_in_db = book_id in all_ids
+
+                books.append({
+                    'bookid': book_id,
+                    'title': item.get('bookname', ''),
+                    'subtitle': item.get('booksub', ''),
+                    'author': item.get('authorname', ''),
+                    'img': item.get('bookimg', ''),
+                    'isbn': item.get('bookisbn', ''),
+                    'date': item.get('bookdate', ''),
+                    'exists': exists_for_author,
+                    'existsElsewhere': exists_in_db and not exists_for_author
+                })
+
+            return {'success': True, 'results': books}
+
+        except Exception as e:
+            logger.error('searchGoogleBooksForAuthor error: %s' % str(e))
+            return {'success': False, 'error': str(e)}
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def matchUnmatchedFile(self, fileid=None, bookid=None, library=None, **kwargs):
+        """Match an unmatched file to a book and update the book's file location."""
+        if not fileid or not bookid:
+            return {'success': False, 'error': 'Missing fileid or bookid'}
+
+        try:
+            myDB = database.DBConnection()
+
+            # Get the unmatched file details
+            file_row = myDB.match('SELECT * FROM unmatchedfiles WHERE FileID=?', (fileid,))
+            if not file_row:
+                return {'success': False, 'error': 'File not found'}
+
+            # Verify the file still exists
+            filepath = file_row['FilePath']
+            if not os.path.isfile(filepath):
+                # Remove the unmatched entry
+                myDB.action('DELETE FROM unmatchedfiles WHERE FileID=?', (fileid,))
+                return {'success': False, 'error': 'File no longer exists on disk'}
+
+            # Get the book
+            book_row = myDB.match('SELECT * FROM books WHERE BookID=?', (bookid,))
+            if not book_row:
+                return {'success': False, 'error': 'Book not found'}
+
+            # Determine library type
+            library_type = file_row['LibraryType'] or library or 'eBook'
+
+            # Update the book's file location
+            if library_type == 'eBook':
+                myDB.action('UPDATE books SET BookFile=?, Status=?, BookLibrary=? WHERE BookID=?',
+                            (filepath, lazylibrarian.CONFIG['FOUND_STATUS'], now(), bookid))
+            else:  # AudioBook
+                myDB.action('UPDATE books SET AudioFile=?, AudioStatus=?, AudioLibrary=? WHERE BookID=?',
+                            (filepath, lazylibrarian.CONFIG['FOUND_STATUS'], now(), bookid))
+
+            # Mark the unmatched file as matched
+            mark_unmatched_file_matched(fileid, bookid, 'Manually matched by user')
+
+            # Update author totals
+            update_totals(book_row['AuthorID'])
+
+            logger.info('Manually matched file [%s] to book [%s]' % (filepath, book_row['BookName']))
+
+            return {'success': True, 'message': 'File matched successfully'}
+
+        except Exception as e:
+            logger.error('matchUnmatchedFile error: %s' % str(e))
+            return {'success': False, 'error': str(e)}
+
+    @cherrypy.expose
+    def markUnmatchedFiles(self, action=None, redirect=None, **args):
+        """Handle bulk actions on unmatched files."""
+        threading.currentThread().name = "WEBSERVER"
+
+        library = args.get('library', 'eBook')
+        whichStatus = args.get('whichStatus', 'Unmatched')
+
+        # Remove non-file args
+        for arg in ['library', 'whichStatus', 'book_table_length']:
+            args.pop(arg, None)
+
+        myDB = database.DBConnection()
+
+        if action:
+            for fileid in args:
+                if action == 'Ignore':
+                    mark_unmatched_file_ignored(fileid, 'Ignored by user')
+                    logger.debug('Marked unmatched file %s as ignored' % fileid)
+
+                elif action == 'Remove':
+                    myDB.action('DELETE FROM unmatchedfiles WHERE FileID=?', (fileid,))
+                    logger.debug('Removed unmatched file entry %s' % fileid)
+
+                elif action == 'Retry':
+                    # Reset status to trigger re-scan
+                    myDB.action('UPDATE unmatchedfiles SET Status="Unmatched" WHERE FileID=?',
+                                (fileid,))
+                    logger.debug('Reset unmatched file %s for retry' % fileid)
+
+        raise cherrypy.HTTPRedirect("unmatchedFiles?library=%s&whichStatus=%s" % (library, whichStatus))
+
+    @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def retryMatchUnmatchedFile(self, fileid=None, library=None, **kwargs):
+        """Retry matching a single unmatched file against the current database."""
+        if not fileid:
+            return {'success': False, 'error': 'Missing fileid'}
+
+        try:
+            myDB = database.DBConnection()
+
+            file_row = myDB.match('SELECT * FROM unmatchedfiles WHERE FileID=?', (fileid,))
+            if not file_row:
+                return {'success': False, 'error': 'File not found'}
+
+            # Verify file exists
+            if not os.path.isfile(file_row['FilePath']):
+                myDB.action('DELETE FROM unmatchedfiles WHERE FileID=?', (fileid,))
+                return {'success': False, 'error': 'File no longer exists'}
+
+            # Try to find a match using the existing fuzzy matching
+            from lazylibrarian.librarysync import find_book_in_db
+
+            author = file_row['ExtractedAuthor']
+            title = file_row['ExtractedTitle']
+            library_type = file_row['LibraryType'] or 'eBook'
+
+            if not author or not title:
+                return {'success': False, 'error': 'Missing author or title metadata'}
+
+            bookid, status = find_book_in_db(author, title, library=library_type)
+
+            if bookid:
+                # Match found - link the file
+                filepath = file_row['FilePath']
+
+                if library_type == 'eBook':
+                    myDB.action('UPDATE books SET BookFile=?, Status=?, BookLibrary=? WHERE BookID=?',
+                                (filepath, lazylibrarian.CONFIG['FOUND_STATUS'], now(), bookid))
+                else:
+                    myDB.action('UPDATE books SET AudioFile=?, AudioStatus=?, AudioLibrary=? WHERE BookID=?',
+                                (filepath, lazylibrarian.CONFIG['FOUND_STATUS'], now(), bookid))
+
+                # Mark as matched
+                mark_unmatched_file_matched(fileid, bookid, 'Auto-matched on retry')
+
+                # Get book info for response
+                book = myDB.match('SELECT BookName, AuthorID FROM books WHERE BookID=?', (bookid,))
+
+                # Update totals
+                update_totals(book['AuthorID'])
+
+                return {
+                    'success': True,
+                    'matched': True,
+                    'bookid': bookid,
+                    'bookname': book['BookName'],
+                    'message': 'File matched to: %s' % book['BookName']
+                }
+            else:
+                # No match found - update scan count
+                myDB.action('UPDATE unmatchedfiles SET ScanCount=ScanCount+1, DateScanned=? WHERE FileID=?',
+                            (now(), fileid))
+                return {
+                    'success': True,
+                    'matched': False,
+                    'message': 'No match found in database'
+                }
+
+        except Exception as e:
+            logger.error('retryMatchUnmatchedFile error: %s' % str(e))
+            return {'success': False, 'error': str(e)}
 
     @cherrypy.expose
     def testDeluge(self, **kwargs):

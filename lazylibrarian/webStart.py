@@ -59,7 +59,7 @@ def initialize(options=None):
     else:
         protocol = "http"
 
-    logger.info("Starting LazyLibrarian web server on %s://%s:%d/" %
+    logger.info("Starting Bookbag of Holding web server on %s://%s:%d/" %
                 (protocol, options['http_host'], options['http_port']))
     cherrypy_cors.install()
     cherrypy.config.update(options_dict)
@@ -137,7 +137,7 @@ def initialize(options=None):
         logger.info("Web server authentication is enabled, username is '%s'" % options['http_user'])
         conf['/'].update({
             'tools.auth_basic.on': True,
-            'tools.auth_basic.realm': 'LazyLibrarian',
+            'tools.auth_basic.realm': 'Bookbag of Holding',
             'tools.auth_basic.checkpassword': cherrypy.lib.auth_basic.checkpassword_dict({
                 options['http_user']: options['http_pass']
             })
@@ -152,7 +152,7 @@ def initialize(options=None):
         if options['http_pass'] is not None and options['http_user'] != options['opds_username']:
             user_list[options['http_user']] = options['http_pass']
         conf['/opds'] = {'tools.auth_basic.on': True,
-                         'tools.auth_basic.realm': 'LazyLibrarian OPDS',
+                         'tools.auth_basic.realm': 'Bookbag of Holding OPDS',
                          'tools.auth_basic.checkpassword': cherrypy.lib.auth_basic.checkpassword_dict(user_list)}
     else:
         conf['/opds'] = {'tools.auth_basic.on': False}

@@ -13,7 +13,7 @@
 <%def name="body()">
 <div class="ll-page-header">
     <h1 class="ll-page-title">Dashboard</h1>
-    <p class="ll-page-subtitle">Welcome to LazyLibrarian</p>
+    <p class="ll-page-subtitle">Welcome to Bookbag of Holding</p>
 </div>
 
 <!-- Statistics Cards -->
@@ -79,13 +79,13 @@
         </svg>
         Search Books
     </a>
-    <a href="libraryScan?library=eBook" class="ll-btn ll-btn-secondary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <button type="button" id="libraryScanBtn" class="ll-btn ll-btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="scan-icon">
             <polyline points="23 4 23 10 17 10"></polyline>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
         </svg>
-        Library Scan
-    </a>
+        <span class="scan-text">Library Scan</span>
+    </button>
     %endif
 </div>
 
@@ -239,4 +239,61 @@
     </div>
 </div>
 %endif
+</%def>
+<%def name="styleIncludes()">
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</%def>
+<%def name="javascriptIncludes()">
+<script>
+$(document).ready(function() {
+    // Library scan button handler
+    $('#libraryScanBtn').on('click', function() {
+        var btn = $(this);
+        var icon = btn.find('.scan-icon');
+        var text = btn.find('.scan-text');
+
+        // Disable button and show loading state
+        btn.prop('disabled', true);
+        icon.css('animation', 'spin 1s linear infinite');
+        text.text('Scanning...');
+
+        $.ajax({
+            url: 'libraryScan',
+            data: { library: 'eBook', ajax: '1' },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    if (window.llToast) {
+                        window.llToast.show(response.message, 'success');
+                    }
+                    // Reload the page to show the progress indicator
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    if (window.llToast) {
+                        window.llToast.show('Error: ' + (response.error || 'Unknown error'), 'error');
+                    }
+                    // Re-enable button on error
+                    btn.prop('disabled', false);
+                    icon.css('animation', '');
+                    text.text('Library Scan');
+                }
+            },
+            error: function() {
+                if (window.llToast) {
+                    window.llToast.show('Failed to start library scan', 'error');
+                }
+                // Re-enable button on error
+                btn.prop('disabled', false);
+                icon.css('animation', '');
+                text.text('Library Scan');
+            }
+        });
+    });
+});
+</script>
 </%def>

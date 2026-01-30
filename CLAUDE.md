@@ -5,7 +5,7 @@
 LazyLibrarian is an open-source book/magazine metadata aggregation and download automation system. It monitors authors and retrieves metadata for digital reading materials (ebooks, audiobooks, magazines, comics) by integrating with multiple book databases and download sources.
 
 **License:** GNU GPL v3
-**Source Repository:** [GitLab](https://gitlab.com/LazyLibrarian/LazyLibrarian)
+**Source Repository:** [GitHub](https://github.com/sd0408/BookBagOfHolding)
 **Public Documentation:** https://lazylibrarian.gitlab.io/
 
 ---
@@ -795,7 +795,7 @@ See [UNITTESTING.md](UNITTESTING.md) for details.
 
 ## Resources
 
-- **Source Code:** https://gitlab.com/LazyLibrarian/LazyLibrarian
+- **Source Code:** https://github.com/sd0408/BookBagOfHolding
 - **Documentation:** https://lazylibrarian.gitlab.io/
 - **Community:** Reddit r/LazyLibrarian
 - **Issues:** GitLab Issues

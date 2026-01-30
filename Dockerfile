@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# LazyLibrarian Docker Image with Calibre Support
+# BookBagOfHolding Docker Image with Calibre Support
 # Based on linuxserver.io patterns
 #
 # Layer ordering optimized for fast rebuilds:
@@ -55,12 +55,12 @@ ARG BUILD_DATE
 ARG VERSION
 
 # Labels following OCI spec
-LABEL build_version="LazyLibrarian version: ${VERSION} Build-date: ${BUILD_DATE}"
-LABEL maintainer="LazyLibrarian"
-LABEL org.opencontainers.image.title="LazyLibrarian"
-LABEL org.opencontainers.image.description="LazyLibrarian with built-in Calibre support"
-LABEL org.opencontainers.image.url="https://lazylibrarian.gitlab.io/"
-LABEL org.opencontainers.image.source="https://gitlab.com/LazyLibrarian/LazyLibrarian"
+LABEL build_version="BookBagOfHolding version: ${VERSION} Build-date: ${BUILD_DATE}"
+LABEL maintainer="BookBagOfHolding"
+LABEL org.opencontainers.image.title="BookBagOfHolding"
+LABEL org.opencontainers.image.description="BookBagOfHolding with built-in Calibre support"
+LABEL org.opencontainers.image.url="https://github.com/sd0408/BookBagOfHolding"
+LABEL org.opencontainers.image.source="https://github.com/sd0408/BookBagOfHolding"
 LABEL org.opencontainers.image.licenses="GPL-3.0"
 
 # -----------------------------------------------------------------------------
@@ -79,7 +79,7 @@ RUN \
   echo "**** install runtime packages ****" && \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-    # LazyLibrarian dependencies
+    # BookBagOfHolding dependencies
     ghostscript \
     libjpeg-turbo8 \
     libmagic1 \

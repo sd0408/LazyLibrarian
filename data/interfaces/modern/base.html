@@ -13,8 +13,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>LazyLibrarian - ${title}</title>
-    <meta name="description" content="LazyLibrarian - Book Automation">
+    <title>Bookbag of Holding - ${title}</title>
+    <meta name="description" content="Bookbag of Holding - Book Automation">
 
     <!-- Favicon -->
     <link rel="shortcut icon" type="image/png" href="images/ll.ico">
@@ -78,11 +78,8 @@
         <!-- Sidebar Navigation -->
         <aside class="ll-sidebar" id="sidebar">
             <div class="ll-sidebar-logo">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                </svg>
-                <span>LazyLibrarian</span>
+                <img src="images/ll48.png" alt="Bookbag of Holding" width="32" height="32">
+                <span>Bookbag of Holding</span>
             </div>
 
             <nav class="ll-sidebar-nav">
@@ -135,6 +132,12 @@
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
                     Wanted
+                </a>
+                <a href="unmatchedFiles" class="ll-nav-item ${' active' if current_page == 'unmatched' else ''}" data-page="unmatched">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    Unmatched
                 </a>
                 %endif
                 %if perm&lazylibrarian.perm_history:
@@ -231,7 +234,7 @@
                     <line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
             </button>
-            <span style="font-weight: 600;">LazyLibrarian</span>
+            <span style="font-weight: 600;">Bookbag of Holding</span>
             <div style="width: 40px;"></div>
         </div>
 

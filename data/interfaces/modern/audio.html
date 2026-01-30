@@ -12,6 +12,10 @@
     <link href="css/datatables.bootstrap5.min.css" rel="stylesheet">
 </%def>
 <%def name="styleIncludes()">
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 </%def>
 <%def name="body()">
     <div class="ll-page-header">
@@ -34,15 +38,15 @@
                 </svg>
                 Post-Process
             </a>
-            <a href="libraryScan?library=AudioBook" class="ll-btn ll-btn-secondary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <button type="button" id="libraryScanBtn" class="ll-btn ll-btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="scan-icon">
                     <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                     <path d="M3 3v5h5"></path>
                     <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
                     <path d="M16 21h5v-5"></path>
                 </svg>
-                Library Scan
-            </a>
+                <span class="scan-text">Library Scan</span>
+            </button>
             %endif
             <a href="audioWall" class="ll-btn ll-btn-secondary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -381,6 +385,52 @@
 
         // Load grid view data
         loadGridView();
+
+        // Library scan button handler
+        $('#libraryScanBtn').on('click', function() {
+            var btn = $(this);
+            var icon = btn.find('.scan-icon');
+            var text = btn.find('.scan-text');
+
+            // Disable button and show loading state
+            btn.prop('disabled', true);
+            icon.css('animation', 'spin 1s linear infinite');
+            text.text('Scanning...');
+
+            $.ajax({
+                url: 'libraryScan',
+                data: { library: 'AudioBook', ajax: '1' },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        if (window.llToast) {
+                            window.llToast.show(response.message, 'success');
+                        }
+                        // Reload the page to show the progress indicator
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 500);
+                    } else {
+                        if (window.llToast) {
+                            window.llToast.show('Error: ' + (response.error || 'Unknown error'), 'error');
+                        }
+                        // Re-enable button on error
+                        btn.prop('disabled', false);
+                        icon.css('animation', '');
+                        text.text('Library Scan');
+                    }
+                },
+                error: function() {
+                    if (window.llToast) {
+                        window.llToast.show('Failed to start library scan', 'error');
+                    }
+                    // Re-enable button on error
+                    btn.prop('disabled', false);
+                    icon.css('animation', '');
+                    text.text('Library Scan');
+                }
+            });
+        });
     });
 
     function loadGridView() {

@@ -2,7 +2,7 @@
 #
 # Author: Kriss1981
 # 
-# PROVIDE: LazyLibrarian
+# PROVIDE: BookbagOfHolding
 # REQUIRE: DAEMON sabnzbd
 # KEYWORD: shutdown
 #
@@ -11,7 +11,7 @@
 #
 # lazylibrarian_enable (bool): Set to NO by default.
 #           Set it to YES to enable it.
-# lazylibrarian_user:  The user account LazyLibrarian daemon runs as what
+# lazylibrarian_user:  The user account Bookbag of Holding daemon runs as what
 #           you want it to be. It uses '_sabnzbd' user by
 #           default. Do not sets it as empty or it will run
 #           as root.
@@ -41,8 +41,8 @@ load_rc_config ${name}
 PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
 
 WGET="/usr/local/bin/wget"      # You need wget for this script to safely shutdown lazylibrarian.
-LLUSR=""                        # Set LazyLibrarian username (if you use one) here.
-LLPWD=""                        # Set LazyLibrarian password (if you use one) here.
+LLUSR=""                        # Set Bookbag of Holding username (if you use one) here.
+LLPWD=""                        # Set Bookbag of Holding password (if you use one) here.
 
 if [ -e "${lazylibrarian_conf}" ]; then
     HOST=`grep -A128 "\[General\]" "${lazylibrarian_conf}"|egrep "^http_host"|perl -wple 's/^http_host = (.*)$/$1/'`

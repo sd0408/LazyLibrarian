@@ -91,8 +91,9 @@ def upgrade_needed():
     # 44 move hosting to gitlab
     # 45 remove series functionality - clear series tables
     # 46 add explicit blacklist table for processed downloads
+    # 47 add unmatchedfiles table for tracking files that fail to match during library scans
 
-    db_current_version = 46
+    db_current_version = 47
 
     if db_version < db_current_version:
         return db_current_version
@@ -192,6 +193,13 @@ def dbupgrade(db_current_version):
                                 'Count INTEGER DEFAULT 0)')
                     myDB.action('CREATE TABLE blacklist (NZBurl TEXT, NZBtitle TEXT, NZBprov TEXT, ' +
                                 'BookID TEXT, AuxInfo TEXT, DateAdded TEXT, Reason TEXT)')
+                    myDB.action('CREATE TABLE unmatchedfiles (FileID TEXT UNIQUE PRIMARY KEY, ' +
+                                'FilePath TEXT NOT NULL, FileName TEXT, FileSize INTEGER DEFAULT 0, ' +
+                                'FileDate TEXT, LibraryType TEXT, ExtractedAuthor TEXT, ' +
+                                'ExtractedTitle TEXT, ExtractedISBN TEXT, ExtractedLang TEXT, ' +
+                                'ExtractedGRID TEXT, ExtractedGBID TEXT, FileExtension TEXT, ' +
+                                'Status TEXT DEFAULT "Unmatched", DateAdded TEXT, DateScanned TEXT, ' +
+                                'ScanCount INTEGER DEFAULT 1, MatchedBookID TEXT, Notes TEXT)')
 
                     # pastissues table has same layout as wanted table, code below is to save typos if columns change
                     res = myDB.match("SELECT sql FROM sqlite_master WHERE type='table' AND name='wanted'")
@@ -208,6 +216,9 @@ def dbupgrade(db_current_version):
                     myDB.action('CREATE INDEX wanted_index_status ON wanted(Status)')
                     myDB.action('CREATE INDEX blacklist_url_index ON blacklist (NZBurl)')
                     myDB.action('CREATE INDEX blacklist_prov_title_index ON blacklist (NZBprov, NZBtitle)')
+                    myDB.action('CREATE INDEX unmatchedfiles_status_index ON unmatchedfiles (Status)')
+                    myDB.action('CREATE INDEX unmatchedfiles_library_index ON unmatchedfiles (LibraryType)')
+                    myDB.action('CREATE INDEX unmatchedfiles_filepath_index ON unmatchedfiles (FilePath)')
 
                 index = db_version + 1
                 while 'db_v%s' % index in globals():
@@ -1249,4 +1260,34 @@ def db_v46(myDB, upgradelog):
     myDB.action('CREATE INDEX IF NOT EXISTS blacklist_url_index ON blacklist (NZBurl)')
     myDB.action('CREATE INDEX IF NOT EXISTS blacklist_prov_title_index ON blacklist (NZBprov, NZBtitle)')
     upgradelog.write("%s v46: complete\n" % time.ctime())
+
+
+def db_v47(myDB, upgradelog):
+    # Add unmatchedfiles table for tracking files that fail to match during library scans
+    lazylibrarian.UPDATE_MSG = 'Creating unmatchedfiles table for import tracking'
+    upgradelog.write("%s v47: %s\n" % (time.ctime(), lazylibrarian.UPDATE_MSG))
+    myDB.action('CREATE TABLE IF NOT EXISTS unmatchedfiles ('
+                'FileID TEXT UNIQUE PRIMARY KEY, '
+                'FilePath TEXT NOT NULL, '
+                'FileName TEXT, '
+                'FileSize INTEGER DEFAULT 0, '
+                'FileDate TEXT, '
+                'LibraryType TEXT, '
+                'ExtractedAuthor TEXT, '
+                'ExtractedTitle TEXT, '
+                'ExtractedISBN TEXT, '
+                'ExtractedLang TEXT, '
+                'ExtractedGRID TEXT, '
+                'ExtractedGBID TEXT, '
+                'FileExtension TEXT, '
+                'Status TEXT DEFAULT "Unmatched", '
+                'DateAdded TEXT, '
+                'DateScanned TEXT, '
+                'ScanCount INTEGER DEFAULT 1, '
+                'MatchedBookID TEXT, '
+                'Notes TEXT)')
+    myDB.action('CREATE INDEX IF NOT EXISTS unmatchedfiles_status_index ON unmatchedfiles (Status)')
+    myDB.action('CREATE INDEX IF NOT EXISTS unmatchedfiles_library_index ON unmatchedfiles (LibraryType)')
+    myDB.action('CREATE INDEX IF NOT EXISTS unmatchedfiles_filepath_index ON unmatchedfiles (FilePath)')
+    upgradelog.write("%s v47: complete\n" % time.ctime())
     

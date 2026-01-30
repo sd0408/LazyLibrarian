@@ -168,3 +168,175 @@ def add_to_blacklist(nzb_url, nzb_title, nzb_prov, book_id=None, aux_info=None, 
         )
         if lazylibrarian.LOGLEVEL & lazylibrarian.log_dlcomms:
             logger.debug("Added to blacklist: %s from %s (%s)" % (nzb_title, nzb_prov, reason))
+
+
+def add_unmatched_file(filepath, library_type, author=None, title=None, isbn=None,
+                       language=None, gr_id=None, gb_id=None, extension=None):
+    """
+    Add or update an unmatched file entry.
+
+    Args:
+        filepath: Full path to the file
+        library_type: 'eBook' or 'AudioBook'
+        author: Extracted author name
+        title: Extracted book title
+        isbn: Extracted ISBN
+        language: Extracted language
+        gr_id: Goodreads ID if found
+        gb_id: Google Books ID if found
+        extension: File extension
+
+    Returns:
+        True if new entry, False if updated existing
+    """
+    import hashlib
+    import os
+    from lazylibrarian.formatter import now
+
+    # Normalize filepath to prevent duplicates from different path representations
+    # (symlinks, relative paths, case differences on case-insensitive filesystems)
+    normalized_path = os.path.realpath(filepath)
+
+    # Generate unique ID from normalized filepath
+    file_id = hashlib.md5(normalized_path.encode('utf-8')).hexdigest()
+
+    myDB = DBConnection()
+
+    # Check if already exists
+    existing = myDB.match('SELECT FileID, ScanCount, Status FROM unmatchedfiles WHERE FileID=?',
+                          (file_id,))
+
+    if existing:
+        # Don't update if already matched or ignored
+        if existing['Status'] in ['Matched', 'Ignored']:
+            return False
+
+        # Update scan count and date
+        myDB.action('UPDATE unmatchedfiles SET ScanCount=?, DateScanned=?, '
+                    'ExtractedAuthor=?, ExtractedTitle=?, ExtractedISBN=?, '
+                    'ExtractedLang=?, ExtractedGRID=?, ExtractedGBID=? '
+                    'WHERE FileID=?',
+                    (existing['ScanCount'] + 1, now(), author, title, isbn,
+                     language, gr_id, gb_id, file_id))
+        return False
+    else:
+        # Get file stats
+        file_size = 0
+        file_date = None
+        file_name = os.path.basename(normalized_path)
+
+        if os.path.isfile(normalized_path):
+            try:
+                stat = os.stat(normalized_path)
+                file_size = stat.st_size
+            except OSError:
+                pass
+        file_date = now()
+
+        myDB.action('INSERT INTO unmatchedfiles '
+                    '(FileID, FilePath, FileName, FileSize, FileDate, LibraryType, '
+                    'ExtractedAuthor, ExtractedTitle, ExtractedISBN, ExtractedLang, '
+                    'ExtractedGRID, ExtractedGBID, FileExtension, Status, '
+                    'DateAdded, DateScanned, ScanCount) '
+                    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (file_id, normalized_path, file_name, file_size, file_date, library_type,
+                     author, title, isbn, language, gr_id, gb_id, extension,
+                     'Unmatched', now(), now(), 1))
+        return True
+
+
+def remove_unmatched_file(file_id):
+    """Remove an unmatched file entry by ID."""
+    myDB = DBConnection()
+    myDB.action('DELETE FROM unmatchedfiles WHERE FileID=?', (file_id,))
+
+
+def mark_unmatched_file_matched(file_id, book_id, notes=None):
+    """Mark an unmatched file as matched to a book."""
+    from lazylibrarian.formatter import now
+
+    myDB = DBConnection()
+    myDB.action('UPDATE unmatchedfiles SET Status=?, MatchedBookID=?, Notes=?, DateScanned=? '
+                'WHERE FileID=?',
+                ('Matched', book_id, notes, now(), file_id))
+
+
+def mark_unmatched_file_ignored(file_id, notes=None):
+    """Mark an unmatched file as ignored."""
+    from lazylibrarian.formatter import now
+
+    myDB = DBConnection()
+    myDB.action('UPDATE unmatchedfiles SET Status=?, Notes=?, DateScanned=? WHERE FileID=?',
+                ('Ignored', notes, now(), file_id))
+
+
+def get_unmatched_files(library_type=None, status='Unmatched'):
+    """Get unmatched files, optionally filtered by library type and status."""
+    myDB = DBConnection()
+
+    cmd = 'SELECT * FROM unmatchedfiles WHERE 1=1'
+    args = []
+
+    if status:
+        cmd += ' AND Status=?'
+        args.append(status)
+
+    if library_type:
+        cmd += ' AND LibraryType=?'
+        args.append(library_type)
+
+    cmd += ' ORDER BY DateAdded DESC'
+
+    return myDB.select(cmd, tuple(args))
+
+
+def cleanup_unmatched_files():
+    """Remove entries for files that no longer exist on disk."""
+    import os
+
+    myDB = DBConnection()
+    files = myDB.select('SELECT FileID, FilePath FROM unmatchedfiles WHERE Status="Unmatched"')
+
+    removed = 0
+    for f in files:
+        if not os.path.isfile(f['FilePath']):
+            myDB.action('DELETE FROM unmatchedfiles WHERE FileID=?', (f['FileID'],))
+            removed += 1
+
+    return removed
+
+
+def dedupe_unmatched_files():
+    """
+    Remove duplicate entries by normalizing file paths.
+    Keeps the entry with the highest ScanCount for each unique file.
+    Returns the number of duplicates removed.
+    """
+    import os
+    import hashlib
+
+    myDB = DBConnection()
+    files = myDB.select('SELECT FileID, FilePath, ScanCount, DateAdded FROM unmatchedfiles')
+
+    # Group files by their normalized path
+    path_groups = {}
+    for f in files:
+        normalized = os.path.realpath(f['FilePath'])
+        normalized_id = hashlib.md5(normalized.encode('utf-8')).hexdigest()
+
+        if normalized_id not in path_groups:
+            path_groups[normalized_id] = []
+        path_groups[normalized_id].append(f)
+
+    removed = 0
+    for normalized_id, group in path_groups.items():
+        if len(group) > 1:
+            # Sort by ScanCount (highest first), then by DateAdded (newest first)
+            group.sort(key=lambda x: (x['ScanCount'] or 0, x['DateAdded'] or ''), reverse=True)
+
+            # Keep the first one (highest scan count / newest), delete the rest
+            for f in group[1:]:
+                myDB.action('DELETE FROM unmatchedfiles WHERE FileID=?', (f['FileID'],))
+                removed += 1
+
+    return removed

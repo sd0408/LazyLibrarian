@@ -1,7 +1,7 @@
 function restartQA(e, message, title) {
     var self = this;
 
-    var q = new Question('Are you sure you want to restart LazyLibrarian?', 'Restart', [{
+    var q = new Question('Are you sure you want to restart Bookbag of Holding?', 'Restart', [{
         'text': 'Restart',
         'class': 'restart orange',
         'events': {
@@ -24,7 +24,7 @@ function restart(message, title) {
 function shutdownQA(e) {
     var self = this;
 
-    var q = new Question('Are you sure you want to shutdown LazyLibrarian?', 'Shutdown', [{
+    var q = new Question('Are you sure you want to shutdown Bookbag of Holding?', 'Shutdown', [{
         'text': 'Shutdown',
         'class': 'shutdown red',
         'events': {

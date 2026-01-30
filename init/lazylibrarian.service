@@ -2,7 +2,7 @@
 
 [Unit]
 SourcePath=/etc/init.d/lazylibrarian
-Description=LSB: starts instance of LazyLibrarian
+Description=LSB: starts instance of Bookbag of Holding
 After=all.target
 
 [Service]

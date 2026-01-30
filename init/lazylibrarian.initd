@@ -11,13 +11,13 @@
 ################################################
 
 ### BEGIN INIT INFO
-# Provides:          LazyLibrarian
+# Provides:          BookbagOfHolding
 # Required-Start:    $all
 # Required-Stop:     $all
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: starts instance of LazyLibrarian
-# Description:       starts instance of LazyLibrarian using start-stop-daemon
+# Short-Description: starts instance of Bookbag of Holding
+# Description:       starts instance of Bookbag of Holding using start-stop-daemon
 ### END INIT INFO
 
 
@@ -27,7 +27,7 @@ SETTINGS=/etc/default/lazylibrarian
 
 SETTINGS_LOADED=FALSE
 
-DESC=LazyLibrarian
+DESC=BookbagOfHolding
 
 # only accept values from /etc/default/lazylibrarian
 unset RUN_AS CONFIG DATADIR PID_FILE

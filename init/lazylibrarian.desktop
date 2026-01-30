@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=LazyLibrarian
-Comment=LazyLibrarian ebook and magazine manager
+Name=Bookbag of Holding
+Comment=Bookbag of Holding - ebook and audiobook manager
 Exec=/usr/bin/lazylibrarian
 Icon=/opt/lazylibrarian/data/images/ll.png
 Terminal=false

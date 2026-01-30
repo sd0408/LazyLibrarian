@@ -147,7 +147,7 @@ def main():
     if not os.access(lazylibrarian.DATADIR, os.W_OK):
         raise SystemExit('Cannot write to the data directory: ' + lazylibrarian.DATADIR + '. Exit ...')
 
-    print("Lazylibrarian is starting up...")
+    print("Bookbag of Holding is starting up...")
     time.sleep(4)  # allow a bit of time for old task to exit if restarting. Needs to free logfile and server port.
 
     # create database and config
@@ -169,11 +169,11 @@ def main():
     # Try to start the server.
     if options.port:
         lazylibrarian.CONFIG['HTTP_PORT'] = int(options.port)
-        logger.info('Starting LazyLibrarian on forced port: %s, webroot "%s"' %
+        logger.info('Starting Bookbag of Holding on forced port: %s, webroot "%s"' %
                     (lazylibrarian.CONFIG['HTTP_PORT'], lazylibrarian.CONFIG['HTTP_ROOT']))
     else:
         lazylibrarian.CONFIG['HTTP_PORT'] = int(lazylibrarian.CONFIG['HTTP_PORT'])
-        logger.info('Starting LazyLibrarian on port: %s, webroot "%s"' %
+        logger.info('Starting Bookbag of Holding on port: %s, webroot "%s"' %
                     (lazylibrarian.CONFIG['HTTP_PORT'], lazylibrarian.CONFIG['HTTP_ROOT']))
 
     webStart.initialize({

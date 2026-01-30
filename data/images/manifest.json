@@ -1,6 +1,6 @@
 {
-    "name": "LazyLibrarian",
-    "short_name": "LazyLibrarian",
+    "name": "Bookbag of Holding",
+    "short_name": "Bookbag",
     "icons": [
         { "src": "images/ll32.png", "sizes": "32x32", "type": "image/png" },
         { "src": "images/ll48.png", "sizes": "48x48", "type": "image/png" },
