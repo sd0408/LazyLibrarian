@@ -98,6 +98,10 @@
     --ll-z-modal-backdrop: 300;
     --ll-z-modal: 400;
     --ll-z-toast: 500;
+
+    /* Mobile-specific tokens */
+    --ll-touch-target-min: 44px;
+    --ll-mobile-padding: 12px;
 }
 
 /* ============================================
@@ -114,6 +118,7 @@ html {
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    height: -webkit-fill-available;
 }
 
 body {
@@ -125,6 +130,7 @@ body {
     color: var(--ll-text);
     background-color: var(--ll-background);
     min-height: 100vh;
+    min-height: -webkit-fill-available;
 }
 
 /* ============================================
@@ -175,6 +181,25 @@ code, pre {
 /* ============================================
    5. Sidebar Navigation
    ============================================ */
+
+/* Sidebar overlay for mobile */
+.ll-sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity var(--ll-transition);
+}
+
+.ll-sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
 
 .ll-sidebar {
     position: fixed;
@@ -1297,7 +1322,9 @@ code, pre {
     background: var(--ll-surface);
     color: var(--ll-text);
     font-size: var(--ll-font-size-base);
-    min-width: 200px;
+    min-width: min(200px, calc(100vw - 120px));
+    width: 100%;
+    max-width: 300px;
     transition: border-color var(--ll-transition-fast), box-shadow var(--ll-transition-fast);
     pointer-events: auto;
     cursor: text;
@@ -1636,8 +1663,8 @@ code, pre {
 }
 
 .ll-series-progress {
-    width: 200px;
-    flex-shrink: 0;
+    width: clamp(100px, 30vw, 200px);
+    flex-shrink: 1;
 }
 
 /* ============================================
@@ -1777,6 +1804,7 @@ code, pre {
     padding: 8px;
     height: fit-content;
     box-shadow: var(--ll-shadow);
+    position: -webkit-sticky;
     position: sticky;
     top: 24px;
 }
@@ -2117,29 +2145,75 @@ code, pre {
    ============================================ */
 
 @media (max-width: 1024px) {
+    /* Stack layout vertically on mobile */
+    .ll-app {
+        flex-direction: column;
+    }
+
     .ll-sidebar {
-        transform: translateX(-100%);
-        transition: transform var(--ll-transition);
+        position: fixed;
+        left: -100%;
+        top: 0;
+        transform: none;
+        transition: left var(--ll-transition);
+        visibility: hidden;
+        pointer-events: none;
+        width: var(--ll-sidebar-width);
+        z-index: 1000;
+        height: 100vh;
     }
 
     .ll-sidebar.open {
-        transform: translateX(0);
+        left: 0;
+        visibility: visible;
+        pointer-events: auto;
     }
 
     .ll-main {
         margin-left: 0;
+        width: 100%;
+        min-height: auto;
     }
 
     .ll-mobile-header {
-        display: flex;
+        display: grid !important;
+        grid-template-columns: 44px 1fr 44px;
         align-items: center;
-        justify-content: space-between;
-        padding: 16px;
+        padding: 12px 16px;
         background: var(--ll-primary);
         color: var(--ll-text-inverse);
+        position: -webkit-sticky;
         position: sticky;
         top: 0;
         z-index: 50;
+        width: 100%;
+        flex-shrink: 0;
+    }
+
+    .ll-mobile-header #menuToggle {
+        justify-self: start;
+    }
+
+    .ll-mobile-header-title {
+        justify-self: center;
+        font-weight: 600;
+        font-size: var(--ll-font-size-md);
+        text-align: center;
+    }
+
+    .ll-mobile-header-spacer {
+        width: 44px;
+    }
+
+    /* Ensure sidebar content is visible when sidebar is open */
+    .ll-sidebar.open .ll-sidebar-nav,
+    .ll-sidebar.open .ll-sidebar-logo {
+        display: block;
+    }
+
+    .ll-sidebar.open .ll-sidebar-nav {
+        display: flex;
+        flex-direction: column;
     }
 
     .ll-settings-layout {
@@ -2163,15 +2237,70 @@ code, pre {
     .ll-toolbar {
         flex-direction: column;
         align-items: stretch;
+        gap: 12px;
     }
 
     .ll-toolbar-left,
     .ll-toolbar-right {
         width: 100%;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .ll-toolbar-right {
-        justify-content: flex-end;
+        justify-content: flex-start;
+    }
+
+    .ll-toolbar-form {
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 8px;
+    }
+
+    .ll-toolbar-form .ll-select {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .ll-toolbar-label {
+        width: 100%;
+        margin-bottom: 4px;
+    }
+
+    .ll-view-toggle {
+        margin-bottom: 0;
+    }
+
+    .ll-filter-group {
+        width: 100%;
+    }
+
+    .ll-filter-select {
+        flex: 1;
+        width: 100%;
+    }
+
+    .ll-search-input {
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    /* Page header responsive */
+    .ll-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .ll-page-header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .ll-page-header-actions .ll-btn {
+        flex: 1;
+        min-width: 120px;
     }
 
     .ll-media-grid {
@@ -2187,6 +2316,35 @@ code, pre {
         width: 100%;
         order: 10;
         margin-top: 12px;
+    }
+
+    /* DataTables controls stacking */
+    .dataTables_wrapper .dataTables_length {
+        float: none;
+        margin-bottom: 12px;
+    }
+
+    .dataTables_wrapper .dataTables_filter {
+        float: none;
+        text-align: left;
+        margin-bottom: 12px;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        width: 100%;
+        max-width: none;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        float: none;
+        text-align: center;
+        padding: 12px 0;
+    }
+
+    .dataTables_wrapper .dataTables_paginate {
+        float: none;
+        text-align: center;
+        padding-top: 12px;
     }
 }
 
@@ -2219,7 +2377,342 @@ code, pre {
 }
 
 /* ============================================
-   28. Utilities
+   28. Extra Small Devices (360px and below)
+   ============================================ */
+@media (max-width: 360px) {
+    :root {
+        --ll-content-padding: 12px;
+        --ll-font-size-base: 13px;
+        --ll-font-size-sm: 11px;
+    }
+
+    .ll-page-title {
+        font-size: var(--ll-font-size-lg);
+    }
+
+    .ll-page-subtitle {
+        font-size: var(--ll-font-size-sm);
+    }
+
+    .ll-media-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .ll-media-grid.books {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .ll-stat-card {
+        padding: 12px;
+    }
+
+    .ll-stat-value {
+        font-size: var(--ll-font-size-lg);
+    }
+
+    .ll-toolbar {
+        gap: 8px;
+    }
+
+    .ll-toolbar-left,
+    .ll-toolbar-right {
+        gap: 8px;
+    }
+
+    .ll-btn {
+        padding: 8px 12px;
+        font-size: var(--ll-font-size-sm);
+    }
+
+    .ll-card-body {
+        padding: 12px;
+    }
+
+    .ll-nav-item {
+        padding: 10px 12px;
+        font-size: var(--ll-font-size-sm);
+    }
+
+    .ll-badge {
+        padding: 2px 6px;
+        font-size: 10px;
+    }
+}
+
+/* ============================================
+   29. Touch Target Improvements
+   ============================================ */
+@media (pointer: coarse) {
+    .ll-btn {
+        min-height: var(--ll-touch-target-min);
+        min-width: var(--ll-touch-target-min);
+    }
+
+    .ll-btn-sm {
+        min-height: 40px;
+        padding: 10px 14px;
+    }
+
+    .ll-btn-icon {
+        min-height: var(--ll-touch-target-min);
+        min-width: var(--ll-touch-target-min);
+        padding: 10px;
+    }
+
+    .ll-nav-item {
+        min-height: var(--ll-touch-target-min);
+        padding: 14px 16px;
+    }
+
+    .ll-checkbox input,
+    .ll-radio input {
+        width: 22px;
+        height: 22px;
+    }
+
+    .ll-select,
+    .ll-input {
+        min-height: var(--ll-touch-target-min);
+        padding: 12px;
+    }
+
+    .ll-filter-select {
+        min-height: var(--ll-touch-target-min);
+        padding: 12px 36px 12px 14px;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button,
+    .dataTables_wrapper .pagination .page-link {
+        min-height: var(--ll-touch-target-min);
+        min-width: var(--ll-touch-target-min);
+        padding: 10px 14px;
+    }
+
+    .ll-page-btn {
+        min-height: var(--ll-touch-target-min);
+        min-width: var(--ll-touch-target-min);
+        padding: 10px 16px;
+    }
+
+    .ll-view-toggle-btn {
+        min-height: var(--ll-touch-target-min);
+        min-width: var(--ll-touch-target-min);
+        padding: 10px;
+    }
+
+    /* Larger checkbox touch targets */
+    .ll-card-checkbox .ll-checkbox-mark {
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Ensure table action buttons are touch-friendly */
+    .ll-table .ll-btn-icon {
+        min-height: 36px;
+        min-width: 36px;
+    }
+}
+
+/* ============================================
+   30. Mobile Table Card Layout
+   ============================================ */
+@media (max-width: 768px) {
+    /* Hide table headers when in card mode */
+    .ll-table-mobile-cards thead {
+        display: none;
+    }
+
+    .ll-table-mobile-cards tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .ll-table-mobile-cards tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        background: var(--ll-surface);
+        border: 1px solid var(--ll-border);
+        border-radius: var(--ll-radius-lg);
+        padding: 12px;
+        gap: 8px;
+        position: relative;
+    }
+
+    .ll-table-mobile-cards tbody tr:hover {
+        background: var(--ll-surface);
+    }
+
+    .ll-table-mobile-cards tbody td {
+        border: none;
+        padding: 4px 0;
+    }
+
+    /* Cell labels from data attributes */
+    .ll-table-mobile-cards tbody td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-size: var(--ll-font-size-xs);
+        font-weight: 600;
+        color: var(--ll-text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+        margin-bottom: 2px;
+    }
+
+    /* Primary content (title/name) - full width */
+    .ll-table-mobile-cards tbody td.mobile-primary {
+        width: calc(100% - 80px);
+        order: -2;
+        font-weight: 600;
+        font-size: var(--ll-font-size-md);
+        padding-left: 8px;
+    }
+
+    .ll-table-mobile-cards tbody td.mobile-primary::before {
+        display: none;
+    }
+
+    /* Image/cover - positioned at start */
+    .ll-table-mobile-cards tbody td.mobile-cover {
+        order: -3;
+        width: 60px;
+        flex-shrink: 0;
+    }
+
+    .ll-table-mobile-cards tbody td.mobile-cover::before {
+        display: none;
+    }
+
+    .ll-table-mobile-cards tbody td.mobile-cover img {
+        width: 60px;
+        height: auto;
+        border-radius: var(--ll-radius);
+    }
+
+    /* Secondary content - inline items */
+    .ll-table-mobile-cards tbody td.mobile-secondary {
+        flex: 1;
+        min-width: 45%;
+    }
+
+    /* Actions - full width at bottom */
+    .ll-table-mobile-cards tbody td.mobile-actions {
+        width: 100%;
+        order: 10;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        padding-top: 8px;
+        border-top: 1px solid var(--ll-border);
+        margin-top: 4px;
+    }
+
+    .ll-table-mobile-cards tbody td.mobile-actions::before {
+        display: none;
+    }
+
+    .ll-table-mobile-cards tbody td.mobile-actions .ll-btn {
+        width: auto;
+        flex: none;
+    }
+
+    /* Checkbox cell - positioned top right */
+    .ll-table-mobile-cards tbody td.mobile-checkbox {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: auto;
+        order: -4;
+    }
+
+    .ll-table-mobile-cards tbody td.mobile-checkbox::before {
+        display: none;
+    }
+
+    /* Status badge styling in cards */
+    .ll-table-mobile-cards .ll-badge {
+        display: inline-flex;
+    }
+
+    /* Hide non-essential columns on very small screens */
+    .ll-table-mobile-cards tbody td.mobile-hide-small {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .ll-table-mobile-cards tbody td.mobile-secondary {
+        min-width: 100%;
+    }
+
+    .ll-table-mobile-cards tbody td.mobile-primary {
+        width: calc(100% - 72px);
+    }
+}
+
+/* ============================================
+   31. iOS Safari Specific Fixes
+   ============================================ */
+
+/* Prevent iOS zoom on input focus - inputs smaller than 16px trigger zoom */
+@media screen and (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}
+
+/* iOS Safari specific styles using touch-callout detection */
+@supports (-webkit-touch-callout: none) {
+    /* Smooth momentum scrolling for all scrollable areas */
+    .ll-sidebar {
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+    }
+
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .ll-card-body {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Prevent elastic bounce on body (optional - may want scroll bounce) */
+    html, body {
+        overscroll-behavior-y: none;
+    }
+
+    /* Fix for 100vh issue on iOS Safari */
+    .ll-app {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    }
+}
+
+/* Touch action hints for gesture areas */
+@media (max-width: 1024px) {
+    .ll-main {
+        touch-action: pan-y;
+    }
+
+    .ll-sidebar {
+        touch-action: pan-x pan-y;
+    }
+}
+
+/* ============================================
+   31. Utilities
    ============================================ */
 
 .ll-text-center { text-align: center; }

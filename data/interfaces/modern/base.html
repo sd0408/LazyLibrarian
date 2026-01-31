@@ -64,7 +64,7 @@
     </style>
 
     <!-- Modern Theme CSS -->
-    <link href="css/modern.css" rel="stylesheet">
+    <link href="css/modern.css?v=4" rel="stylesheet">
 
     <!-- FontAwesome for backwards compatibility -->
     <link href="css/fontawesome/fontawesome-all.css" rel="stylesheet">
@@ -78,6 +78,9 @@
 </head>
 <body>
     <div class="ll-app">
+        <!-- Sidebar Overlay (for mobile) -->
+        <div class="ll-sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- Sidebar Navigation -->
         <aside class="ll-sidebar" id="sidebar">
             <div class="ll-sidebar-logo">
@@ -219,8 +222,8 @@
                     <line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
             </button>
-            <span style="font-weight: 600;">Bookbag of Holding</span>
-            <div style="width: 40px;"></div>
+            <span class="ll-mobile-header-title">Bookbag of Holding</span>
+            <div class="ll-mobile-header-spacer"></div>
         </div>
 
         <!-- Main Content Area -->
@@ -291,19 +294,44 @@
         const sidebar = document.getElementById('sidebar');
         const menuToggle = document.getElementById('menuToggle');
         const mobileHeader = document.getElementById('mobileHeader');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            if (sidebarOverlay) sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
 
         function checkMobile() {
             if (window.innerWidth <= 1024) {
-                mobileHeader.style.display = 'flex';
+                if (mobileHeader) mobileHeader.style.display = 'flex';
             } else {
-                mobileHeader.style.display = 'none';
-                sidebar.classList.remove('open');
+                if (mobileHeader) mobileHeader.style.display = 'none';
+                closeSidebar();
             }
         }
 
         if (menuToggle) {
-            menuToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('open');
+            menuToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (sidebar.classList.contains('open')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            });
+        }
+
+        // Close sidebar when clicking overlay
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', function() {
+                closeSidebar();
             });
         }
 
@@ -311,13 +339,109 @@
         document.addEventListener('click', function(e) {
             if (window.innerWidth <= 1024 && sidebar.classList.contains('open')) {
                 if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                    sidebar.classList.remove('open');
+                    closeSidebar();
                 }
             }
         });
 
         window.addEventListener('resize', checkMobile);
         checkMobile();
+
+        // Swipe gesture handling for sidebar on mobile
+        (function() {
+            if (!sidebar) return;
+
+            var startX = 0;
+            var startY = 0;
+            var currentX = 0;
+            var isDragging = false;
+            var SWIPE_THRESHOLD = 50;
+            var EDGE_WIDTH = 30; // Width from left edge to detect swipe start
+
+            function handlePointerDown(e) {
+                // Only handle on mobile and primary pointer
+                if (window.innerWidth > 1024 || !e.isPrimary) return;
+
+                var isOpen = sidebar.classList.contains('open');
+                var edgeStart = e.clientX < EDGE_WIDTH;
+                var sidebarTouch = sidebar.contains(e.target);
+
+                // Start swipe from left edge (to open) or from sidebar (to close)
+                if (edgeStart || (isOpen && sidebarTouch)) {
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    currentX = startX;
+                    isDragging = true;
+                    sidebar.style.transition = 'none';
+                }
+            }
+
+            function handlePointerMove(e) {
+                if (!isDragging || !e.isPrimary) return;
+
+                var deltaX = e.clientX - startX;
+                var deltaY = e.clientY - startY;
+
+                // If vertical movement is greater, cancel horizontal swipe
+                if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 10) {
+                    isDragging = false;
+                    sidebar.style.transition = '';
+                    sidebar.style.transform = '';
+                    return;
+                }
+
+                currentX = e.clientX;
+                var isOpen = sidebar.classList.contains('open');
+                var sidebarWidth = sidebar.offsetWidth;
+
+                // Calculate new position
+                var translateX;
+                if (isOpen) {
+                    // Closing: start at 0, move left (negative values only)
+                    translateX = Math.min(0, Math.max(-sidebarWidth, deltaX));
+                } else {
+                    // Opening: start at -100%, move right
+                    translateX = Math.max(-sidebarWidth, Math.min(0, -sidebarWidth + deltaX));
+                }
+
+                sidebar.style.transform = 'translateX(' + translateX + 'px)';
+            }
+
+            function handlePointerUp(e) {
+                if (!isDragging || !e.isPrimary) return;
+
+                isDragging = false;
+                sidebar.style.transition = '';
+                sidebar.style.transform = '';
+
+                var deltaX = currentX - startX;
+                var isOpen = sidebar.classList.contains('open');
+
+                if (isOpen) {
+                    // Closing gesture (swipe left)
+                    if (deltaX < -SWIPE_THRESHOLD) {
+                        sidebar.classList.remove('open');
+                    }
+                } else {
+                    // Opening gesture (swipe right from edge)
+                    if (deltaX > SWIPE_THRESHOLD) {
+                        sidebar.classList.add('open');
+                    }
+                }
+            }
+
+            function handlePointerCancel() {
+                isDragging = false;
+                sidebar.style.transition = '';
+                sidebar.style.transform = '';
+            }
+
+            // Use pointer events for unified touch/mouse handling
+            document.addEventListener('pointerdown', handlePointerDown, { passive: true });
+            document.addEventListener('pointermove', handlePointerMove, { passive: true });
+            document.addEventListener('pointerup', handlePointerUp, { passive: true });
+            document.addEventListener('pointercancel', handlePointerCancel, { passive: true });
+        })();
 
         // User dropdown toggle
         const userDropdown = document.getElementById('userDropdownTrigger');

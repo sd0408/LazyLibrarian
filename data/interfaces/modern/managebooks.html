@@ -303,6 +303,20 @@
                 %if perm&bookbagofholding.perm_status == 0:
                 $('td', nRow).eq(0).addClass("hidden");
                 %endif
+
+                // Add mobile card classes
+                var cells = $('td', nRow);
+                cells.eq(0).addClass('mobile-checkbox');
+                cells.eq(1).addClass('mobile-cover');
+                cells.eq(2).addClass('mobile-secondary').attr('data-label', 'Author');
+                cells.eq(3).addClass('mobile-primary');
+                cells.eq(4).addClass('mobile-secondary').attr('data-label', 'Series');
+                cells.eq(5).addClass('mobile-secondary mobile-hide-small').attr('data-label', 'Released');
+                %if bookbagofholding.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
+                cells.eq(6).addClass('mobile-secondary mobile-hide-small').attr('data-label', 'Delay');
+                cells.eq(7).addClass('mobile-secondary mobile-hide-small').attr('data-label', 'Last Search');
+                %endif
+
                 return nRow;
             }
         });
@@ -310,6 +324,23 @@
         // Hide the default DataTables search box (we use our own)
         $('.dataTables_filter').hide();
         $('.dataTables_length select').addClass('ll-select');
+
+        // Mobile card mode toggle
+        function checkMobileCardMode() {
+            var table = $('#book_table');
+            if (window.innerWidth <= 768) {
+                table.addClass('ll-table-mobile-cards');
+            } else {
+                table.removeClass('ll-table-mobile-cards');
+            }
+        }
+
+        var resizeTimer;
+        $(window).on('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(checkMobileCardMode, 250);
+        });
+        checkMobileCardMode();
 
         // Interactive search input - filter table as user types
         var searchTimeout;
