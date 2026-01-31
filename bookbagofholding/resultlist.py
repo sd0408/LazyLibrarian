@@ -110,17 +110,21 @@ def findBestResult(resultlist, book, searchtype, source):
                 logger.debug("Rejecting %s, no URL found" % resultTitle)
 
             if not rejected and bookbagofholding.CONFIG['BLACKLIST_FAILED']:
-                blacklisted = myDB.match('SELECT * from blacklist WHERE NZBurl=? and Reason="Failed"', (url,))
+                # Check for all failure-related reasons (Failed, TypeMismatch, UnsupportedFileType)
+                blacklisted = myDB.match(
+                    'SELECT * from blacklist WHERE NZBurl=? and Reason IN ("Failed", "TypeMismatch", "UnsupportedFileType")',
+                    (url,))
                 if blacklisted:
-                    logger.debug("Rejecting %s, url blacklisted (Failed) at %s" %
-                                 (resultTitle, blacklisted['NZBprov']))
+                    logger.debug("Rejecting %s, url blacklisted (%s) at %s" %
+                                 (resultTitle, blacklisted['Reason'], blacklisted['NZBprov']))
                     rejected = True
                 if not rejected:
-                    blacklisted = myDB.match('SELECT * from blacklist WHERE NZBprov=? and NZBtitle=? and Reason="Failed"',
-                                             (res[prefix + 'prov'], resultTitle))
+                    blacklisted = myDB.match(
+                        'SELECT * from blacklist WHERE NZBprov=? and NZBtitle=? and Reason IN ("Failed", "TypeMismatch", "UnsupportedFileType")',
+                        (res[prefix + 'prov'], resultTitle))
                     if blacklisted:
-                        logger.debug("Rejecting %s, title blacklisted (Failed) at %s" %
-                                     (resultTitle, blacklisted['NZBprov']))
+                        logger.debug("Rejecting %s, title blacklisted (%s) at %s" %
+                                     (resultTitle, blacklisted['Reason'], blacklisted['NZBprov']))
                         rejected = True
 
             if not rejected and bookbagofholding.CONFIG['BLACKLIST_PROCESSED']:

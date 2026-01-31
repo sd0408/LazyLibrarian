@@ -71,6 +71,9 @@
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="6">Delay</button>
                 <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="7">Search</button>
                 %endif
+                %if whichStatus == 'Wanted' and perm&bookbagofholding.perm_search:
+                <button type="button" class="ll-btn ll-btn-ghost ll-btn-sm toggle-vis active" data-column="${8 if bookbagofholding.CONFIG['DELAYSEARCH'] else 6}">Actions</button>
+                %endif
             </div>
             %endif
         </div>
@@ -99,6 +102,9 @@
                                 %if bookbagofholding.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
                                 <th class="text-center no-sort" style="width: 80px;">Delay</th>
                                 <th class="text-center no-sort" style="width: 120px;">Last Search</th>
+                                %endif
+                                %if whichStatus == 'Wanted' and perm&bookbagofholding.perm_search:
+                                <th class="text-center no-sort" style="width: 140px;">Actions</th>
                                 %endif
                             </tr>
                         </thead>
@@ -280,6 +286,18 @@
                 { targets: [7],
                     'class': 'text-center',
                     'render': function(data, type, row) { return row[15]; }
+                },
+                %endif
+                %if whichStatus == 'Wanted' and perm&bookbagofholding.perm_search:
+                { targets: [${8 if bookbagofholding.CONFIG['DELAYSEARCH'] else 6}],
+                    'class': 'text-center',
+                    'render': function(data, type, row) {
+                        var bookid = row[0];
+                        return '<a class="ll-btn ll-btn-primary ll-btn-xs" href="searchForBook?bookid=' + bookid + '&library=${library}" title="Auto search">' +
+                               '<i class="fa fa-search"></i> Search</a> ' +
+                               '<a class="ll-btn ll-btn-secondary ll-btn-xs" href="interactiveSearch?bookid=' + bookid + '&library=${library}" title="Pick from results">' +
+                               '<i class="fa fa-list"></i> Pick</a>';
+                    }
                 }
                 %endif
             ],
@@ -315,6 +333,9 @@
                 %if bookbagofholding.CONFIG['DELAYSEARCH'] and whichStatus == 'Wanted':
                 cells.eq(6).addClass('mobile-secondary mobile-hide-small').attr('data-label', 'Delay');
                 cells.eq(7).addClass('mobile-secondary mobile-hide-small').attr('data-label', 'Last Search');
+                %endif
+                %if whichStatus == 'Wanted' and perm&bookbagofholding.perm_search:
+                cells.eq(${8 if bookbagofholding.CONFIG['DELAYSEARCH'] else 6}).addClass('mobile-actions').attr('data-label', 'Actions');
                 %endif
 
                 return nRow;

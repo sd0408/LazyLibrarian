@@ -116,6 +116,84 @@ def fail_type_mismatch(book, book_type, pp_path, files_found):
     return error_msg
 
 
+def fail_unsupported_filetype(book, book_type, pp_path, files_found):
+    """
+    Handle failure when download contains no supported file types.
+    Marks download as Failed, blacklists if enabled, resets book status to Wanted,
+    removes from download client, and triggers an immediate search for the book.
+
+    Args:
+        book: dict from wanted table (must contain NZBurl, NZBtitle, NZBprov,
+              BookID, Source, DownloadID, and optionally AuxInfo)
+        book_type: expected type ('eBook' or 'AudioBook')
+        pp_path: path to the downloaded files
+        files_found: dict from get_files_by_type() with 'ebook', 'audiobook', 'other' lists
+
+    Returns:
+        str: Error message describing the failure
+    """
+    myDB = database.DBConnection()
+
+    # Build descriptive error message listing what was found
+    other_files = files_found.get('other', [])
+    if other_files:
+        # Get unique extensions found
+        extensions = set()
+        for f in other_files:
+            ext = os.path.splitext(f)[1].lstrip('.').lower()
+            if ext:
+                extensions.add(ext)
+        ext_list = ', '.join(sorted(extensions)[:5])
+        if len(extensions) > 5:
+            ext_list += ' (and more)'
+        file_desc = "found unsupported types: %s" % ext_list
+    else:
+        file_desc = "folder empty or contains only non-media files"
+
+    error_msg = "No valid %s files: %s" % (book_type.lower(), file_desc)
+
+    logger.warn("%s for %s" % (error_msg, book['NZBtitle']))
+
+    # Update wanted table to Failed status
+    myDB.action('UPDATE wanted SET Status="Failed", DLResult=? WHERE NZBurl=? AND Status="Snatched"',
+                (error_msg, book['NZBurl']))
+
+    # Reset book status to Wanted so it can be searched again
+    if book['BookID'] != 'unknown':
+        if book_type == 'eBook':
+            myDB.action('UPDATE books SET status="Wanted" WHERE status="Snatched" AND BookID=?',
+                        (book['BookID'],))
+        elif book_type == 'AudioBook':
+            myDB.action('UPDATE books SET audiostatus="Wanted" WHERE audiostatus="Snatched" AND BookID=?',
+                        (book['BookID'],))
+
+    # Blacklist if enabled
+    if bookbagofholding.CONFIG['BLACKLIST_FAILED']:
+        try:
+            aux_info = book['AuxInfo']
+        except (KeyError, IndexError):
+            aux_info = None
+        add_to_blacklist(book['NZBurl'], book['NZBtitle'], book['NZBprov'],
+                         book['BookID'], aux_info, 'UnsupportedFileType')
+
+    # Delete from downloader (with files)
+    if book['Source'] and book['Source'] != 'DIRECT':
+        delete_task(book['Source'], book['DownloadID'], True)
+
+    # Trigger immediate search for the book in a background thread
+    if book['BookID'] != 'unknown':
+        # Import here to avoid circular import
+        from bookbagofholding import searchbook
+        logger.info("Triggering new search for %s" % book['NZBtitle'])
+        threading.Thread(
+            target=searchbook.search_book,
+            name='SEARCH-RETRY-%s' % book['BookID'],
+            args=[[{'bookid': book['BookID']}], book_type]
+        ).start()
+
+    return error_msg
+
+
 def processAlternate(source_dir=None, library='eBook'):
     # import a book from an alternate directory
     # noinspection PyBroadException
@@ -546,6 +624,9 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                                         files_found = get_files_by_type(pp_path)
                                         if files_found['audiobook']:
                                             fail_type_mismatch(book, book_type, pp_path, files_found)
+                                        elif files_found['other']:
+                                            # Download contains only unsupported file types
+                                            fail_unsupported_filetype(book, book_type, pp_path, files_found)
                                         else:
                                             logger.debug("Skipping %s, no ebook found" % pp_path)
                                         skipped = True
@@ -554,6 +635,9 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                                         files_found = get_files_by_type(pp_path)
                                         if files_found['ebook']:
                                             fail_type_mismatch(book, book_type, pp_path, files_found)
+                                        elif files_found['other']:
+                                            # Download contains only unsupported file types
+                                            fail_unsupported_filetype(book, book_type, pp_path, files_found)
                                         else:
                                             logger.debug("Skipping %s, no audiobook found" % pp_path)
                                         skipped = True

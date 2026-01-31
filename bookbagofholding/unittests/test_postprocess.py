@@ -49,6 +49,7 @@ def postprocess_config():
     bookbagofholding.CONFIG['AUDIOBOOK_TYPE'] = 'mp3, m4b'
     bookbagofholding.CONFIG['MAG_TYPE'] = 'pdf'
     bookbagofholding.CONFIG['DESTINATION_COPY'] = False
+    bookbagofholding.CONFIG['BLACKLIST_FAILED'] = False  # Default to False for tests
     bookbagofholding.LOGLEVEL = 0
 
     yield
@@ -310,3 +311,469 @@ class TestThreadSafety:
         import threading
         # Verify threading module is imported and usable
         assert hasattr(postprocess, 'threading') or 'threading' in dir()
+
+
+class TestFailUnsupportedFiletype:
+    """Tests for fail_unsupported_filetype() function."""
+
+    @pytest.fixture
+    def mock_book(self):
+        """Create a mock book dict similar to wanted table row."""
+        return {
+            'NZBurl': 'http://example.com/download.nzb',
+            'NZBtitle': 'Test Book - Author Name',
+            'NZBprov': 'TestProvider',
+            'BookID': 'book123',
+            'Source': 'SABNZBD',
+            'DownloadID': 'sab123',
+            'AuxInfo': 'eBook'
+        }
+
+    @pytest.fixture
+    def unsupported_files(self):
+        """Files dict with only unsupported types."""
+        return {
+            'ebook': [],
+            'audiobook': [],
+            'other': ['readme.txt', 'sample.doc', 'cover.jpg']
+        }
+
+    @pytest.fixture
+    def empty_files(self):
+        """Files dict representing empty folder."""
+        return {
+            'ebook': [],
+            'audiobook': [],
+            'other': []
+        }
+
+    def test_fail_unsupported_filetype_returns_error_message(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should return descriptive error message."""
+        db_path, conn = temp_db
+
+        # Create required tables
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book'):
+                result = postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+        assert 'No valid ebook files' in result
+        assert 'unsupported types' in result
+
+    def test_fail_unsupported_filetype_updates_wanted_status(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should update wanted table to Failed."""
+        db_path, conn = temp_db
+
+        # Create wanted table and insert test record
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY,
+                NZBtitle TEXT,
+                NZBprov TEXT,
+                BookID TEXT,
+                Status TEXT,
+                DLResult TEXT,
+                Source TEXT,
+                DownloadID TEXT,
+                AuxInfo TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, NZBtitle, BookID, Status) VALUES (?, ?, ?, ?)",
+            (mock_book['NZBurl'], mock_book['NZBtitle'], mock_book['BookID'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book'):
+                postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+        result = conn.execute(
+            "SELECT Status, DLResult FROM wanted WHERE NZBurl=?",
+            (mock_book['NZBurl'],)
+        ).fetchone()
+
+        assert result[0] == 'Failed'
+        assert 'No valid ebook files' in result[1]
+
+    def test_fail_unsupported_filetype_resets_ebook_status(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should reset ebook status to Wanted."""
+        db_path, conn = temp_db
+
+        # Create books table with snatched status
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS books (
+                BookID TEXT PRIMARY KEY,
+                status TEXT,
+                audiostatus TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO books (BookID, status) VALUES (?, ?)",
+            (mock_book['BookID'], 'Snatched')
+        )
+        # Create wanted table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book'):
+                postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+        result = conn.execute(
+            "SELECT status FROM books WHERE BookID=?",
+            (mock_book['BookID'],)
+        ).fetchone()
+
+        assert result[0] == 'Wanted'
+
+    def test_fail_unsupported_filetype_resets_audiobook_status(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should reset audiobook status to Wanted."""
+        db_path, conn = temp_db
+
+        mock_book['AuxInfo'] = 'AudioBook'
+
+        # Create books table with snatched audiostatus
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS books (
+                BookID TEXT PRIMARY KEY,
+                status TEXT,
+                audiostatus TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO books (BookID, audiostatus) VALUES (?, ?)",
+            (mock_book['BookID'], 'Snatched')
+        )
+        # Create wanted table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book'):
+                postprocess.fail_unsupported_filetype(
+                    mock_book, 'AudioBook', '/tmp/test', unsupported_files)
+
+        result = conn.execute(
+            "SELECT audiostatus FROM books WHERE BookID=?",
+            (mock_book['BookID'],)
+        ).fetchone()
+
+        assert result[0] == 'Wanted'
+
+    def test_fail_unsupported_filetype_calls_delete_task(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should call delete_task to remove from client."""
+        db_path, conn = temp_db
+
+        # Create required tables
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True) as mock_delete:
+            with patch('bookbagofholding.searchbook.search_book'):
+                postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+        mock_delete.assert_called_once_with(
+            mock_book['Source'], mock_book['DownloadID'], True)
+
+    def test_fail_unsupported_filetype_adds_to_blacklist(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should blacklist when BLACKLIST_FAILED enabled."""
+        bookbagofholding.CONFIG['BLACKLIST_FAILED'] = True
+        db_path, conn = temp_db
+
+        # Create blacklist table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS blacklist (
+                NZBurl TEXT PRIMARY KEY,
+                NZBtitle TEXT,
+                NZBprov TEXT,
+                BookID TEXT,
+                AuxInfo TEXT,
+                DateAdded TEXT,
+                Reason TEXT
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book'):
+                postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+        result = conn.execute(
+            "SELECT Reason FROM blacklist WHERE NZBurl=?",
+            (mock_book['NZBurl'],)
+        ).fetchone()
+
+        assert result is not None
+        assert result[0] == 'UnsupportedFileType'
+
+    def test_fail_unsupported_filetype_skips_blacklist_when_disabled(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should skip blacklist when BLACKLIST_FAILED disabled."""
+        bookbagofholding.CONFIG['BLACKLIST_FAILED'] = False
+        db_path, conn = temp_db
+
+        # Create blacklist table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS blacklist (
+                NZBurl TEXT PRIMARY KEY, Reason TEXT
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book'):
+                postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+        result = conn.execute("SELECT COUNT(*) FROM blacklist").fetchone()
+        assert result[0] == 0
+
+    def test_fail_unsupported_filetype_handles_empty_folder(
+            self, temp_db, mock_book, empty_files, postprocess_config):
+        """fail_unsupported_filetype should handle empty download folders."""
+        db_path, conn = temp_db
+
+        # Create required tables
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book'):
+                result = postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', empty_files)
+
+        assert 'empty or contains only non-media files' in result
+
+    def test_fail_unsupported_filetype_skips_delete_for_direct(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should skip delete_task for DIRECT source."""
+        mock_book['Source'] = 'DIRECT'
+        db_path, conn = temp_db
+
+        # Create required tables
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True) as mock_delete:
+            with patch('bookbagofholding.searchbook.search_book'):
+                postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+        mock_delete.assert_not_called()
+
+    def test_fail_unsupported_filetype_handles_unknown_bookid(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should skip book update for unknown BookID."""
+        mock_book['BookID'] = 'unknown'
+        db_path, conn = temp_db
+
+        # Create books table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS books (
+                BookID TEXT PRIMARY KEY,
+                status TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO books (BookID, status) VALUES (?, ?)",
+            ('other_book', 'Snatched')
+        )
+        # Create wanted table
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            postprocess.fail_unsupported_filetype(
+                mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+        # Verify no book status was changed
+        result = conn.execute(
+            "SELECT status FROM books WHERE BookID=?",
+            ('other_book',)
+        ).fetchone()
+
+        assert result[0] == 'Snatched'  # Unchanged
+
+    def test_fail_unsupported_filetype_limits_extensions_display(
+            self, temp_db, mock_book, postprocess_config):
+        """fail_unsupported_filetype should limit extension display to 5."""
+        many_files = {
+            'ebook': [],
+            'audiobook': [],
+            'other': [
+                'file.txt', 'file.doc', 'file.xls', 'file.ppt',
+                'file.rtf', 'file.odt', 'file.ods', 'file.odp'
+            ]
+        }
+        db_path, conn = temp_db
+
+        # Create required tables
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book'):
+                result = postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', many_files)
+
+        assert '(and more)' in result
+
+    def test_fail_unsupported_filetype_triggers_search(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should trigger immediate search for the book."""
+        from bookbagofholding import searchbook
+
+        db_path, conn = temp_db
+
+        # Create required tables
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('bookbagofholding.searchbook.search_book') as mock_search:
+                with patch('threading.Thread') as mock_thread:
+                    mock_thread_instance = MagicMock()
+                    mock_thread.return_value = mock_thread_instance
+
+                    postprocess.fail_unsupported_filetype(
+                        mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+                    # Verify Thread was created with correct arguments
+                    mock_thread.assert_called_once()
+                    call_kwargs = mock_thread.call_args[1]
+                    assert call_kwargs['target'] == searchbook.search_book
+                    assert 'SEARCH-RETRY' in call_kwargs['name']
+                    assert call_kwargs['args'] == [[{'bookid': mock_book['BookID']}], 'eBook']
+
+                    # Verify thread was started
+                    mock_thread_instance.start.assert_called_once()
+
+    def test_fail_unsupported_filetype_skips_search_for_unknown_bookid(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should skip search trigger for unknown BookID."""
+        mock_book['BookID'] = 'unknown'
+        db_path, conn = temp_db
+
+        # Create required tables
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            with patch('threading.Thread') as mock_thread:
+                postprocess.fail_unsupported_filetype(
+                    mock_book, 'eBook', '/tmp/test', unsupported_files)
+
+                # Verify Thread was NOT created for unknown BookID
+                mock_thread.assert_not_called()
