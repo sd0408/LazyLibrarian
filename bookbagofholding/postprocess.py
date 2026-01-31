@@ -113,6 +113,30 @@ def fail_type_mismatch(book, book_type, pp_path, files_found):
     if book['Source'] and book['Source'] != 'DIRECT':
         delete_task(book['Source'], book['DownloadID'], True)
 
+    # Clean up files from download directory to prevent orphaning
+    # By the time we detect type mismatch, files are already in pp_path
+    if pp_path and os.path.isdir(pp_path):
+        if bookbagofholding.CONFIG['DESTINATION_COPY']:
+            # If keeping files, rename to .fail to prevent re-processing
+            fail_path = pp_path + '.fail'
+            if os.path.isdir(fail_path):
+                try:
+                    shutil.rmtree(fail_path)
+                except Exception as why:
+                    logger.warn("Unable to remove old %s: %s %s" % (fail_path, type(why).__name__, str(why)))
+            try:
+                shutil.move(pp_path, fail_path)
+                logger.debug("Renamed %s to %s" % (pp_path, fail_path))
+            except Exception as why:
+                logger.warn("Unable to rename %s to .fail: %s %s" % (pp_path, type(why).__name__, str(why)))
+        else:
+            # Delete the mismatched files
+            try:
+                shutil.rmtree(pp_path)
+                logger.debug("Deleted mismatched files from %s" % pp_path)
+            except Exception as why:
+                logger.warn("Unable to delete %s: %s %s" % (pp_path, type(why).__name__, str(why)))
+
     return error_msg
 
 
@@ -179,6 +203,29 @@ def fail_unsupported_filetype(book, book_type, pp_path, files_found):
     # Delete from downloader (with files)
     if book['Source'] and book['Source'] != 'DIRECT':
         delete_task(book['Source'], book['DownloadID'], True)
+
+    # Clean up files from download directory to prevent orphaning
+    if pp_path and os.path.isdir(pp_path):
+        if bookbagofholding.CONFIG['DESTINATION_COPY']:
+            # If keeping files, rename to .fail to prevent re-processing
+            fail_path = pp_path + '.fail'
+            if os.path.isdir(fail_path):
+                try:
+                    shutil.rmtree(fail_path)
+                except Exception as why:
+                    logger.warn("Unable to remove old %s: %s %s" % (fail_path, type(why).__name__, str(why)))
+            try:
+                shutil.move(pp_path, fail_path)
+                logger.debug("Renamed %s to %s" % (pp_path, fail_path))
+            except Exception as why:
+                logger.warn("Unable to rename %s to .fail: %s %s" % (pp_path, type(why).__name__, str(why)))
+        else:
+            # Delete the unsupported files
+            try:
+                shutil.rmtree(pp_path)
+                logger.debug("Deleted unsupported files from %s" % pp_path)
+            except Exception as why:
+                logger.warn("Unable to delete %s: %s %s" % (pp_path, type(why).__name__, str(why)))
 
     # Trigger immediate search for the book in a background thread
     if book['BookID'] != 'unknown':
@@ -641,10 +688,10 @@ def processDir(reset=False, startdir=None, ignoreclient=False):
                                         else:
                                             logger.debug("Skipping %s, no audiobook found" % pp_path)
                                         skipped = True
-                                    if not os.listdir(makeBytestr(pp_path)):
+                                    if not skipped and os.path.isdir(pp_path) and not os.listdir(makeBytestr(pp_path)):
                                         logger.debug("Skipping %s, folder is empty" % pp_path)
                                         skipped = True
-                                    elif bts_file(pp_path):
+                                    elif not skipped and bts_file(pp_path):
                                         logger.debug("Skipping %s, found a .bts file" % pp_path)
                                         skipped = True
                                     if not skipped:

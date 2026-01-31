@@ -915,3 +915,330 @@ class TestCheckContents:
                 'QBITTORRENT', 'abc123', 'ebook', 'Book Title')
 
             assert result == ''
+
+
+class TestFailTypeMismatch:
+    """Tests for fail_type_mismatch() function."""
+
+    @pytest.fixture
+    def mock_book(self):
+        """Create a mock book dict similar to wanted table row."""
+        return {
+            'NZBurl': 'http://example.com/download.nzb',
+            'NZBtitle': 'Test Book - Author Name',
+            'NZBprov': 'TestProvider',
+            'BookID': 'book123',
+            'Source': 'SABNZBD',
+            'DownloadID': 'sab123',
+            'AuxInfo': 'AudioBook'
+        }
+
+    @pytest.fixture
+    def ebook_files(self):
+        """Files dict with ebook when expecting audiobook."""
+        return {
+            'ebook': ['Book Title.epub', 'Book Title.mobi'],
+            'audiobook': [],
+            'other': ['readme.txt']
+        }
+
+    @pytest.fixture
+    def audiobook_files(self):
+        """Files dict with audiobook when expecting ebook."""
+        return {
+            'ebook': [],
+            'audiobook': ['Chapter 01.mp3', 'Chapter 02.mp3'],
+            'other': []
+        }
+
+    def test_fail_type_mismatch_returns_error_message(
+            self, temp_db, mock_book, ebook_files, postprocess_config):
+        """fail_type_mismatch should return descriptive error message."""
+        db_path, conn = temp_db
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            result = postprocess.fail_type_mismatch(
+                mock_book, 'AudioBook', '/tmp/nonexistent', ebook_files)
+
+        assert 'Type mismatch' in result
+        assert 'expected AudioBook' in result
+        assert 'ebook' in result
+
+    def test_fail_type_mismatch_updates_wanted_status(
+            self, temp_db, mock_book, ebook_files, postprocess_config):
+        """fail_type_mismatch should update wanted table to Failed."""
+        db_path, conn = temp_db
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            postprocess.fail_type_mismatch(
+                mock_book, 'AudioBook', '/tmp/nonexistent', ebook_files)
+
+        result = conn.execute(
+            "SELECT Status, DLResult FROM wanted WHERE NZBurl=?",
+            (mock_book['NZBurl'],)
+        ).fetchone()
+
+        assert result[0] == 'Failed'
+        assert 'Type mismatch' in result[1]
+
+    def test_fail_type_mismatch_resets_audiobook_status(
+            self, temp_db, mock_book, ebook_files, postprocess_config):
+        """fail_type_mismatch should reset audiobook status to Wanted."""
+        db_path, conn = temp_db
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS books (
+                BookID TEXT PRIMARY KEY, status TEXT, audiostatus TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO books (BookID, audiostatus) VALUES (?, ?)",
+            (mock_book['BookID'], 'Snatched')
+        )
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            postprocess.fail_type_mismatch(
+                mock_book, 'AudioBook', '/tmp/nonexistent', ebook_files)
+
+        result = conn.execute(
+            "SELECT audiostatus FROM books WHERE BookID=?",
+            (mock_book['BookID'],)
+        ).fetchone()
+
+        assert result[0] == 'Wanted'
+
+    def test_fail_type_mismatch_deletes_directory_when_copy_disabled(
+            self, temp_db, mock_book, ebook_files, postprocess_config):
+        """fail_type_mismatch should delete pp_path when DESTINATION_COPY is False."""
+        db_path, conn = temp_db
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        # Create a temporary directory to test deletion
+        test_dir = tempfile.mkdtemp()
+        test_file = os.path.join(test_dir, 'test.epub')
+        with open(test_file, 'w') as f:
+            f.write('test content')
+
+        try:
+            bookbagofholding.CONFIG['DESTINATION_COPY'] = False
+
+            with patch.object(postprocess, 'delete_task', return_value=True):
+                postprocess.fail_type_mismatch(
+                    mock_book, 'AudioBook', test_dir, ebook_files)
+
+            # Directory should be deleted
+            assert not os.path.exists(test_dir)
+        finally:
+            # Cleanup if test failed
+            if os.path.exists(test_dir):
+                shutil.rmtree(test_dir)
+
+    def test_fail_type_mismatch_renames_directory_when_copy_enabled(
+            self, temp_db, mock_book, ebook_files, postprocess_config):
+        """fail_type_mismatch should rename pp_path to .fail when DESTINATION_COPY is True."""
+        db_path, conn = temp_db
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        # Create a temporary directory to test renaming
+        test_dir = tempfile.mkdtemp()
+        test_file = os.path.join(test_dir, 'test.epub')
+        with open(test_file, 'w') as f:
+            f.write('test content')
+
+        fail_path = test_dir + '.fail'
+
+        try:
+            bookbagofholding.CONFIG['DESTINATION_COPY'] = True
+
+            with patch.object(postprocess, 'delete_task', return_value=True):
+                postprocess.fail_type_mismatch(
+                    mock_book, 'AudioBook', test_dir, ebook_files)
+
+            # Original directory should be gone
+            assert not os.path.exists(test_dir)
+            # .fail directory should exist
+            assert os.path.exists(fail_path)
+        finally:
+            # Cleanup
+            if os.path.exists(test_dir):
+                shutil.rmtree(test_dir)
+            if os.path.exists(fail_path):
+                shutil.rmtree(fail_path)
+
+    def test_fail_type_mismatch_handles_nonexistent_path(
+            self, temp_db, mock_book, ebook_files, postprocess_config):
+        """fail_type_mismatch should handle nonexistent pp_path gracefully."""
+        db_path, conn = temp_db
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        with patch.object(postprocess, 'delete_task', return_value=True):
+            # Should not raise exception
+            result = postprocess.fail_type_mismatch(
+                mock_book, 'AudioBook', '/nonexistent/path', ebook_files)
+
+        assert 'Type mismatch' in result
+
+
+class TestFailUnsupportedFiletypeCleanup:
+    """Tests for fail_unsupported_filetype() file cleanup behavior."""
+
+    @pytest.fixture
+    def mock_book(self):
+        """Create a mock book dict similar to wanted table row."""
+        return {
+            'NZBurl': 'http://example.com/download.nzb',
+            'NZBtitle': 'Test Book - Author Name',
+            'NZBprov': 'TestProvider',
+            'BookID': 'book123',
+            'Source': 'SABNZBD',
+            'DownloadID': 'sab123',
+            'AuxInfo': 'eBook'
+        }
+
+    @pytest.fixture
+    def unsupported_files(self):
+        """Files dict with only unsupported types."""
+        return {
+            'ebook': [],
+            'audiobook': [],
+            'other': ['readme.txt', 'sample.doc']
+        }
+
+    def test_fail_unsupported_filetype_deletes_directory(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should delete pp_path when DESTINATION_COPY is False."""
+        db_path, conn = temp_db
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        # Create a temporary directory to test deletion
+        test_dir = tempfile.mkdtemp()
+        test_file = os.path.join(test_dir, 'readme.txt')
+        with open(test_file, 'w') as f:
+            f.write('test content')
+
+        try:
+            bookbagofholding.CONFIG['DESTINATION_COPY'] = False
+
+            with patch.object(postprocess, 'delete_task', return_value=True):
+                with patch('bookbagofholding.searchbook.search_book'):
+                    postprocess.fail_unsupported_filetype(
+                        mock_book, 'eBook', test_dir, unsupported_files)
+
+            # Directory should be deleted
+            assert not os.path.exists(test_dir)
+        finally:
+            if os.path.exists(test_dir):
+                shutil.rmtree(test_dir)
+
+    def test_fail_unsupported_filetype_renames_directory_when_copy_enabled(
+            self, temp_db, mock_book, unsupported_files, postprocess_config):
+        """fail_unsupported_filetype should rename to .fail when DESTINATION_COPY is True."""
+        db_path, conn = temp_db
+
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS wanted (
+                NZBurl TEXT PRIMARY KEY, Status TEXT, DLResult TEXT
+            )
+        ''')
+        conn.execute(
+            "INSERT INTO wanted (NZBurl, Status) VALUES (?, ?)",
+            (mock_book['NZBurl'], 'Snatched')
+        )
+        conn.commit()
+
+        # Create a temporary directory to test renaming
+        test_dir = tempfile.mkdtemp()
+        test_file = os.path.join(test_dir, 'readme.txt')
+        with open(test_file, 'w') as f:
+            f.write('test content')
+
+        fail_path = test_dir + '.fail'
+
+        try:
+            bookbagofholding.CONFIG['DESTINATION_COPY'] = True
+
+            with patch.object(postprocess, 'delete_task', return_value=True):
+                with patch('bookbagofholding.searchbook.search_book'):
+                    postprocess.fail_unsupported_filetype(
+                        mock_book, 'eBook', test_dir, unsupported_files)
+
+            # Original should be gone, .fail should exist
+            assert not os.path.exists(test_dir)
+            assert os.path.exists(fail_path)
+        finally:
+            if os.path.exists(test_dir):
+                shutil.rmtree(test_dir)
+            if os.path.exists(fail_path):
+                shutil.rmtree(fail_path)

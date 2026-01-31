@@ -323,8 +323,13 @@ def removeTorrent(hashid, remove_data=False):
                         logger.info('%s removing torrent and data' % torrent['name'])
                     else:
                         logger.info('%s removing torrent' % torrent['name'])
-                    qbclient.remove(hashid, remove_data)
+                    result = qbclient.remove(hashid, remove_data)
+                    if result:
+                        logger.debug('%s torrent removal successful' % torrent['name'])
+                    else:
+                        logger.warn('%s torrent removal may have failed' % torrent['name'])
                     return True
+    logger.debug('removeTorrent: hashid %s not found in torrent list' % hashid)
     return False
 
 
