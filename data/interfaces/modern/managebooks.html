@@ -113,7 +113,7 @@
             </div>
         </div>
         %if perm&bookbagofholding.perm_status:
-        <div class="ll-card-footer">
+        <div class="ll-card-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <form action="markBooks" method="get" class="ll-toolbar-form">
                 <input type="hidden" name="redirect" value="manage">
                 <input type="hidden" name="library" value="${library}">
@@ -139,6 +139,11 @@
                 </select>
                 <button type="button" class="ll-btn ll-btn-primary ll-btn-sm" onclick="submitMarked()">Go</button>
             </form>
+            %if whichStatus == 'Wanted' and perm&bookbagofholding.perm_force:
+            <button type="button" class="ll-btn ll-btn-secondary ll-btn-sm" onclick="searchSelected()">
+                <i class="fa fa-search"></i> Search Selected
+            </button>
+            %endif
         </div>
         %endif
     </div>
@@ -198,6 +203,39 @@
 
         document.body.appendChild(form);
         form.submit();
+    }
+
+    function searchSelected() {
+        var checkboxes = document.querySelectorAll('input[class="checkbox"]:checked');
+        if (checkboxes.length === 0) {
+            bootbox.alert('Please select at least one book to search');
+            return;
+        }
+
+        bootbox.confirm('Search for ' + checkboxes.length + ' selected book(s)?', function(result) {
+            if (result) {
+                var form = document.createElement('form');
+                form.method = 'get';
+                form.action = 'searchSelectedBooks';
+
+                var libraryInput = document.createElement('input');
+                libraryInput.type = 'hidden';
+                libraryInput.name = 'library';
+                libraryInput.value = '${library}';
+                form.appendChild(libraryInput);
+
+                checkboxes.forEach(function(cb) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = cb.name;
+                    input.value = 'on';
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
     }
 
     function bookinfo(bookid) {
@@ -295,7 +333,7 @@
                         var bookid = row[0];
                         return '<a class="ll-btn ll-btn-primary ll-btn-xs" href="searchForBook?bookid=' + bookid + '&library=${library}" title="Auto search">' +
                                '<i class="fa fa-search"></i> Search</a> ' +
-                               '<a class="ll-btn ll-btn-secondary ll-btn-xs" href="interactiveSearch?bookid=' + bookid + '&library=${library}" title="Pick from results">' +
+                               '<a class="ll-btn ll-btn-secondary ll-btn-xs" href="interactiveSearch?bookid=' + bookid + '&library=${library}&referrer=wanted" title="Pick from results">' +
                                '<i class="fa fa-list"></i> Pick</a>';
                     }
                 }

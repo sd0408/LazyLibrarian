@@ -50,6 +50,12 @@ def postprocess_config():
     bookbagofholding.CONFIG['MAG_TYPE'] = 'pdf'
     bookbagofholding.CONFIG['DESTINATION_COPY'] = False
     bookbagofholding.CONFIG['BLACKLIST_FAILED'] = False  # Default to False for tests
+    bookbagofholding.CONFIG['REJECT_WORDS'] = 'audiobook, mp3'
+    bookbagofholding.CONFIG['REJECT_AUDIO'] = 'epub, mobi'
+    bookbagofholding.CONFIG['BANNED_EXT'] = 'exe, bat'
+    bookbagofholding.CONFIG['REJECT_MAXSIZE'] = 0
+    bookbagofholding.CONFIG['REJECT_MINSIZE'] = 0
+    bookbagofholding.CONFIG['REJECT_MAXAUDIO'] = 0
     bookbagofholding.LOGLEVEL = 0
 
     yield
@@ -777,3 +783,135 @@ class TestFailUnsupportedFiletype:
 
                 # Verify Thread was NOT created for unknown BookID
                 mock_thread.assert_not_called()
+
+
+class TestCheckContents:
+    """Tests for check_contents() function - validates download file contents."""
+
+    def test_check_contents_accepts_valid_epub(self, postprocess_config):
+        """check_contents should accept a download with only valid epub files."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = [
+                {'name': 'Book Title/Book Title.epub', 'size': 500000}
+            ]
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'ebook', 'Book Title')
+
+            assert result == ''  # Empty string means accepted
+
+    def test_check_contents_rejects_epub_with_banned_word(self, postprocess_config):
+        """check_contents should reject an epub with banned word in filename."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = [
+                {'name': 'Book Title/audiobook companion.epub', 'size': 500000}
+            ]
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'ebook', 'Book Title')
+
+            assert 'audiobook' in result  # Should be rejected
+
+    def test_check_contents_ignores_txt_with_banned_word(self, postprocess_config):
+        """check_contents should NOT reject due to banned word in txt file.
+
+        This is the key fix: info/advertisement txt files commonly found in
+        torrents should not trigger rejection of valid ebook downloads.
+        """
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = [
+                {'name': 'Book Title/Book Title.epub', 'size': 500000},
+                {'name': 'Book Title/free audiobook version.txt', 'size': 1000}
+            ]
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'ebook', 'Book Title')
+
+            # Should be accepted - the txt file with "audiobook" should be ignored
+            assert result == ''
+
+    def test_check_contents_ignores_nfo_with_banned_word(self, postprocess_config):
+        """check_contents should NOT reject due to banned word in nfo file."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = [
+                {'name': 'Book Title/Book Title.epub', 'size': 500000},
+                {'name': 'Book Title/audiobook_available.nfo', 'size': 500}
+            ]
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'ebook', 'Book Title')
+
+            assert result == ''
+
+    def test_check_contents_rejects_banned_extension(self, postprocess_config):
+        """check_contents should reject files with banned extensions."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = [
+                {'name': 'Book Title/Book Title.epub', 'size': 500000},
+                {'name': 'Book Title/installer.exe', 'size': 100000}
+            ]
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'ebook', 'Book Title')
+
+            assert 'exe' in result
+
+    def test_check_contents_audiobook_accepts_valid_mp3(self, postprocess_config):
+        """check_contents should accept valid audiobook files."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = [
+                {'name': 'Audiobook/Chapter 01.mp3', 'size': 50000000},
+                {'name': 'Audiobook/Chapter 02.mp3', 'size': 50000000}
+            ]
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'audiobook', 'Audiobook Title')
+
+            assert result == ''
+
+    def test_check_contents_audiobook_rejects_mp3_with_epub_in_name(
+            self, postprocess_config):
+        """check_contents should reject audiobook with ebook word in filename."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = [
+                {'name': 'Audiobook/epub companion guide.mp3', 'size': 50000000}
+            ]
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'audiobook', 'Audiobook Title')
+
+            assert 'epub' in result
+
+    def test_check_contents_audiobook_ignores_txt_with_banned_word(
+            self, postprocess_config):
+        """check_contents should ignore txt file with banned word for audiobooks."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = [
+                {'name': 'Audiobook/Chapter 01.mp3', 'size': 50000000},
+                {'name': 'Audiobook/get the epub version.txt', 'size': 500}
+            ]
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'audiobook', 'Audiobook Title')
+
+            assert result == ''
+
+    def test_check_contents_empty_filelist(self, postprocess_config):
+        """check_contents should handle empty file list gracefully."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = []
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'ebook', 'Book Title')
+
+            assert result == ''
+
+    def test_check_contents_none_filelist(self, postprocess_config):
+        """check_contents should handle None file list gracefully."""
+        with patch.object(postprocess, 'getDownloadFiles') as mock_get_files:
+            mock_get_files.return_value = None
+
+            result = postprocess.check_contents(
+                'QBITTORRENT', 'abc123', 'ebook', 'Book Title')
+
+            assert result == ''

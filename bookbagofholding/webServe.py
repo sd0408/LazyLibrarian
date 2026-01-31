@@ -1735,7 +1735,7 @@ If you did not request this reset, you can ignore this email.
         return "Searching %s providers, please wait..." % count
 
     @cherrypy.expose
-    def snatchBook(self, bookid=None, mode=None, provider=None, url=None, size=None, library=None, redirect=None):
+    def snatchBook(self, bookid=None, mode=None, provider=None, url=None, size=None, library=None, redirect=None, referrer=None):
         # Decode URL if it was URL-encoded by the browser
         if url:
             url = unquote_plus(url)
@@ -1779,17 +1779,25 @@ If you did not request this reset, you can ignore this email.
                     add_to_blacklist(url, bookdata["BookName"], provider, bookid, library, 'Failed')
             # Redirect based on where the user came from
             if redirect == 'interactive':
-                raise cherrypy.HTTPRedirect("interactiveSearch?bookid=%s&library=%s" % (bookid, library))
+                redirect_url = "interactiveSearch?bookid=%s&library=%s" % (bookid, library)
+                if referrer:
+                    redirect_url += "&referrer=%s" % referrer
+                raise cherrypy.HTTPRedirect(redirect_url)
             raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s&library=%s" % (AuthorID, library))
         else:
             logger.debug('snatchBook Invalid bookid [%s]' % bookid)
             raise cherrypy.HTTPRedirect("home")
 
     @cherrypy.expose
-    def interactiveSearch(self, bookid=None, library=None):
+    def interactiveSearch(self, bookid=None, library=None, referrer=None):
         """
         Display interactive search page for a book.
         Shows all search results from all providers, allowing user to pick which to download.
+
+        referrer: Optional parameter to indicate where the user came from.
+                  'author' - came from author page, back button goes to author
+                  'wanted' - came from wanted/manage page, back button goes to manage
+                  If not specified, defaults to author page behavior.
         """
         self.label_thread('INTSEARCH')
         if not bookid:
@@ -1810,11 +1818,16 @@ If you did not request this reset, you can ignore this email.
         if not library:
             library = 'eBook'
 
+        # Default to author if referrer not specified
+        if not referrer:
+            referrer = 'author'
+
         return serve_template(
             templatename="interactivesearch.html",
             title='Interactive Search: %s - %s' % (book['AuthorName'], book['BookName']),
             book=book,
-            library=library
+            library=library,
+            referrer=referrer
         )
 
     @cherrypy.expose
@@ -2261,6 +2274,26 @@ If you did not request this reset, you can ignore this email.
             raise cherrypy.HTTPRedirect("authorPage?AuthorID=%s" % AuthorID)
         else:
             raise cherrypy.HTTPRedirect("books")
+
+    @cherrypy.expose
+    def searchSelectedBooks(self, library=None, **kwargs):
+        """
+        Search for multiple selected books at once.
+        Book IDs are passed as form parameters (bookid_XXXXX=on format from checkboxes).
+        """
+        self.label_thread('SEARCH_SELECTED')
+
+        # Extract book IDs from kwargs - they come as bookid=on from checkboxes
+        books = []
+        for key in kwargs:
+            if kwargs[key] == 'on':
+                books.append({"bookid": key})
+
+        if books:
+            logger.info("Searching for %d selected books (%s)" % (len(books), library or 'all types'))
+            self.startBookSearch(books, library=library)
+
+        raise cherrypy.HTTPRedirect("manage?whichStatus=Wanted&library=%s" % (library or 'eBook'))
 
     @cherrypy.expose
     def requestBook(self, **kwargs):

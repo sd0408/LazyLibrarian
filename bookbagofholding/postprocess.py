@@ -968,7 +968,9 @@ def check_contents(source, downloadid, book_type, title):
                 logger.warn("%s. Rejecting download" % rejected)
                 break
 
-            if not rejected and banlist:
+            # Only check banned words in filenames of actual ebook/audiobook files,
+            # not info files like .txt or .nfo that often contain advertising text
+            if not rejected and banlist and extn in filetypes:
                 wordlist = getList(fname.lower().replace(os.sep, ' ').replace('.', ' '))
                 for word in wordlist:
                     if word in banlist:
@@ -1005,6 +1007,14 @@ def check_contents(source, downloadid, book_type, title):
         logger.debug("%s accepted" % title)
     else:
         logger.debug("%s: %s" % (title, rejected))
+        # Log all files in the download to help diagnose false positives
+        if downloadfiles:
+            logger.warn("All files in rejected download %s:" % title)
+            for entry in downloadfiles:
+                fname = entry.get('path') or entry.get('name') or entry.get('filename', 'unknown')
+                fsize = entry.get('size') or entry.get('filesize') or entry.get('length', 0)
+                extn = os.path.splitext(fname)[1].lstrip('.').lower()
+                logger.warn("  - %s (%s, %s bytes)" % (fname, extn or 'no extension', fsize))
     return rejected
 
 

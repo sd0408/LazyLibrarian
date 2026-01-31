@@ -922,7 +922,7 @@
                             return '<a class="ll-badge ll-badge-success" href="openBook?bookid=' + row[9] + '&library=${library}"><i class="fa fa-book"></i> ' + btn + '</a>';
                         }
                         else if (btn.indexOf('Wanted') >= 0) {
-                            return '<span class="ll-badge ll-badge-warning">' + btn + '</span><br><a class="ll-badge ll-badge-primary" href="searchForBook?bookid=' + row[9] + '&library=${library}" style="margin-top: 4px;"><i class="fa fa-search"></i> Search</a> <a class="ll-badge ll-badge-info" href="interactiveSearch?bookid=' + row[9] + '&library=${library}" style="margin-top: 4px;" title="Interactive search - pick from all results"><i class="fa fa-list"></i> Pick</a>';
+                            return '<span class="ll-badge ll-badge-warning">' + btn + '</span><br><a class="ll-badge ll-badge-primary" href="searchForBook?bookid=' + row[9] + '&library=${library}" style="margin-top: 4px;"><i class="fa fa-search"></i> Search</a> <a class="ll-badge ll-badge-info" href="interactiveSearch?bookid=' + row[9] + '&library=${library}&referrer=author" style="margin-top: 4px;" title="Interactive search - pick from all results"><i class="fa fa-list"></i> Pick</a>';
                         }
                         else if (btn.indexOf('Snatched') >= 0) {
                             return '<span class="ll-badge ll-badge-info">' + btn + '</span>';

@@ -234,6 +234,15 @@
 </%def>
 
 <!-- Page Header -->
+% if referrer == 'wanted':
+<a href="manage" class="ll-back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+    Back to Wanted
+</a>
+% else:
 <a href="authorPage?AuthorID=${book['AuthorID']}&library=${library}" class="ll-back-link">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
         <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -241,6 +250,7 @@
     </svg>
     Back to Author
 </a>
+% endif
 
 <div class="ll-page-header">
     <h1 class="ll-page-title">Interactive Search</h1>
@@ -349,6 +359,7 @@
 
     var bookid = '${book["BookID"]}';
     var library = '${library}';
+    var referrer = '${referrer}';
     var allResults = [];
     var sortColumn = 'score';
     var sortDirection = 'desc';
@@ -539,7 +550,8 @@
             '&url=' + encodeURIComponent(data.url) +
             '&size=' + encodeURIComponent(data.size) +
             '&library=' + encodeURIComponent(library) +
-            '&redirect=interactive';
+            '&redirect=interactive' +
+            '&referrer=' + encodeURIComponent(referrer);
 
         window.location.href = url;
     }

@@ -496,7 +496,7 @@ def TORDownloadMethod(bookid=None, tor_title=None, tor_url=None, library='eBook'
                             add_to_blacklist(full_url, wanted['NZBtitle'], wanted['NZBprov'],
                                              bookid, library, 'Failed')
                     delete_task(Source, downloadID, True)
-                    return False
+                    return False, rejected
                 else:
                     logger.debug('%s setting torrent name to [%s]' % (Source, tor_title))
                     myDB.action('UPDATE wanted SET NZBtitle=? WHERE NZBurl=?', (tor_title, full_url))
